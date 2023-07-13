@@ -1,0 +1,199 @@
+syntax = "proto3";
+
+option java_multiple_files = true;
+option java_package = "com.ospreydcs.dp.grpc.v1.query";
+
+import "google/protobuf/empty.proto";
+import "common.proto";
+
+///////////////////////////////////////////////////////////
+// The type of the PV Field.  The type of the last field
+// stored is returned.  Default is float
+///////////////////////////////////////////////////////////
+enum PVType {
+  FLOAT = 0;          // floating point value (default)
+  STRING = 1;         // String value
+  INTEGER = 2;        // integer value
+  BOOLEAN = 3;        // boolean value
+  STRUCTURE = 4;      // structure value
+  IMAGE = 5;          // image value
+  ARRAY = 6;          // Array value
+  BYTE_ARRAY = 7;     // byte array value
+}
+
+///////////////////////////////////////////////////////////
+// Paginated Request
+///////////////////////////////////////////////////////////
+message PaginatedRequest {
+  oneof value_oneof {
+    Request request = 1;      // The request is sent first on the stream
+    uint32 page = 2;          // From then on, simply the 1-based page is sent.   Can stream many PaginatedRequests without waiting for server to reply each time.  Sending 0 means send all remaining pages.
+  }
+}
+
+///////////////////////////////////////////////////////////
+// Paginated Datastore Query Request.
+///////////////////////////////////////////////////////////
+message Request {
+  string query = 1;           // Extended influxDb query language
+  uint32 perPage = 2;         // Max number of rows per page - default 100
+  uint32 page = 3;            // 1-based page to start streaming responses from - default 0 = send all pages without waiting for client
+}
+
+///////////////////////////////////////////////////////////
+// Query Request for list of annotations or PVs managed by the datastore.
+// Provide a query string that is a regex for filtering the results returned
+// e.g. "|> filter(fn: (r) => r.mpexPv01_value > 10.0)" to return all mpex PV01 with values greater than 10.0
+// e.g. "FAIL.*" to return all annotations dealing with failures
+// see {@link ./README.md} for more information
+///////////////////////////////////////////////////////////
+message Query{
+  string query = 1;
+}
+
+///////////////////////////////////////////////////////////
+// record containing all data items in this page ( same number of items as labels )
+///////////////////////////////////////////////////////////
+
+message PaginatedResponse {
+  uint32 page = 1;                    // the page number returned
+  repeated string labels = 2;         // list of labels for columns, from the aliases specified in the query or uses the column names
+  repeated Timestamp timestamps = 3;  // list of timestamps for this page or responses
+  repeated Data columns = 4;          // list of column - same number as labels.  For each a whole page is returned, each Data.Datum is a row
+  uint64 totalRows = 5;               // total rows that satisfy the query
+  uint32 totalPages = 6;              // total number of pages that satisfy the query
+}
+
+///////////////////////////////////////////////////////////
+// The list of Snapshots corresponding to the SnapshotRequest
+// Request is a SnapshotQuery
+///////////////////////////////////////////////////////////
+message SnapshotResponse {
+  repeated Snapshot snapshots = 1;
+}
+
+///////////////////////////////////////////////////////////
+// Snapshot Query Request is a expression of the following form:
+// [ (snapshotTimestamp|firstTimestamp|lastTimestamp) (after|before) {Timestamp} |
+//   (snapshotTimestamp|firstTimestamp|lastTimestamp) between {Timestamp} and {EndTimestamp} ] ...
+// [ {pvName} matches {regex} ] ...
+// [ {attributeName}.value matches {regex} ] ...
+// For a Snapshot to match all timestamp clauses must match and also all attribute clauses
+//
+///////////////////////////////////////////////////////////
+message SnapshotQuery {
+  repeated TimestampClause timestampClauses = 1;
+  repeated string pvNameClause = 2;           // Value is regex
+  repeated uint32 idClause = 3;               // list of snapshot ids
+  repeated Attribute attributeClauses = 4;    // Value is regex
+}
+
+///////////////////////////////////////////////////////////
+// ID Query Request
+///////////////////////////////////////////////////////////
+message IdQuery {
+  uint32 id = 1;
+}
+
+///////////////////////////////////////////////////////////
+// Timestamp clause of a SnapshotQuery is a expression of the following form:
+// [ (snapshotTimestamp|firstTimestamp|lastTimestamp) (after|before) {Timestamp} |
+//   (snapshotTimestamp|firstTimestamp|lastTimestamp) between {Timestamp} and {EndTimestamp} ] ...
+///////////////////////////////////////////////////////////
+message TimestampClause {
+    SnapshotTimestampClauseSelector selector = 1;
+    SnapshotTimestampClausePredicate predicate = 2;
+    Timestamp timestamp = 3;
+    Timestamp endTimestamp = 4;
+}
+
+///////////////////////////////////////////////////////////
+// The predicate used in a timestamp clause
+///////////////////////////////////////////////////////////
+enum SnapshotTimestampClausePredicate {
+  BEFORE = 0;
+  BETWEEN = 1;
+  AFTER = 2;
+}
+
+enum SnapshotTimestampClauseSelector {
+  SNAPSHOT_TIMESTAMP = 0;
+  FIRST_TIMESTAMP = 1;
+  LAST_TIMESTAMP = 2;
+}
+
+///////////////////////////////////////////////////////////
+// Information about a single Snapshot.  ID, Snapshot Timestamp and
+// list of PVs.
+// Also included are any attributes logged for the Snapshot
+// and the first and last timestamps of any recorded PVs
+///////////////////////////////////////////////////////////
+message Snapshot {
+  uint32 id = 1;
+  uint32 size = 2;
+  Timestamp snapshotTimestamp = 3;
+  repeated string pvs = 4;
+  Timestamp first = 5;
+  Timestamp last = 6;
+  repeated Attribute attributes = 7;
+}
+
+///////////////////////////////////////////////////////////
+// The list of PVs corresponding to the PVRequest
+// Request is a regex that matches against pv `name`
+///////////////////////////////////////////////////////////
+message PVResponse {
+  repeated PV pvs = 1;
+}
+
+///////////////////////////////////////////////////////////
+// Information about a single PV.  Name and list of fields
+// Also included is the identifier of the snapshot data provider that
+// provided the PV and the first and last timestamps of recorded data
+///////////////////////////////////////////////////////////
+message PV {
+  string name = 1;
+  repeated PVField fields = 2;
+  Timestamp first = 3;
+  Timestamp last = 4;
+  uint32 providerID = 5;
+  AttributeNames attributes = 6;
+}
+
+///////////////////////////////////////////////////////////
+// Information about a single PV Field. Name and type
+///////////////////////////////////////////////////////////
+message PVField {
+  string name = 1;
+  PVType type = 2;
+}
+
+///////////////////////////////////////////////////////////
+// Annotation.  List of annotations selected by annotations query
+// Request is a regex that matches against annotation `name`
+///////////////////////////////////////////////////////////
+message AnnotationsResponse {
+  repeated Annotation annotations = 1;
+}
+
+///////////////////////////////////////////////////////////
+// A single annotation
+///////////////////////////////////////////////////////////
+message Annotation {
+  string name = 1;  // name of annotation
+  string query = 2; // the query that is referenced by this annotation
+}
+
+///////////////////////////////////////////////////////////
+// Service endpoints
+///////////////////////////////////////////////////////////
+service QueryService {
+  rpc getSnapshotById (IdQuery) returns (Snapshot);
+  rpc listAnnotations (Query) returns (AnnotationsResponse);
+  rpc listPVs (Query) returns (PVResponse);
+  rpc listPVAttributes ( google.protobuf.Empty ) returns (AttributeNames);
+  rpc listSnapshotData (Query) returns (PaginatedResponse);
+  rpc listSnapshots (SnapshotQuery) returns (SnapshotResponse);
+  rpc listSnapshotAttributes (google.protobuf.Empty) returns (AttributeNames);
+  rpc querySnapshotData (stream PaginatedRequest) returns (stream PaginatedResponse);
+}

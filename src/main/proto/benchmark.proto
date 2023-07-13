@@ -1,0 +1,33 @@
+syntax = "proto3";
+
+option java_multiple_files = true;
+option java_package = "com.ospreydcs.dp.grpc.v1.benchmark";
+
+import "google/protobuf/empty.proto";
+import "common.proto";
+import "ingestion.proto";
+
+message Int64Msg {
+  uint64 value = 1;
+}
+
+message SnapshotDataStatus {
+  bool dataError = 1;
+  string statusMsg = 2;
+}
+
+message SnapshotDataResponse {
+  uint32 rowCount = 1;
+  uint32 colCount = 2;
+  SnapshotDataStatus status = 3;
+}
+
+///////////////////////////////////////////////////////////
+// Service endpoints
+///////////////////////////////////////////////////////////
+service Benchmark {
+  rpc UnarySpam (Int64Msg) returns (Int64Msg) {}
+  rpc StreamingSpam (Int64Msg) returns (stream Int64Msg) {}
+  rpc UnaryIngestion (SnapshotData) returns (SnapshotID) {}
+  rpc StreamingIngestion (stream SnapshotData) returns (stream SnapshotDataResponse);
+}
