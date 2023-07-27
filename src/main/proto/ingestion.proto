@@ -111,6 +111,6 @@ message TimestampList {
 ///////////////////////////////////////////////////////////
 service IngestionService {
   rpc registerProvider (SnapshotProviderConfig) returns (ProviderID);
-  rpc streamSnapshotData (stream SnapshotData) returns (SnapshotID);
+  rpc streamSnapshotData (stream SnapshotData) returns (stream SnapshotID);
   rpc addSnapshotData (SnapshotData) returns (SnapshotID);
 }
