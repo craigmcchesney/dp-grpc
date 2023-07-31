@@ -1,0 +1,26 @@
+syntax = "proto3";
+
+option java_multiple_files = true;
+option java_package = "com.ospreydcs.dp.grpc.v1.ingestion";
+
+import "common.proto";
+
+service DpIngestionService {
+  rpc streamingIngestion (stream IngestionRequest) returns (stream IngestionResponse);
+  rpc unaryIngestion (IngestionRequest) returns (IngestionResponse);
+}
+
+message IngestionRequest {
+  uint32 snapshotDataProviderID = 1;
+  Timestamp snapshotTimestamp = 2;
+  repeated Timestamp timestamps = 4;
+  repeated Data columns = 5;
+  repeated Attribute attributes = 6;
+}
+
+message IngestionResponse {
+  uint32 snapshotID = 1;
+  OperationStatus status = 2;
+  uint32 numValues = 3;
+  uint32 numColumns = 4;
+}
