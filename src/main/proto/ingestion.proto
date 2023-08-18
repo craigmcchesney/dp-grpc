@@ -6,21 +6,119 @@ option java_package = "com.ospreydcs.dp.grpc.v1.ingestion";
 import "common.proto";
 
 service DpIngestionService {
+  rpc registerProvider (RegisterProviderRequest) returns (RegisterProviderResponse);
   rpc streamingIngestion (stream IngestionRequest) returns (stream IngestionResponse);
   rpc unaryIngestion (IngestionRequest) returns (IngestionResponse);
 }
 
+message RegisterProviderRequest {
+  string providerName = 1;
+  repeated Attribute attributes = 2;
+  Timestamp requestTime = 3;
+}
+
+message RegisterProviderResponse {
+  ResponseType responseType = 1;
+  Timestamp responseTime = 2;
+  RegisterProviderResponseDetails responseDetails = 3;
+}
+
 message IngestionRequest {
-  uint32 snapshotDataProviderID = 1;
-  Timestamp snapshotTimestamp = 2;
-  repeated Timestamp timestamps = 4;
-  repeated Data columns = 5;
-  repeated Attribute attributes = 6;
+  uint32 providerId = 1;
+  string clientRequestId = 2;
+  Timestamp requestTime = 3;
+  ResponseLevel responseLevel = 4;
+  EventDescription eventDescription = 5;
+  DataTable dataTable = 6;
 }
 
 message IngestionResponse {
-  uint32 snapshotID = 1;
-  OperationStatus status = 2;
-  uint32 numValues = 3;
-  uint32 numColumns = 4;
+  uint32 providerId = 1;
+  string clientRequestId = 2;
+  ResponseType responseType = 3;
+  Timestamp responseTime = 4;
+  IngestionResponseDetails responseDetails = 5;
+}
+
+enum ResponseLevel {
+  ACK_LEVEL = 0;
+  REPORT_LEVEL = 1;
+}
+
+message EventDescription {
+  uint32 eventId = 1;
+  Timestamp eventTimestamp = 2;
+  string eventDescription = 3;
+  repeated Attribute eventMetadata = 4;
+}
+
+message DataTable {
+  repeated Timestamp timestamps = 1;
+  repeated Data columns = 2;
+  repeated Attribute attributes = 3;
+}
+
+enum ResponseType {
+  ACK_RESPONSE = 0;
+  REJECT_RESPONSE = 1;
+  REPORT_RESPONSE = 2;
+  ERROR_RESPONSE = 3;
+}
+
+message RegisterProviderResponseDetails {
+  oneof details_oneof {
+    RegisterProviderDetails registerProviderDetails = 1;
+    RejectDetails rejectDetails = 2;
+    ErrorDetails errorDetails = 3;
+  }
+}
+
+message IngestionResponseDetails {
+  oneof details_oneof {
+    AckDetails ackDetails = 1;
+    RejectDetails rejectDetails = 2;
+    IngestionReportDetails reportDetails = 3;
+    ErrorDetails errorDetails = 4;
+  }
+}
+
+message AckDetails {
+  uint32 numRows = 1;
+  uint32 numColumns = 2;
+}
+
+message RejectDetails {
+  RejectReason reason = 1;
+  string message = 2;
+}
+
+message RegisterProviderDetails {
+  uint32 providerId = 1;
+}
+
+message IngestionReportDetails {
+  EventReportDetails eventDetails = 1;
+  ColumnDataReportDetails columnDetails = 2;
+}
+
+message ErrorDetails {
+  ErrorCode code = 1;
+  string message = 2;
+}
+
+message EventReportDetails {
+  uint32 eventId = 1;
+}
+
+message ColumnDataReportDetails {
+  repeated string columnDataIds = 1;
+}
+
+enum RejectReason {
+  INVALID_REQUEST_REASON = 0;
+}
+
+enum ErrorCode {
+  DB_ERROR = 0;
+  INTERNAL_ERROR = 1;
 }
