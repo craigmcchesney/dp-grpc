@@ -39,14 +39,13 @@ message IngestionRequest {
   string clientRequestId = 2;
   Timestamp requestTime = 3;
   repeated Attribute attributes = 4;
-  EventDescription eventDescription = 5;
+  EventMetadata eventMetadata = 5;
   DataTable dataTable = 6;
 }
 
-message EventDescription {
-  uint32 eventId = 1;
-  Timestamp eventTimestamp = 2;
-  string eventDescription = 3;
+message EventMetadata {
+  Timestamp eventTimestamp = 1;
+  string eventDescription = 2;
 }
 
 message DataTable {
