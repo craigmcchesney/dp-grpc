@@ -1,0 +1,43 @@
+syntax = "proto3";
+
+option java_multiple_files = true;
+option java_package = "com.ospreydcs.dp.grpc.v1.query";
+
+import "common.proto";
+
+service DpQueryServiceService {
+  rpc queryDataByTime (QueryDataByTimeRequest) returns (stream QueryDataByTimeResponse);
+}
+
+message QueryDataByTimeRequest {
+  Timestamp startTime = 1;
+  Timestamp endTime = 2;
+  repeated string columnNames = 3;
+}
+
+message QueryDataByTimeResponse {
+  DataBucket dataBucket = 1;
+}
+
+message DataBucket {
+  string columnName = 1;
+  Timestamp firstTime = 2;
+  Timestamp lastTime = 3;
+  repeated Attribute attributes = 4;
+  EventMetadata eventMetadata = 5;
+  uint32 numSamples = 6;
+  oneof value_oneof {
+    FixedIntervalBucketData fixedBucketData = 100;
+    IrregularIntervalBucketData irregularBucketData = 101;
+  }
+}
+
+message FixedIntervalBucketData {
+  uint64 sampleFrequency = 1;
+  Data data = 2;
+}
+
+message IrregularIntervalBucketData {
+  TimestampList timestampList = 1;
+  Data data = 2;
+}

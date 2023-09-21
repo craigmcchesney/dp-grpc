@@ -8,6 +8,10 @@ message Timestamp {
   uint64 nanoseconds = 2;   // nanoseconds - sub-second precision down to the nanosecond
 }
 
+message TimestampList {
+  repeated Timestamp timestampValues = 1;
+}
+
 message Data {
   string name = 1;
   repeated Datum data = 2;
@@ -85,4 +89,9 @@ enum Severity {
   MAJOR_ALARM = 2;
   INVALID_ALARM = 3;
   UNDEFINED_ALARM = 4;
+}
+
+message EventMetadata {
+  Timestamp eventTimestamp = 1;
+  string eventDescription = 2;
 }
