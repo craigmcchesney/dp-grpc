@@ -16,16 +16,15 @@ message QueryDataByTimeRequest {
 }
 
 message QueryDataByTimeResponse {
-  DataBucket dataBucket = 1;
+  ColumnDataBuckets columnDataBuckets = 1;
 }
 
-message DataBucket {
-  string columnName = 1;
-  Timestamp firstTime = 2;
-  Timestamp lastTime = 3;
-  repeated Attribute attributes = 4;
-  EventMetadata eventMetadata = 5;
-  uint32 numSamples = 6;
+message ColumnDataBuckets {
+  Timestamp firstTime = 1;
+  Timestamp lastTime = 2;
+  repeated Attribute attributes = 3;
+  EventMetadata eventMetadata = 4;
+  uint32 numSamples = 5;
   oneof value_oneof {
     FixedIntervalBucketData fixedBucketData = 100;
     IrregularIntervalBucketData irregularBucketData = 101;
@@ -34,10 +33,10 @@ message DataBucket {
 
 message FixedIntervalBucketData {
   uint64 sampleFrequency = 1;
-  Data data = 2;
+  repeated Data columns = 2;
 }
 
 message IrregularIntervalBucketData {
   TimestampList timestampList = 1;
-  Data data = 2;
+  repeated Data columns = 2;
 }
