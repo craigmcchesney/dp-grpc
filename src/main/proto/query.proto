@@ -16,27 +16,27 @@ message QueryDataByTimeRequest {
 }
 
 message QueryDataByTimeResponse {
-  ColumnDataBuckets columnDataBuckets = 1;
+  QueryResultDataTable columnDataBuckets = 1;
 }
 
-message ColumnDataBuckets {
+message QueryResultDataTable {
   Timestamp firstTime = 1;
   Timestamp lastTime = 2;
   repeated Attribute attributes = 3;
   EventMetadata eventMetadata = 4;
   uint32 numSamples = 5;
   oneof value_oneof {
-    FixedIntervalBucketData fixedBucketData = 100;
-    IrregularIntervalBucketData irregularBucketData = 101;
+    FixedIntervalColumnData fixedIntervalColumnData = 100;
+    IrregularIntervalColumnData irregularIntervalColumnData = 101;
   }
 }
 
-message FixedIntervalBucketData {
+message FixedIntervalColumnData {
   uint64 sampleFrequency = 1;
   repeated Data columns = 2;
 }
 
-message IrregularIntervalBucketData {
+message IrregularIntervalColumnData {
   TimestampList timestampList = 1;
   repeated Data columns = 2;
 }
