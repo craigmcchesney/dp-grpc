@@ -6,7 +6,7 @@ option java_package = "com.ospreydcs.dp.grpc.v1.query";
 import "common.proto";
 
 service DpQueryServiceService {
-  rpc queryDataByTime (QueryDataByTimeRequest) returns (stream QueryDataByTimeResponse);
+  rpc queryDataByTime (QueryDataByTimeRequest) returns (stream QueryDataResponse);
 }
 
 message QueryDataByTimeRequest {
@@ -15,28 +15,11 @@ message QueryDataByTimeRequest {
   repeated string columnNames = 3;
 }
 
-message QueryDataByTimeResponse {
-  QueryResultDataTable columnDataBuckets = 1;
-}
-
-message QueryResultDataTable {
+message QueryDataResponse {
   Timestamp firstTime = 1;
   Timestamp lastTime = 2;
-  repeated Attribute attributes = 3;
-  EventMetadata eventMetadata = 4;
-  uint32 numSamples = 5;
-  oneof value_oneof {
-    FixedIntervalColumnData fixedIntervalColumnData = 100;
-    IrregularIntervalColumnData irregularIntervalColumnData = 101;
-  }
-}
-
-message FixedIntervalColumnData {
-  uint64 sampleFrequency = 1;
-  repeated Data columns = 2;
-}
-
-message IrregularIntervalColumnData {
-  TimestampList timestampList = 1;
-  repeated Data columns = 2;
+  repeated string columnNames = 3;
+  repeated Attribute attributes = 4;
+  EventMetadata eventMetadata = 5;
+  DataTable dataTable = 6;
 }

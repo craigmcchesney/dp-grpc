@@ -31,6 +31,24 @@ message Datum {
   OperationStatus status = 20;         // status enum value
 }
 
+message DataTable {
+  DataTimeSpec dataTimeSpec = 1;
+  repeated Data columns = 2;
+}
+
+message DataTimeSpec {
+  oneof value_oneof {
+    TimestampIterator timestampIterator = 1;
+    TimestampList timestampList = 2;
+  }
+}
+
+message TimestampIterator {
+  Timestamp startTime = 1;
+  uint64 sampleIntervalNanos = 2;
+  uint32 numSamples = 3;
+}
+
 message Image {
   FileType type = 1;
   bytes image = 2;
