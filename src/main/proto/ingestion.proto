@@ -18,15 +18,13 @@ message RegisterProviderRequest {
 }
 
 message RegisterProviderResponse {
+
   ResponseType responseType = 1;
   Timestamp responseTime = 2;
-  RegisterProviderResponseDetails responseDetails = 3;
-}
 
-message RegisterProviderResponseDetails {
   oneof details_oneof {
-    RegisterProviderDetails registerProviderDetails = 1;
-    RejectDetails rejectDetails = 2;
+    RegisterProviderDetails registerProviderDetails = 10;
+    RejectDetails rejectDetails = 11;
   }
 }
 
@@ -44,23 +42,21 @@ message IngestionRequest {
 }
 
 message IngestionResponse {
+
   uint32 providerId = 1;
   string clientRequestId = 2;
   ResponseType responseType = 3;
   Timestamp responseTime = 4;
-  IngestionResponseDetails responseDetails = 5;
+
+  oneof details_oneof {
+    AckDetails ackDetails = 10;
+    RejectDetails rejectDetails = 11;
+  }
 }
 
 enum ResponseType {
   ACK_RESPONSE = 0;
   REJECT_RESPONSE = 1;
-}
-
-message IngestionResponseDetails {
-  oneof details_oneof {
-    AckDetails ackDetails = 1;
-    RejectDetails rejectDetails = 2;
-  }
 }
 
 message AckDetails {
@@ -69,10 +65,11 @@ message AckDetails {
 }
 
 message RejectDetails {
-  RejectReason reason = 1;
-  string message = 2;
-}
 
-enum RejectReason {
-  INVALID_REQUEST_REASON = 0;
+  string message = 1;
+  RejectReason rejectReason = 2;
+
+  enum RejectReason {
+    INVALID_REQUEST_REASON = 0;
+  }
 }
