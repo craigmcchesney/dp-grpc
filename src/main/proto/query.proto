@@ -5,7 +5,7 @@ option java_package = "com.ospreydcs.dp.grpc.v1.query";
 
 import "common.proto";
 
-service DpQueryServiceService {
+service DpQueryService {
   rpc queryDataByTime (QueryDataByTimeRequest) returns (stream QueryDataResponse);
 }
 
