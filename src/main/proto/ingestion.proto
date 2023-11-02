@@ -54,22 +54,7 @@ message IngestionResponse {
   }
 }
 
-enum ResponseType {
-  ACK_RESPONSE = 0;
-  REJECT_RESPONSE = 1;
-}
-
 message AckDetails {
   uint32 numRows = 1;
   uint32 numColumns = 2;
-}
-
-message RejectDetails {
-
-  string message = 1;
-  RejectReason rejectReason = 2;
-
-  enum RejectReason {
-    INVALID_REQUEST_REASON = 0;
-  }
 }

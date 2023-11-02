@@ -12,14 +12,40 @@ service DpQueryService {
 message QueryDataByTimeRequest {
   Timestamp startTime = 1;
   Timestamp endTime = 2;
-  repeated string columnNames = 3;
+  string columnName = 3;
 }
 
 message QueryDataResponse {
+  ResponseType responseType = 1;
+  Timestamp responseTime = 2;
+
+  oneof details_oneof {
+    QueryResultDetails queryResultDetails = 10;
+    RejectDetails rejectDetails = 11;
+  }
+}
+
+message QueryResultDetails {
+  oneof details_oneof {
+    QueryResultSummary queryResultSummary = 10;
+    QueryResultData queryResultData = 11;
+  }
+}
+
+message QueryResultSummary {
+  string columnName = 1;
+  uint32 numResultColumns = 2;
+}
+
+message QueryResultData {
+  string columnName = 1;
+  repeated QueryResultColumn queryResultColumns = 2;
+}
+
+message QueryResultColumn {
   Timestamp firstTime = 1;
   Timestamp lastTime = 2;
-  repeated string columnNames = 3;
-  repeated Attribute attributes = 4;
-  EventMetadata eventMetadata = 5;
-  DataTable dataTable = 6;
+  repeated Attribute attributes = 3;
+  EventMetadata eventMetadata = 4;
+  DataColumn dataColumn = 5;
 }

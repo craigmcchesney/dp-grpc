@@ -115,3 +115,21 @@ message Image {
     PDF = 8;
   }
 }
+
+enum ResponseType {
+  ACK_RESPONSE = 0;
+  REJECT_RESPONSE = 1;
+  SUMMARY_RESPONSE = 2;
+  DETAIL_RESPONSE = 3;
+}
+
+message RejectDetails {
+
+  string message = 1;
+  RejectReason rejectReason = 2;
+
+  enum RejectReason {
+    INVALID_REQUEST_REASON = 0;
+  }
+}
+
