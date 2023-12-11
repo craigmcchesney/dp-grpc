@@ -6,46 +6,46 @@ option java_package = "com.ospreydcs.dp.grpc.v1.query";
 import "common.proto";
 
 service DpQueryService {
-  rpc queryDataByTime (QueryDataByTimeRequest) returns (stream QueryDataResponse);
+  rpc query(QueryRequest) returns (stream QueryResponse);
 }
 
-message QueryDataByTimeRequest {
+message QueryRequest {
   Timestamp startTime = 1;
   Timestamp endTime = 2;
-  string columnName = 3;
+  repeated string columnNames = 3;
 }
 
-message QueryDataResponse {
+message QueryResponse {
+
   ResponseType responseType = 1;
   Timestamp responseTime = 2;
 
-  oneof details_oneof {
-    QueryResultDetails queryResultDetails = 10;
+  oneof response {
+    QueryResult queryResult = 10;
     RejectDetails rejectDetails = 11;
   }
-}
 
-message QueryResultDetails {
-  oneof details_oneof {
-    QueryResultSummary queryResultSummary = 10;
-    QueryResultData queryResultData = 11;
+  message QueryResult {
+
+    oneof resultMessage {
+      ResultSummary resultSummary = 1;
+      ResultData resultData = 2;
+    }
+
+    message ResultSummary {
+      uint32 numBuckets = 1;
+    }
+
+    message ResultData {
+      repeated DataBucket dataBuckets = 1;
+    }
+
+    message DataBucket {
+      FixedIntervalTimestampSpec samplingInterval = 1;
+      repeated Attribute attributes = 2;
+      EventMetadata eventMetadata = 3;
+      DataColumn dataColumn = 4;
+    }
   }
 }
 
-message QueryResultSummary {
-  string columnName = 1;
-  uint32 numResultColumns = 2;
-}
-
-message QueryResultData {
-  string columnName = 1;
-  repeated QueryResultColumn queryResultColumns = 2;
-}
-
-message QueryResultColumn {
-  Timestamp firstTime = 1;
-  Timestamp lastTime = 2;
-  repeated Attribute attributes = 3;
-  EventMetadata eventMetadata = 4;
-  DataColumn dataColumn = 5;
-}
