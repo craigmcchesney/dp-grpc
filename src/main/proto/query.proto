@@ -33,7 +33,9 @@ message QueryResponse {
     }
 
     message ResultSummary {
-      uint32 numBuckets = 1;
+      bool isError = 1;
+      string message = 2;
+      uint32 numBuckets = 3;
     }
 
     message ResultData {
