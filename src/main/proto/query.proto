@@ -21,32 +21,34 @@ message QueryResponse {
   Timestamp responseTime = 2;
 
   oneof response {
-    QueryResult queryResult = 10;
-    RejectDetails rejectDetails = 11;
+    QueryReport queryReport = 10;
+    RejectDetails queryReject = 11;
   }
 
-  message QueryResult {
+  message QueryReport {
 
-    oneof resultMessage {
-      ResultSummary resultSummary = 1;
-      ResultData resultData = 2;
+    oneof reportContent {
+      QueryError queryError = 1;
+      QuerySummary querySummary = 2;
+      QueryData queryData = 3;
     }
 
-    message ResultSummary {
-      bool isError = 1;
-      string message = 2;
-      uint32 numBuckets = 3;
+    message QueryError {
+      string message = 1;
     }
 
-    message ResultData {
+    message QuerySummary {
+      uint32 numBuckets = 1;
+    }
+
+    message QueryData {
       repeated DataBucket dataBuckets = 1;
-    }
-
-    message DataBucket {
-      FixedIntervalTimestampSpec samplingInterval = 1;
-      repeated Attribute attributes = 2;
-      EventMetadata eventMetadata = 3;
-      DataColumn dataColumn = 4;
+      message DataBucket {
+        FixedIntervalTimestampSpec samplingInterval = 1;
+        repeated Attribute attributes = 2;
+        EventMetadata eventMetadata = 3;
+        DataColumn dataColumn = 4;
+      }
     }
   }
 }
