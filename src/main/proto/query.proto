@@ -6,13 +6,27 @@ option java_package = "com.ospreydcs.dp.grpc.v1.query";
 import "common.proto";
 
 service DpQueryService {
-  rpc query(QueryRequest) returns (stream QueryResponse);
+  rpc queryResponseSingle(QueryRequest) returns (QueryResponse);
+  rpc queryResponseStream(QueryRequest) returns (stream QueryResponse);
+  rpc queryResponseCursor(stream QueryRequest) returns (stream QueryResponse);
 }
 
 message QueryRequest {
-  Timestamp startTime = 1;
-  Timestamp endTime = 2;
-  repeated string columnNames = 3;
+
+  oneof request {
+    QuerySpec querySpec = 1;
+    CursorRequest cursorOp = 2;
+  }
+
+  message QuerySpec {
+    Timestamp startTime = 1;
+    Timestamp endTime = 2;
+    repeated string columnNames = 3;
+  }
+
+  message CursorRequest {
+    uint32 numBuckets = 1;
+  }
 }
 
 message QueryResponse {
