@@ -42,17 +42,18 @@ message QueryResponse {
   message QueryReport {
 
     oneof reportContent {
-      QueryError queryError = 1;
-      QuerySummary querySummary = 2;
-      QueryData queryData = 3;
+      QueryStatus queryStatus = 1;
+      QueryData queryData = 2;
     }
 
-    message QueryError {
-      string message = 1;
-    }
+    message QueryStatus {
+      QueryStatusType queryStatusType = 1;
+      string statusMessage = 2;
 
-    message QuerySummary {
-      uint32 numBuckets = 1;
+      enum QueryStatusType {
+        QUERY_STATUS_ERROR = 0;
+        QUERY_STATUS_EMPTY = 1;
+      }
     }
 
     message QueryData {
