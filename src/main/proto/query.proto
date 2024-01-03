@@ -15,7 +15,7 @@ message QueryRequest {
 
   oneof request {
     QuerySpec querySpec = 1;
-    CursorRequest cursorOp = 2;
+    CursorOperation cursorOp = 2;
   }
 
   message QuerySpec {
@@ -24,8 +24,8 @@ message QueryRequest {
     repeated string columnNames = 3;
   }
 
-  message CursorRequest {
-    uint32 numBuckets = 1;
+  enum CursorOperation {
+    CURSOR_OP_NEXT = 0;
   }
 }
 
@@ -53,6 +53,7 @@ message QueryResponse {
       enum QueryStatusType {
         QUERY_STATUS_ERROR = 0;
         QUERY_STATUS_EMPTY = 1;
+        QUERY_STATUS_NOT_READY = 2;
       }
     }
 
