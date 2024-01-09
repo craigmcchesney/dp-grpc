@@ -122,6 +122,7 @@ enum ResponseType {
   SUMMARY_RESPONSE = 2;
   DETAIL_RESPONSE = 3;
   ERROR_RESPONSE = 4;
+  STATUS_RESPONSE = 5;
 }
 
 message RejectDetails {
