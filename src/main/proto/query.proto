@@ -7,6 +7,7 @@ import "common.proto";
 
 service DpQueryService {
   rpc queryResponseSingle(QueryRequest) returns (QueryResponse);
+  rpc queryResponseTable(QueryRequest) returns (DataTable);
   rpc queryResponseStream(QueryRequest) returns (stream QueryResponse);
   rpc queryResponseCursor(stream QueryRequest) returns (stream QueryResponse);
 }
