@@ -7,7 +7,7 @@ import "common.proto";
 
 service DpQueryService {
   rpc queryResponseSingle(QueryRequest) returns (QueryResponse);
-  rpc queryResponseTable(QueryRequest) returns (DataTable);
+  rpc queryResponseTable(QueryRequest) returns (QueryResponse);
   rpc queryResponseStream(QueryRequest) returns (stream QueryResponse);
   rpc queryResponseCursor(stream QueryRequest) returns (stream QueryResponse);
 }
@@ -44,7 +44,8 @@ message QueryResponse {
 
     oneof reportContent {
       QueryStatus queryStatus = 1;
-      QueryData queryData = 2;
+      BucketData bucketData = 2;
+      DataTable dataTable = 3;
     }
 
     message QueryStatus {
@@ -58,7 +59,7 @@ message QueryResponse {
       }
     }
 
-    message QueryData {
+    message BucketData {
       repeated DataBucket dataBuckets = 1;
       message DataBucket {
         FixedIntervalTimestampSpec samplingInterval = 1;
