@@ -10,6 +10,7 @@ service DpQueryService {
   rpc queryResponseTable(QueryRequest) returns (QueryResponse);
   rpc queryResponseStream(QueryRequest) returns (stream QueryResponse);
   rpc queryResponseCursor(stream QueryRequest) returns (stream QueryResponse);
+  rpc getColumnInfo(QueryRequest) returns (QueryResponse);
 }
 
 message QueryRequest {
@@ -17,6 +18,7 @@ message QueryRequest {
   oneof request {
     QuerySpec querySpec = 1;
     CursorOperation cursorOp = 2;
+    ColumnInfoQuerySpec columnInfoQuerySpec = 3;
   }
 
   message QuerySpec {
@@ -27,6 +29,20 @@ message QueryRequest {
 
   enum CursorOperation {
     CURSOR_OP_NEXT = 0;
+  }
+
+  message ColumnInfoQuerySpec {
+    oneof columnNameSpec {
+      ColumnNameList columnNameList = 1;
+      ColumnNamePattern columnNamePattern = 2;
+    }
+    message ColumnNameList {
+      repeated string columnNames = 1;
+    }
+
+    message ColumnNamePattern {
+      string pattern = 1;
+    }
   }
 }
 
@@ -46,6 +62,7 @@ message QueryResponse {
       QueryStatus queryStatus = 1;
       BucketData bucketData = 2;
       DataTable dataTable = 3;
+      ColumnInfoList columnInfoList = 4;
     }
 
     message QueryStatus {
@@ -66,6 +83,19 @@ message QueryResponse {
         repeated Attribute attributes = 2;
         EventMetadata eventMetadata = 3;
         DataColumn dataColumn = 4;
+      }
+    }
+
+    message ColumnInfoList {
+      repeated ColumnInfo columnInfoList = 1;
+
+      message ColumnInfo {
+        string columnName = 1;
+        string dataType = 2;
+        uint64 samplingClock = 3;
+        uint32 bucketSize = 4;
+        Timestamp firstTime = 5;
+        Timestamp lastTime = 6;
       }
     }
   }
