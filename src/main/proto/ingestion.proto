@@ -37,7 +37,7 @@ import "common.proto";
 service DpIngestionService {
   rpc registerProvider (RegisterProviderRequest) returns (RegisterProviderResponse);
   rpc ingestData (IngestDataRequest) returns (IngestDataResponse);
-  rpc ingestDataStream (stream IngestDataRequest) returns (stream IngestDataRequest);
+  rpc ingestDataStream (stream IngestDataRequest) returns (stream IngestDataResponse);
 }
 
 
@@ -138,6 +138,6 @@ message AckDetails {
  * Each data column must be the same size, the number of timestamps identified in dataTimeSpec.
  */
 message IngestionDataFrame {
-  DataTimestamps dataTimeSpec = 1;
+  DataTimestamps dataTimestamps = 1;
   repeated DataColumn dataColumns = 2;
 }

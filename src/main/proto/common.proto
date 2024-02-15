@@ -110,7 +110,7 @@ message SamplingClock {
  *
  */
 message DataTimestamps {
-  oneof value_oneof {
+  oneof value {
     SamplingClock samplingClock = 1;
     TimestampList timestampList = 2;
   }
@@ -174,7 +174,7 @@ message DataValue {
     double		doubleValue = 8;		// 64 byte float value (double)
     bytes		byteArrayValue = 9;		// raw data as byte string
     Array		arrayValue = 10;			// heterogeneous array (no dimensional restrictions as of yet)
-    Structure	structValue = 11;		// general data structure (no width or depth restrictions yet)
+    Structure	structureValue = 11;		// general data structure (no width or depth restrictions yet)
     Image		imageValue = 12;		// general image value
   }
 
