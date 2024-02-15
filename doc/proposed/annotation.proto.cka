@@ -1,0 +1,458 @@
+//
+// annotation.proto
+//
+// Contains RPC messages and interface specific to the Annotation Service.
+//
+// since: December, 2023
+// version: 1.0.0
+//
+// NOTES:
+// - Carried over naming suggestions from common.proto (CKA)
+//
+// - Turns out protoc does not recognize name space containment within Java.  For example, using 
+//   "java_multiple_files = false" and enclosing all messages within class Annotation does not
+//   prevent name collisions of RPC messages (if they have same name but in different services).
+//
+// - Thus, from the above, looks like long identifiers are a good design choice to prevent future
+//   name collisions. 
+//
+// TODO:
+// - Define the entire Annotation Service interface
+// 
+// - Lock down metadata definitions.  These may need to go in common.proto, or create a new
+//   file (e.g., "metadata.proto"). 
+//
+
+
+
+syntax = "proto3";
+
+option java_multiple_files = false;  // necessary for name space containment 
+option java_package = "com.ospreydcs.dp.grpc.v1.annotation";
+
+import "common.proto";
+
+
+//
+// ------------------- RPC Interfaces ---------------------------
+//
+
+/*
+ * Annotation Authors Interface
+ *
+ * Used for annotation author registration and author queries.  Also allows authors to
+ * modify authority of other authors over existing annotations.
+ */
+service DpAuthorService {
+	rpc registerAuthor(RegisterAuthorRequest) returns (AuthorRegistrationResponse); 
+	rpc queryAuthor(AuthorQueryRequest) returns (AuthorQueryResponse);
+	rpc modifyPermission(AuthorPermissionsRequest) returns (AuthorPermissionsResponse);
+}
+
+
+/*
+ * Annotation Service Interface
+ *
+ * Interface for annotating archived data.  Registered annotation authors can create and modify data
+ * annotations. 
+ */
+service DpAnnotationService {
+	rpc createComment(AnnotateComment) returns (AnnotateCommentResponse);
+	rpc addComment(AddCommentRequest) returns (AnnotateCommentResponse);
+}
+
+
+//
+// ------------------- Metadata Definition ---------------------------
+//
+// NOTE: These may belong in the common.proto file.
+//
+
+
+/*
+ * A Closed Time Interval
+ *
+ * Defines the finite, closed time interval [start, stop] where end points are inclusive.
+ * 
+ * NOTES (CKA):
+ * - I'm not sure if this is useful, it depends upon the structure of the MongoDB bucket.
+ * - Probably depends on search-ability and performance.
+ *
+ * - This may be more proper in common.proto.  Could potentially be used as an alternate within DataTimeSpec.
+ * - However, this application is probably only valid for buckets.
+ */
+message TimeInterval {
+	Timestamp	start = 1;		// interval start time instant (inclusive)
+	Timestamp	stop = 2;		// interval stop time instant (inclusive)
+}
+
+/*
+ * Range of Timestamps
+ *
+ * Identifies a range of time instants within an archived data bucket. 
+ * Time ranges are specified either as a finite collection of Timestamps or a time interval containing
+ * desired Timestamp values within a bucket. 
+ *
+ * NOTES (CKA):
+ * - Perhaps we only want to support TimestampList's?  This would force the onerous on determination of
+ *   which timestamps are valid within in interval.
+ *  
+ * - TimeIntervals require the service to search the underlying buckets for valid timestamps within interval.
+ */
+message TimeRange {
+	oneof time {
+		TimeInterval	interval = 1;	// time interval within data block(s)
+		TimestampList	list = 2;		// list of timestamps within data block(s)
+	} 
+}
+
+
+/*
+ * Unit of Data Platform Storage
+ *
+ * Data is archived in "buckets" containing acquired data from a single data source (PV) within a 
+ * specified time range (e.g., interval).  
+ *
+ * NOTES:
+ * - Some time instants within the interval may not be populated (missing data, acquisition errors, interruptions, etc.)
+ * - Buckets have non-normalized attributes that can be searched (not included here).  
+ */
+message DataBucket {
+	uint32		uid = 1;	// bucket UID ?
+	string		name = 2;	// bucket unique name or data source (e.g., PV name)?
+}
+
+
+/*
+ * Standardized Identifier for Block of Archived Data
+ *
+ * A DataBlock specifies archived data across multiple buckets and at multiple time instants.
+ *
+ * NOTES:
+ * - Validity requires that all buckets contain the specified time instants, otherwise we have an exceptional
+ *   condition.
+ *   o Missing time instances could be ignored (as they may be contained in other buckets created from the same
+ *     data source.  If all specified time intervals were outside bucket ranges the empty record would result.
+ *   o We may wish to support only valid time ranges to avoid empty result?
+ *
+ * - If only TimestampList's are supported (rather than TimeInterval's) then the 'times' field collapses to a
+ *   TimestampList field.
+ */
+message DataBlock {
+		repeated TimeRange	times = 1;
+		repeated DataBucket	buckets = 2;
+}
+
+
+/*
+ * Contiguous Range of Data
+ *
+ * NOTES:
+ * - I don't know if we need to explicitly require a "snapshot" or it is a special 
+ *   attribute or property of a DataBlock (which currently does not need to be contiguous). 
+ */
+message Snapshot {
+	repeated DataBlock	blocks = 1;
+}
+
+//message DataSet {
+//	repeated DataBlock	blocks = 1;	// 
+//}
+
+
+
+//
+// ------------------- Annotation Author/User Definition ---------------------------
+//
+
+/*
+ * Annotation User Record
+ *
+ * Defines an author of archive annotations.  This information is maintained internally by the
+ * Annotation Service and can be provided upon request.
+ */
+message AuthorRecord {
+	uint32				UID = 1;			// annotation author unique ID (assigned by service)
+	string				userId = 2;			// annotation author unique name (Registration and User ID)
+	string				name = 3;			// annotation author given name
+	repeated Attribute	attributes = 4;		// optional user attributes
+	Timestamp			since = 5;			// instant of initial registration and acknowledgment
+	Timestamp			last = 6;			// instant of last activity
+	repeated uint64		annotationIds = 7;	// collection of all author annotations (used for searches) 
+	string				credentials = 8;	// optional security credential token?
+}
+
+
+/*
+ * Author Permissions Set
+ *
+ * Supported permissions for annotations authors.  Allows authors to grant transitive permissions
+ * to other author or to restrict modification and/or visibility.
+ */
+enum AuthorPermission {
+  	NONE_PERMISSION = 0;	// no annotation access
+  	READ_PERMISSION = 1;	// read only access
+  	WRITE_PERMISSION = 2;	// write only access
+  	FULL_PERMISSION = 3;	// full read/write access
+  	OWNER_PERMISSION = 4;	// full access, ability to grant others access
+  	CHECK_PERMISSION = 5;	// request current author permission
+}
+
+
+
+//
+// ------------------- Annotations Definition ---------------------------
+//
+
+/*
+ * Supported Annotation Types
+ *
+ * NOTES (CKA):
+ * - I don't know if this is redundant or could be useful in searches.
+ */
+enum Type {
+	UNDEFINED = 0;
+	EMPTY = 1;
+	NOTE = 2;
+	ASSOCIATION = 3;
+	CALCULATION = 4;
+}
+
+
+/*
+ * Annotation Visibility
+ *
+ * Not sure how to coordinate this with accessbility above.
+ */
+enum AnnotationVisibility {
+	NONE_VISIBILITY = 0;
+	OWNER_VISIBILTY = 1;
+	AUTHOR_VISIBILITY = 2;
+	GROUP_VISIBITY = 3;
+	WORLD_VISIBILITY = 4;
+};
+
+
+/*
+ * Fields Common to All Annotations
+ *
+ * That is, the message contains metadata that should be contained in any user annotation.
+ */
+message AnnotationMeta {
+	uint64				annotationId = 1;	// UID of annotation
+	Timestamp			timeCreation = 2;	// instant of creation
+	Timestamp			timeModified = 3;	// instant of last modification
+	uint32				authorModified = 4;	// author UID of last modification
+	repeated uint32		authorIds = 5;		// UID(s) of all annotation author(s)
+	Type				type = 6;			// annotation type
+//	AnnotationLock		lock = 7;			// optional modification lock
+	repeated Attribute	attributes = 8;		// optional attributes ?
+	AnnotationVisibility visibility = 9;	// annotation visibility
+}
+
+
+/*
+ * Basic Annotation Lock
+ *
+ * NOTES (CKA):
+ * - This is probably rudimentary here.  But we will probably need some type of mechanism to
+ *   maintain security on annotations.
+ * - An annotation user may wish to lock out other users from modifying his work.
+ *
+ */
+message AnnotationLock {
+	bool				active = 1;			// is lock active (if not anyone can modify)
+	repeated uint32		owners = 2;			// lock owners (author UID)
+	repeated string		credentials = 3;	// optional security credential tokens?
+}
+
+
+/*
+ * Annotation Comment or Note
+ *
+ * Allows uses to add comments to a block of data.
+ */
+message AnnotateComment {
+	uint32				authorId = 1;		// annotation author
+	repeated string		notes = 2;			// annotation notes
+	repeated Attribute	attributes = 3;		// optional attributes
+	DataBlock			dataBlock = 4;		// applicable data		
+}
+
+
+/*
+ * Annotation Data Association
+ *
+ * Allows annotations users to create  associations between a source data
+ * set and one or more target data sets.
+ */
+message AnnotateDataAssociation {
+//	AnnotationMeta		meta = 1;
+	repeated string		notes = 2;
+	repeated Attribute	attributes = 3;
+	DataBlock			dataSource = 4;
+	repeated DataBlock	dataTarget = 5;			
+}
+
+message Calculation {
+}
+
+message Event {
+}
+
+
+//
+// ------------------- Annotation Author Interface Messages ---------------------------
+//
+
+
+/*
+ * Annotation Author Registration Message
+ *
+ * Must provide at least the 'authorId' field (i.e., a userid) in order to register.
+ * All other fields are essentially optional and/or can be provided at later registration
+ * events.
+ *
+ * The objective is to obtain the author UID (and eventually credentials) which allows authors
+ * to create new annotations and modify existing ones.
+ */
+message RegisterAuthorRequest {
+  string				authorId = 1;			// (required) unique author user and registration ID
+  string 				name = 2;				// author full name
+  repeated Attribute 	attributes = 3;			// create or add author attributes
+  Timestamp 			requestTime = 4;		// (optional)
+  bool					newCredentials = 5;		// (optional) request new authorization credentials
+}
+
+/*
+ * I'm not sure if we want to carry through the format of the accept/reject details
+ * throughout the annotation service?  It might become cumbersome or redundant.
+ */
+message AuthorRegistrationResponse {  
+
+  ResponseType responseType = 1;
+  Timestamp responseTime = 2;
+
+  oneof details {  
+    AuthorRegistrationDetails registrationDetails = 10;
+    RejectionDetails rejectionDetails = 11;
+  }
+}
+
+message AuthorRegistrationDetails {  
+  uint32 authorId = 1;				// UID of author
+  string authorizationToken = 2;	// 
+}
+
+
+/*
+ * Query Author Request Message
+ *
+ * Request annotation author information by author UID or author User ID.
+ */ 
+message AuthorQueryRequest {
+	oneof details {
+		uint32				authorId = 1;
+		string				userId = 2;
+	}
+	
+	repeated Attribute	attributes = 3;
+}
+
+/*
+ * Query Author Response Message
+ *
+ * Returns results of an author query.
+ *
+ * NOTEs:
+ * - Currently returns the full AuthorRecord of requested author if successful.
+ * - Some fields of the AuthorRecord should be left unset (e.g., credential token).
+ */
+message AuthorQueryResponse	{
+	ResponseType	responseType = 1;
+	Timestamp		responseTime = 2;
+	
+	oneof response {
+		AuthorRecord		author = 10;
+		RejectionDetails	rejectionDetails = 11;
+	}
+}
+
+
+/*
+ * Provide/Remove Author Permissions Request
+ *
+ * Granting author must have ownership and/or authority over specified annotations.
+ */
+message AuthorPermissionsRequest {
+	uint32						sourceId = 1;			// granting author UID
+	string						sourceCredentials = 2;	// granting author credentials
+	repeated uint64				annotationIds = 3;		// applicable annotations
+	repeated uint32				targetIds = 4;			// beneficiary author UID(s)
+	repeated AuthorPermission	permissions = 5;		// new author permissions
+	
+}
+
+
+/*
+ * Provide/Remove Author Permissions Response
+ */
+message AuthorPermissionsResponse {
+	ResponseType		responseType = 1;
+	Timestamp			responseTime = 2;
+	
+	oneof response {
+		AuthorPermissionsDetails 	authorDetails = 10;
+		RejectionDetails			rejectionDetails = 11;
+	}
+}
+
+/*
+ * I'm not sure if we want to carry through the format of the accept/reject details
+ * throughout the annotation service?  It might become cumbersome or redundant.
+ */
+message AuthorPermissionsDetails {
+	bool						rejection = 1;		// was at least one author permission modification rejected?
+	repeated uint32				acceptedIds = 2;	// list of accepted author UID(s)
+	repeated AuthorPermission	permissions = 3;	// list of new permissions for each author
+}
+
+
+//
+// ------------------- Annotations Interface Messages ---------------------------
+//
+
+
+/*
+ * Modify Comment Annotation Request
+ *
+ * Not sure about details yet.
+ */
+ message AddCommentRequest {
+ 	uint32	authorId = 1;
+ 	uint64	annotationId = 2;
+ 	string	comment = 3;
+ }
+
+/*
+ * Comment Annotation Response
+ */
+ message AnnotateCommentResponse {
+ 	ResponseType	responseType = 1;
+ 	Timestamp		responseTime = 2;
+ 	
+ 	oneof response {
+ 		AnnotateCommentDetails	commentDetails = 10;
+ 		RejectionDetails		rejectionDetails = 11;
+ 	}
+ }
+ 
+ /*
+  * I'm not sure if we want to carry through the format of the accept/reject details
+  * throughout the annotation service?  It might become cumbersome or redundant.
+  */
+ message AnnotateCommentDetails {
+ 	bool			success = 1;
+ 	string			comment = 2;
+ 	AnnotationMeta	meta = 3;
+ }

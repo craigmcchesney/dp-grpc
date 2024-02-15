@@ -4,100 +4,181 @@ option java_multiple_files = true;
 option java_package = "com.ospreydcs.dp.grpc.v1.query";
 
 import "common.proto";
+import "annotation.proto";
 
 service DpQueryService {
-  rpc queryResponseSingle(QueryRequest) returns (QueryResponse);
-  rpc queryResponseTable(QueryRequest) returns (QueryResponse);
-  rpc queryResponseStream(QueryRequest) returns (stream QueryResponse);
-  rpc queryResponseCursor(stream QueryRequest) returns (stream QueryResponse);
-  rpc getColumnInfo(QueryRequest) returns (QueryResponse);
+  rpc queryData(QueryDataRequest) returns (QueryDataResponse);
+  rpc queryDataTable(QueryDataRequest) returns (QueryTableResponse);
+  rpc queryDataStream(QueryDataRequest) returns (stream QueryDataResponse);
+  rpc queryDataBidiStream(stream QueryDataRequest) returns (stream QueryDataResponse);
+  rpc queryMetadata(QueryMetadataRequest) returns (QueryMetadataResponse);
+  rpc queryAnnotations(QueryAnnotationsRequest) returns (QueryAnnotationsResponse);
 }
 
-message QueryRequest {
+message QueryDataRequest {
 
   oneof request {
     QuerySpec querySpec = 1;
     CursorOperation cursorOp = 2;
-    ColumnInfoQuerySpec columnInfoQuerySpec = 3;
   }
 
   message QuerySpec {
-    Timestamp startTime = 1;
+    Timestamp beginTime = 1;
     Timestamp endTime = 2;
-    repeated string columnNames = 3;
+    repeated string pvNames = 3;
   }
 
-  enum CursorOperation {
-    CURSOR_OP_NEXT = 0;
-  }
-
-  message ColumnInfoQuerySpec {
-    oneof columnNameSpec {
-      ColumnNameList columnNameList = 1;
-      ColumnNamePattern columnNamePattern = 2;
-    }
-    message ColumnNameList {
-      repeated string columnNames = 1;
-    }
-
-    message ColumnNamePattern {
-      string pattern = 1;
+  message CursorOperation {
+    enum CursorOperationType {
+      CURSOR_OP_NEXT = 0;
     }
   }
 }
 
-message QueryResponse {
+message QueryDataResponse {
 
   ResponseType responseType = 1;
   Timestamp responseTime = 2;
 
   oneof response {
-    QueryReport queryReport = 10;
-    RejectDetails queryReject = 11;
+    QueryResult queryResult = 10;
+    RejectionDetails rejectionDetails = 11;
   }
 
-  message QueryReport {
+  message QueryResult {
 
-    oneof reportContent {
+    oneof result {
       QueryStatus queryStatus = 1;
-      BucketData bucketData = 2;
-      DataTable dataTable = 3;
-      ColumnInfoList columnInfoList = 4;
+      QueryData queryData = 2;
     }
 
-    message QueryStatus {
-      QueryStatusType queryStatusType = 1;
-      string statusMessage = 2;
-
-      enum QueryStatusType {
-        QUERY_STATUS_ERROR = 0;
-        QUERY_STATUS_EMPTY = 1;
-        QUERY_STATUS_NOT_READY = 2;
-      }
-    }
-
-    message BucketData {
+    message QueryData {
       repeated DataBucket dataBuckets = 1;
       message DataBucket {
-        FixedIntervalTimestampSpec samplingInterval = 1;
+        SamplingClock samplingClock = 1;
         repeated Attribute attributes = 2;
         EventMetadata eventMetadata = 3;
         DataColumn dataColumn = 4;
       }
     }
+  }
+}
 
-    message ColumnInfoList {
-      repeated ColumnInfo columnInfoList = 1;
+message QueryTableResponse {
 
-      message ColumnInfo {
-        string columnName = 1;
-        string dataType = 2;
-        uint64 samplingClock = 3;
-        uint32 bucketSize = 4;
-        Timestamp firstTime = 5;
-        Timestamp lastTime = 6;
+  ResponseType responseType = 1;
+  Timestamp responseTime = 2;
+
+  oneof response {
+    QueryResult queryResult = 10;
+    RejectionDetails rejectionDetails = 11;
+  }
+
+  message QueryResult {
+
+    oneof result {
+      QueryStatus queryStatus = 1;
+      TableResult tableResult = 2;
+    }
+
+    message TableResult {
+      DataTimestamps dataTimestamps = 1;
+      repeated DataColumn dataColumns = 2;
+    }
+  }
+}
+
+message QueryMetadataRequest {
+
+  QuerySpec querySpec = 1;
+
+  message QuerySpec {
+
+    oneof pvNameSpec {
+      PvNameList pvNameList = 1;
+      PvNamePattern pvNamePattern = 2;
+    }
+
+    message PvNameList {
+      repeated string pvNames = 1;
+    }
+
+    message PvNamePattern {
+      string pattern = 1;
+    }
+  }
+}
+
+message QueryMetadataResponse {
+
+  ResponseType responseType = 1;
+  Timestamp responseTime = 2;
+
+  oneof response {
+    QueryResult queryResult = 10;
+    RejectionDetails rejectionDetails = 11;
+  }
+
+  message QueryResult {
+
+    oneof result {
+      QueryStatus queryStatus = 1;
+      MetadataResult metadataResult = 2;
+    }
+
+    message MetadataResult {
+
+      repeated PvInfo pvInfos = 1;
+
+      message PvInfo {
+        string pvName = 1;
+        DataValueType lastDataValueType = 2;
+        SamplingClock lastSamplingClock = 3;
+        Timestamp firstTimestamp = 5;
+        Timestamp lastTimestamp = 6;
       }
     }
+  }
+}
+
+message QueryAnnotationsRequest {
+
+  QuerySpec querySpec = 1;
+
+  message QuerySpec {
+  }
+}
+
+message QueryAnnotationsResponse {
+
+  ResponseType responseType = 1;
+  Timestamp responseTime = 2;
+
+  oneof response {
+    QueryResult queryResult = 10;
+    RejectionDetails rejectionDetails = 11;
+  }
+
+  message QueryResult {
+
+    oneof result {
+      QueryStatus queryStatus = 1;
+      AnnotationsResult annotationsResult = 2;
+    }
+
+    message AnnotationsResult {
+    }
+  }
+}
+
+message QueryStatus {
+  QueryStatusType queryStatusType = 1;
+  string statusMessage = 2;
+
+  enum QueryStatusType {
+    QUERY_STATUS_ERROR = 0;
+    QUERY_STATUS_EMPTY = 1;
+    QUERY_STATUS_NOT_READY = 2;
   }
 }
 

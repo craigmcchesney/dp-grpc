@@ -13,6 +13,8 @@
 // - Naming suggestions (CKA)
 //
 
+
+
 syntax = "proto3";
 
 option java_multiple_files = true;
@@ -30,14 +32,15 @@ import "common.proto";
  *
  * Defines RPC operations for data provider registration and ingestion.
  *
- * registerProvider - registers data provider and obtain provide UID
- * ingestData - data ingestion via unary gRPC
- * ingestDataStream - data ingestion via streaming gRPC
+ * register - registers data provider and obtain provide UID
+ * streamingIngestion - data ingestion via gRPC streaming
+ * unaryIngestion - data ingestion via standard RPC 
  */
 service DpIngestionService {
-  rpc registerProvider (RegisterProviderRequest) returns (RegisterProviderResponse);
-  rpc ingestData (IngestDataRequest) returns (IngestDataResponse);
-  rpc ingestDataStream (stream IngestDataRequest) returns (stream IngestDataRequest);
+  rpc register (RegistrationRequest) returns (RegistrationResponse); // CKA - Rename suggestion (provider is implicit)
+//  rpc registerProvider (RegistrationRequest) returns (RegistrationResponse);
+  rpc streamingIngestion (stream IngestionRequest) returns (stream IngestionResponse);
+  rpc unaryIngestion (IngestionRequest) returns (IngestionResponse);
 }
 
 
@@ -47,14 +50,15 @@ service DpIngestionService {
 
 /*
  * Data provider Registration Request
- *
+ * 
  * Data providers are registered by name, which must be unique (field providerName).
  *
  * If a data provider has previously registered with the Ingestion Service, its established
  * UID will be returned in the response.  For an initial registration a new UID is
  * created, stored, and returned.
  */
-message RegisterProviderRequest {
+message RegistrationRequest {	// CKA - Rename suggestion - Looks like these won't work (name space collisions)
+//message RegisterProviderRequest {
   string providerName = 1;
   repeated Attribute attributes = 2;
   Timestamp requestTime = 3;
@@ -72,26 +76,29 @@ message RegisterProviderRequest {
  * If a data provider has previously registered with the Ingestion Service, its established
  * UID will be returned in the response.  For an initial registration a new UID is
  * created, stored, and returned.
- */
-message RegisterProviderResponse {
+ */  
+message RegistrationResponse {  // CKA - Rename suggestion - Looks like these won't work (name space collisions)
+//message RegisterProviderResponse {
 
   ResponseType responseType = 1;
   Timestamp responseTime = 2;
 
-  oneof details {
+  oneof details {  // CKA - Rename suggestion
+//  oneof details_oneof {
     RegistrationDetails registrationDetails = 10;
     RejectionDetails rejectionDetails = 11;
   }
+}
 
- /*
- * Data Provider Registration Details
+/*
+ * Data Provider Registration Record
  *
- * This record message contains the UID of the data provider upon successful registration
+ * This record message contains the UID of the data provider upon successful registration 
  * with the Ingestion Service.
  */
-  message RegistrationDetails {
-    uint32 providerId = 1;
-  }
+message RegistrationDetails {  // CKA - Rename suggestion
+//message RegisterProviderDetails {
+  uint32 providerId = 1;
 }
 
 
@@ -99,23 +106,23 @@ message RegisterProviderResponse {
 // ------------------- Data Ingestion ---------------------------
 //
 
-message IngestDataRequest {
+message IngestionRequest {
   uint32 providerId = 1;
   string clientRequestId = 2;
   Timestamp requestTime = 3;
   repeated Attribute attributes = 4;
   EventMetadata eventMetadata = 5;
-  IngestionDataFrame ingestionDataFrame = 6;
+  DataFrame dataTable = 6;
 }
 
-message IngestDataResponse {
+message IngestionResponse {
 
   uint32 providerId = 1;
   string clientRequestId = 2;
   ResponseType responseType = 3;
   Timestamp responseTime = 4;
 
-  oneof details {
+  oneof details_oneof {
     AckDetails ackDetails = 10;
     RejectionDetails rejectionDetails = 11;
   }
@@ -124,20 +131,4 @@ message IngestDataResponse {
 message AckDetails {
   uint32 numRows = 1;
   uint32 numColumns = 2;
-}
-
-/*
- * The unit of ingestion.
- *
- * Data is ingested into the Data Platform in tabular form.  The table consists
- * of a collection of timestamps and an collection of table columns containing
- * heterogeneous data.
- *  - dataTimeSpec - set of (ordered) timestamps for each column
- *  - dataColumns - an (unordered) collection of DataColumn messages.
- *
- * Each data column must be the same size, the number of timestamps identified in dataTimeSpec.
- */
-message IngestionDataFrame {
-  DataTimestamps dataTimeSpec = 1;
-  repeated DataColumn dataColumns = 2;
 }

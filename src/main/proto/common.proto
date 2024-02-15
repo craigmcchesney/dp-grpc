@@ -1,108 +1,289 @@
+//
+// common.proto
+//
+// Contains RPC messages common to all services.
+//
+// since: July, 2023
+// version: 1.1.0 February 2024
+//
+// NOTES:
+//
+//
+// TODO:
+
+
 syntax = "proto3";
 
 option java_multiple_files = true;
 option java_package = "com.ospreydcs.dp.grpc.v1.common";
 
+
+//
+// ------------------- Miscellaneous Definitions ---------------------------
+//
+
+/*
+ * Generic attribute.
+ */
+message Attribute {
+  string name = 1;
+  string value = 2;
+}
+
+/*
+ * Metadata associated with an ingestion/archiving event or snapshot.
+ *
+ * NOTES:
+ * CAM - This is related to the annotation API and underlying data model, so may end up living whereever the annotation
+ * API is defined.
+ */
+message EventMetadata {
+  string description = 1;
+  Timestamp startTimestamp = 2;
+  Timestamp stopTimestamp = 3;
+}
+
+
+//
+// ------------------- Time Definitions ---------------------------
+//
+
+/*
+ * Time instant described by epoch.
+ */
 message Timestamp {
   uint64 epochSeconds = 1;  // seconds past unix epoch - 1st january 1970
   uint64 nanoseconds = 2;   // nanoseconds - sub-second precision down to the nanosecond
 }
 
+/*
+ * Ordered list of Timestamp messages.
+ */
 message TimestampList {
   repeated Timestamp timestamps = 1;
 }
 
-message DataTimeSpec {
+
+
+/*
+ * Collection of timestamps identified by sampling interval.
+ *
+ * Uniform sampling is assumed within sampling interval.
+ * Thus, the ordered collection of timestamps are defined as a contiguous, equally-spaced point set
+ * {t1, t2, ..., tN} within the following interval:
+ *
+ *    [startTime, (count-1)*periodNanos]
+ *
+ * The timestamps {t1, t2, ..., tN} are then given by
+ *
+ *    t1 = startTime,
+ *    t2 = startTime + 1 * periodNanos,
+ *    t3 = startTime + 2 * periodNanos,
+ *    ...
+ *    tN = startTime + (N-1) * periodNanos,
+ *
+ * where N = count.
+ */
+message SamplingClock {
+  Timestamp startTime = 1;
+  uint64 periodNanos = 2;
+  uint32 count = 3;
+}
+
+// CKA: The idea of a "uniform-sampling interval" would look like this
+// message {
+//	  Timestamp startTime = 1;
+//    Timestamp stopTime = 2;
+//    uint32 	count = 3;
+// }
+//
+// Which is attractive because it has the start time and stop time - may make lookups and table construction
+// easier (?)
+
+/*
+ * Specifies the set of timestamps for a dataset collection.
+ *
+ * The timestamps are identified as either of the following:
+ *
+ *  - UniformSampleTimes - time instants required for uniform sampling
+ *  - TimestampList - explicit set of ordered time instants
+ *
+ */
+message DataTimestamps {
   oneof value_oneof {
-    FixedIntervalTimestampSpec fixedIntervalTimestampSpec = 1;
+    SamplingClock samplingClock = 1;
     TimestampList timestampList = 2;
   }
 }
 
-message FixedIntervalTimestampSpec {
-  Timestamp startTime = 1;
-  uint64 sampleIntervalNanos = 2;
-  uint32 numSamples = 3;
-}
 
-message DataTable {
-  DataTimeSpec dataTimeSpec = 1;
-  repeated DataColumn dataColumns = 2;
-}
+// ------------------- Ingestion Definitions ---------------------------
+//
 
+/*
+ * A named vector of heterogeneous data values.
+ *
+ */
 message DataColumn {
   string name = 1;
   repeated DataValue dataValues = 2;
 }
 
+
+/*
+ * Unit of Heterogeneous Data
+ *
+ * The message includes both a data field 'value' and a status field 'status'.
+ * The 'value' field is the actual data value while the 'status' field represents the
+ * condition of the value (i.e., typically at acquisition time).  Future versions may include
+ * the status of the value within the archive (e.g., corrupt, truncated, etc.).
+ *
+ * The field 'value' is a union of all possible data types currently supported.  It represents one
+ * unit of heterogeneous data.  Only one data type may be included in the message.
+ *
+ * The 'status' field is structure defined as an enclosed RPC message.  It contains information about
+ * value during acquisition, such as value alarm conditions, acquisition conditions, and any associated
+ * message.  This field is subject to future modification for expanded use case.
+ */
 message DataValue {
 
-  oneof value_oneof {
-    string stringValue = 1;             // String value
-    double floatValue = 2;              // floating point value
-    uint64 intValue = 3;                // integer value
-    bytes byteArrayValue = 4;           // byte array value
-    bool booleanValue = 5;              // boolean value
-    Image image = 6;                    // image value
-    Structure structureValue = 7;      // structure value
-    Array arrayValue = 8;              // Array value
+  /*
+   * Heterogeneous Data Value
+   *
+   * CKA NOTES:
+   * Since we're going all in I redefined the entire value union.
+   *
+   * Includes corrections
+   *  - ints and longs should have signs.
+   *  - uint32 and uint64 expand to 'int' and 'long' in Java but 'uint32' and 'uint64' in C++
+   *  - Protobuf expands int32 and int64 efficiently for unsigned values but not when negative
+   *  - sint32 and sint64 expand more efficiently than int32 and int64 for negative numbers
+   *  - We can change sint32 -> int32 and sint64 -> int64 if necessary, without affecting language code
+   *
+   *  - Direct support for scalar values could be added with Scalar
+   *  - Support of scalar vectors and/or multi-dimensional arrays can also be added if needed (Vector, NDArray)
+   */
+  oneof value {
+    string		stringValue = 1;		// character string
+    bool		booleanValue = 2;		// logical Boolean
+    uint32		uintValue = 3;			// unsigned integer value
+    uint64		ulongValue = 4;			// unsigned long integer
+    sint32		intValue = 5;			// signed integer value
+    sint64		longValue = 6;			// signed long integer
+    float		floatValue = 7;			// 32 byte float value
+    double		doubleValue = 8;		// 64 byte float value (double)
+    bytes		byteArrayValue = 9;		// raw data as byte string
+    Array		arrayValue = 10;			// heterogeneous array (no dimensional restrictions as of yet)
+    Structure	structValue = 11;		// general data structure (no width or depth restrictions yet)
+    Image		imageValue = 12;		// general image value
   }
 
+  /*
+   * Status of Value
+   *
+   * Currently represents the condition of the value or associated hardware and software at
+   * acquisition time.
+   */
+  ValueStatus valueStatus = 15;
+
+  /*
+   * Status of current data value.
+   *
+   * The current status definition reflects the value at acquisition time
+   * (e.g., as in the EPIC record fields).
+   *
+   * In the future we may wish to support archiving status as well (CLIENT_STATUS?).
+   */
   message ValueStatus {
 
     string message = 1;
     StatusCode statusCode = 2;
     Severity severity = 3;
 
+    /*
+     * Source of an Exceptional Status
+     */
     enum StatusCode {
-      NO_STATUS = 0;
-      DEVICE_STATUS = 1;
-      DRIVER_STATUS = 2;
-      RECORD_STATUS = 3;
-      DB_STATUS = 4;
-      CONF_STATUS = 5;
-      UNDEFINED_STATUS = 6;
-      CLIENT_STATUS = 7;
+      NO_STATUS = 0;		// no status condition
+      DEVICE_STATUS = 1;	// hardware device condition
+      DRIVER_STATUS = 2;	// hardware driver condition
+      RECORD_STATUS = 3;	// device database record condition
+      DB_STATUS = 4; 		// device database condition
+      CONF_STATUS = 5;		// configuration condition
+      UNDEFINED_STATUS = 6;	// unknown or undefined status condition
+      CLIENT_STATUS = 7;	// data provider client condition
     }
 
+    /*
+     * Value Alarm
+     *
+     * Pre-configured alarm conditions triggered by current data value.
+     */
     enum Severity {
-      NO_ALARM = 0;
-      MINOR_ALARM = 1;
-      MAJOR_ALARM = 2;
-      INVALID_ALARM = 3;
-      UNDEFINED_ALARM = 4;
+      NO_ALARM = 0;			// no alarm conditions
+      MINOR_ALARM = 1;		// value has triggered a minor alarm condition
+      MAJOR_ALARM = 2;		// value has triggered a major alarm condition
+      INVALID_ALARM = 3;	// value has triggered an invalid alarm condition
+      UNDEFINED_ALARM = 4;	// unknown or undefined alarm condition present
     }
   }
 }
 
-message Attribute {
-  string name = 1;
-  string value = 2;
+enum DataValueType {
+  DATA_TYPE_STRING = 0;		// character string
+  DATA_TYPE_BOOLEAN = 1;		// logical Boolean
+  DATA_TYPE_UINT = 2;			// unsigned integer value
+  DATA_TYPE_ULONG = 3;			// unsigned long integer
+  DATA_TYPE_INT = 4;			// signed integer value
+  DATA_TYPE_LONG = 5;			// signed long integer
+  DATA_TYPE_FLOAT = 6;			// 32 byte float value
+  DATA_TYPE_DOUBLE = 7;		// 64 byte float value (double)
+  DATA_TYPE_BYTES = 8;		// raw data as byte string
+  DATA_TYPE_ARRAY = 9;			// heterogeneous array (no dimensional restrictions as of yet)
+  DATA_TYPE_STRUCT = 10;		// general data structure (no width or depth restrictions yet)
+  DATA_TYPE_IMAGE = 11;		// general image value
 }
 
-message EventMetadata {
-  Timestamp eventTimestamp = 1;
-  string eventDescription = 2;
-}
-
+/*
+ * General Data Structure.
+ *
+ * Each level of a general data structure may have an indefinite number of fields consisting
+ * of (name, value) pairs.  There may be practical restrictions on the number of fields within
+ * service implementations (as of yet unreported).
+ *
+ * Note that the Structure message supported nested structure, and thus, complex data structures
+ * can be represented.  The 'value' field within a (name, value) pair may contain another Structure
+ * message supporting multi-level structuring.  The depth of the structuring is currently indefinite
+ * but may have practical restrictions within service implementation (yet unreported).
+ */
 message Structure {
-  repeated Field fields = 1;
-}
 
-message Field {
-  string name = 1;
-  DataValue value = 2;
+  repeated Field fields = 1;
+
+  message Field {
+    string name = 1;
+    DataValue value = 2;
+  }
 }
 
 message Array {
   repeated DataValue dataValues = 1;
 }
 
+/*
+ * An image file.
+ *
+ * Images are stored as raw data as a byte vector.  Interpretation is determined by standard
+ * image file formats enumerated by FileType.
+ */
 message Image {
 
   bytes image = 1;
   FileType fileType = 2;
 
+  /*
+   * Image file format.  Also used as file extension.
+   */
   enum FileType {
     RAW = 0;
     JPEG = 1;
@@ -116,6 +297,11 @@ message Image {
   }
 }
 
+
+//
+// ------------------- Common Messages ---------------------------
+//
+
 enum ResponseType {
   ACK_RESPONSE = 0;
   REJECT_RESPONSE = 1;
@@ -125,12 +311,12 @@ enum ResponseType {
   STATUS_RESPONSE = 5;
 }
 
-message RejectDetails {
+message RejectionDetails {
 
   string message = 1;
-  RejectReason rejectReason = 2;
+  Reason reason = 2;
 
-  enum RejectReason {
+  enum Reason {
     INVALID_REQUEST_REASON = 0;
   }
 }

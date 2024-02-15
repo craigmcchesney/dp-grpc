@@ -1,0 +1,83 @@
+//
+// query.proto
+//
+// Contains RPC messages and interface specific to the Query Service.
+//
+// since: July, 2023
+// version: 1.0.0
+//
+// NOTES:
+// - Carried over naming suggestions from common.proto (CKA)
+//
+// TODO:
+// - Naming suggestions (CKA)
+//
+
+
+
+syntax = "proto3";
+
+option java_multiple_files = true;
+option java_package = "com.ospreydcs.dp.grpc.v1.query";
+
+import "common.proto";
+
+
+//
+// ------------------- RPC Interfaces ---------------------------
+//
+
+service DpQueryService {
+  rpc queryDataByTime (QueryDataByTimeRequest) returns (stream QueryDataResponse);
+}
+
+
+//
+// ------------------- Query Definition ---------------------------
+//
+
+message QueryDataByTimeRequest {
+  Timestamp startTime = 1;
+  Timestamp endTime = 2;
+  string columnName = 3;
+}
+
+
+//
+// ------------------- Results Definition ---------------------------
+//
+
+message QueryDataResponse {
+  ResponseType responseType = 1;
+  Timestamp responseTime = 2;
+
+  oneof details_oneof {
+    QueryResultDetails queryResultDetails = 10;
+    RejectionDetails rejectionDetails = 11;
+  }
+}
+
+message QueryResultDetails {
+  oneof details_oneof {
+    QueryResultSummary queryResultSummary = 10;
+    QueryResultData queryResultData = 11;
+  }
+}
+
+message QueryResultSummary {
+  string columnName = 1;
+  uint32 numResultColumns = 2;
+}
+
+message QueryResultData {
+  string columnName = 1;
+  repeated QueryResultColumn queryResultColumns = 2;
+}
+
+message QueryResultColumn {
+  Timestamp firstTime = 1;
+  Timestamp lastTime = 2;
+  repeated Attribute attributes = 3;
+  EventMetadata eventMetadata = 4;
+  DataColumn dataColumn = 5;
+}
