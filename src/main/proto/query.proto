@@ -28,6 +28,8 @@ message QueryDataRequest {
   }
 
   message CursorOperation {
+    CursorOperationType cursorOperationType = 1;
+
     enum CursorOperationType {
       CURSOR_OP_NEXT = 0;
     }
@@ -131,7 +133,7 @@ message QueryMetadataResponse {
 
       message PvInfo {
         string pvName = 1;
-        DataValueType lastDataValueType = 2;
+        string lastBucketDataType = 2;
         SamplingClock lastSamplingClock = 3;
         Timestamp firstTimestamp = 5;
         Timestamp lastTimestamp = 6;
