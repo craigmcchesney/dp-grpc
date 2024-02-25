@@ -78,10 +78,26 @@ service DpQueryService {
    */
   rpc queryDataBidiStream(stream QueryDataRequest) returns (stream QueryDataResponse);
 
-  // queryMetadata: Unary (non-streaming) metadata query describing available data sources (columns/PVs).
+  /*
+   * queryMetadata: Unary (non-streaming) metadata query.
+   *
+   * This RPC is used by clients to learn about data sources (PVs/columns) available in the archive.  Client sends
+   * a single QueryMetadataRequest with the query parameters, and receives a single QueryMetadataResponse
+   * with the query results. The response may indicate rejection, error in handling, no data matching query, or
+   * otherwise contains the data matching the query specification.
+   */
   rpc queryMetadata(QueryMetadataRequest) returns (QueryMetadataResponse);
 
-  // queryAnnotations: Unary (non-streaming) query over annotations to ingested data.
+  /*
+   * queryAnnotations: Unary (non-streaming) annotations query.
+   *
+   * This RPC is used by clients to query over annotations added to ingested data, and is not yet implemented.
+   * Client sends a single QueryAnnotationsRequest with the query parameters, and receives a single
+   * QueryAnnotationsResponse with the query results. The response may indicate rejection, error in handling,
+   * no data matching query, or otherwise contains the data matching the query specification.
+   *
+   * TODO: this RPC is not yet implmented.
+   */
   rpc queryAnnotations(QueryAnnotationsRequest) returns (QueryAnnotationsResponse);
 }
 
@@ -173,7 +189,7 @@ message QueryDataResponse {
       repeated DataBucket dataBuckets = 1;
 
       message DataBucket {
-        SamplingClock samplingClock = 1; // Specifies sample interval parameters for bucket.
+        DataTimestamps dataTimestamps = 1; // Specifies timestamps for bucket, using SamplingClock or explicit Timestamp list
         repeated Attribute attributes = 2; // Specifies list of key/value attributes for bucket, if any.
         EventMetadata eventMetadata = 3; // Specifies event/snapshot metadata for bucket, if any.
         DataColumn dataColumn = 4; // Vector of column data for bucket.
