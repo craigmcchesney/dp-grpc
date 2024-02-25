@@ -4,13 +4,7 @@
 // Contains RPC messages common to all services.
 //
 // since: July, 2023
-// version: 1.1.0 February 2024
-//
-// NOTES:
-//
-//
-// TODO:
-
+// version: 1.2.0
 
 syntax = "proto3";
 
@@ -23,7 +17,7 @@ option java_package = "com.ospreydcs.dp.grpc.v1.common";
 //
 
 /*
- * Generic attribute.
+ * Generic key/value attribute, used as metadata to describe other objects.
  */
 message Attribute {
   string name = 1;
@@ -31,16 +25,12 @@ message Attribute {
 }
 
 /*
- * Metadata associated with an ingestion/archiving event or snapshot.
- *
- * NOTES:
- * CAM - This is related to the annotation API and underlying data model, so may end up living whereever the annotation
- * API is defined.
+ * Metadata associated with an ingestion event or snapshot.
  */
 message EventMetadata {
-  string description = 1;
-  Timestamp startTimestamp = 2;
-  Timestamp stopTimestamp = 3;
+  string description = 1; // Description of the event.
+  Timestamp startTimestamp = 2; // Start time of event.
+  Timestamp stopTimestamp = 3; // End time of event.
 }
 
 
@@ -52,8 +42,8 @@ message EventMetadata {
  * Time instant described by epoch.
  */
 message Timestamp {
-  uint64 epochSeconds = 1;  // seconds past unix epoch - 1st january 1970
-  uint64 nanoseconds = 2;   // nanoseconds - sub-second precision down to the nanosecond
+  uint64 epochSeconds = 1;  // Seconds past unix epoch - 1st january 1970.
+  uint64 nanoseconds = 2;   // Nanoseconds - sub-second precision down to the nanosecond.
 }
 
 /*
@@ -62,8 +52,6 @@ message Timestamp {
 message TimestampList {
   repeated Timestamp timestamps = 1;
 }
-
-
 
 /*
  * Collection of timestamps identified by sampling interval.
@@ -85,31 +73,18 @@ message TimestampList {
  * where N = count.
  */
 message SamplingClock {
-  Timestamp startTime = 1;
-  uint64 periodNanos = 2;
-  uint32 count = 3;
+  Timestamp startTime = 1; // Interval start time.
+  uint64 periodNanos = 2; // Period in nanos between samples.
+  uint32 count = 3; // Number of samples contained in the interval.
 }
 
-// CKA: The idea of a "uniform-sampling interval" would look like this
-// message {
-//	  Timestamp startTime = 1;
-//    Timestamp stopTime = 2;
-//    uint32 	count = 3;
-// }
-//
-// Which is attractive because it has the start time and stop time - may make lookups and table construction
-// easier (?)
-
 /*
- * Specifies the set of timestamps for a dataset collection.
- *
- * The timestamps are identified as either of the following:
- *
- *  - UniformSampleTimes - time instants required for uniform sampling
- *  - TimestampList - explicit set of ordered time instants
- *
+ * Specifies the set of timestamps for a dataset collection, either as an explicit list of timestamps, or using a
+ * Sampling Clock to specify interval start time, sampling period, and sample count.
  */
 message DataTimestamps {
+
+  // value: Payload is either SamplingClock to specify interval parameters, or TimestampList with explicit list of times.
   oneof value {
     SamplingClock samplingClock = 1;
     TimestampList timestampList = 2;
@@ -117,7 +92,7 @@ message DataTimestamps {
 }
 
 
-// ------------------- Ingestion Definitions ---------------------------
+// ------------------- Data Definitions (Ingestion and Query)  ---------------------------
 //
 
 /*
@@ -125,8 +100,8 @@ message DataTimestamps {
  *
  */
 message DataColumn {
-  string name = 1;
-  repeated DataValue dataValues = 2;
+  string name = 1; // Name of column.
+  repeated DataValue dataValues = 2; // List of column data values.
 }
 
 
@@ -149,19 +124,6 @@ message DataValue {
 
   /*
    * Heterogeneous Data Value
-   *
-   * CKA NOTES:
-   * Since we're going all in I redefined the entire value union.
-   *
-   * Includes corrections
-   *  - ints and longs should have signs.
-   *  - uint32 and uint64 expand to 'int' and 'long' in Java but 'uint32' and 'uint64' in C++
-   *  - Protobuf expands int32 and int64 efficiently for unsigned values but not when negative
-   *  - sint32 and sint64 expand more efficiently than int32 and int64 for negative numbers
-   *  - We can change sint32 -> int32 and sint64 -> int64 if necessary, without affecting language code
-   *
-   *  - Direct support for scalar values could be added with Scalar
-   *  - Support of scalar vectors and/or multi-dimensional arrays can also be added if needed (Vector, NDArray)
    */
   oneof value {
     string		stringValue = 1;		// character string
@@ -181,18 +143,16 @@ message DataValue {
   /*
    * Status of Value
    *
-   * Currently represents the condition of the value or associated hardware and software at
+   * Represents the condition of the value or associated hardware and software at
    * acquisition time.
    */
   ValueStatus valueStatus = 15;
 
   /*
-   * Status of current data value.
+   * Status of data value.
    *
-   * The current status definition reflects the value at acquisition time
+   * The status definition reflects the value at acquisition time
    * (e.g., as in the EPIC record fields).
-   *
-   * In the future we may wish to support archiving status as well (CLIENT_STATUS?).
    */
   message ValueStatus {
 
@@ -245,13 +205,13 @@ enum DataValueType {
 }
 
 /*
- * General Data Structure.
+ * Structure Data Value.
  *
- * Each level of a general data structure may have an indefinite number of fields consisting
+ * Each level of a data structure may have an indefinite number of fields consisting
  * of (name, value) pairs.  There may be practical restrictions on the number of fields within
  * service implementations (as of yet unreported).
  *
- * Note that the Structure message supported nested structure, and thus, complex data structures
+ * Note that the Structure message supports nested structure, and thus, complex data structures
  * can be represented.  The 'value' field within a (name, value) pair may contain another Structure
  * message supporting multi-level structuring.  The depth of the structuring is currently indefinite
  * but may have practical restrictions within service implementation (yet unreported).
@@ -266,12 +226,20 @@ message Structure {
   }
 }
 
+/*
+ * Array Data Value.
+ *
+ * Used for columns whose values are arrays instead of individual scalar values.  Data values are any of the defined
+ * DataValue types including simple scalars as well as more complex types like structures, images, and other nested
+ * arrays.  The depth of array nesting is currently indefinite but may have practical restrictions within service
+ * implementation (yet unreported).
+ */
 message Array {
-  repeated DataValue dataValues = 1;
+  repeated DataValue dataValues = 1; // List of array data values.
 }
 
 /*
- * An image file.
+ * Image Data Value.
  *
  * Images are stored as raw data as a byte vector.  Interpretation is determined by standard
  * image file formats enumerated by FileType.
@@ -302,6 +270,9 @@ message Image {
 // ------------------- Common Messages ---------------------------
 //
 
+/*
+ * Generic enum used to indicate the type of an RPC response.  Use varies by particular RPC definition.
+ */
 enum ResponseType {
   ACK_RESPONSE = 0;
   REJECT_RESPONSE = 1;
@@ -311,10 +282,13 @@ enum ResponseType {
   STATUS_RESPONSE = 5;
 }
 
+/*
+ * Generic structure used to provide details when an API request is rejected by the service.
+ */
 message RejectionDetails {
 
-  string message = 1;
-  Reason reason = 2;
+  string message = 1; // Detailed message describing rejection.
+  Reason reason = 2; // Enum indicating reason for rejection.
 
   enum Reason {
     INVALID_REQUEST_REASON = 0;

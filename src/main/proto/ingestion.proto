@@ -4,13 +4,7 @@
 // Contains RPC messages and interface specific to the Ingestion Service.
 //
 // since: July, 2023
-// version: 1.0.0
-//
-// NOTES:
-//
-//
-// TODO:
-// - Naming suggestions (CKA)
+// version: 1.2.0
 //
 
 syntax = "proto3";
@@ -30,13 +24,54 @@ import "common.proto";
  *
  * Defines RPC operations for data provider registration and ingestion.
  *
- * registerProvider - registers data provider and obtain provide UID
- * ingestData - data ingestion via unary gRPC
+  * ingestData - data ingestion via unary gRPC
  * ingestDataStream - data ingestion via streaming gRPC
  */
 service DpIngestionService {
+
+  /*
+   * registerProvider: Registers an ingestion data provider and obtains providerId.
+   *
+   * The provider registration API is not yet implemented.  For now, data ingestion clients should send a unique
+   * integer identifier in ingestion requests to distinguish providers as appropriate.
+   *
+   * TODO: this RPC is not yet implemented.
+   */
   rpc registerProvider (RegisterProviderRequest) returns (RegisterProviderResponse);
+
+  /*
+   * ingestData: Unary (non-streaming) data ingestion.
+   *
+   * This unary data ingestion API is not yet implemented.  It is anticipated that the behavior will be exactly
+   * the same as for the *ingestDataStream()* method, except that the method only supports sending a single request
+   * and receiving a single response.  The response and processing performed will be the same as for the streaming case.
+   *
+   * TODO: this RPC is not yet implmented.
+   */
   rpc ingestData (IngestDataRequest) returns (IngestDataResponse);
+
+  /*
+   * ingestDataStream(): Bidirectional streaming data ingestion.
+   *
+   * The Ingestion Service performs initial validation on each IngestDataRequest in the stream, and replies immediately
+   * with a IngestDataResponse message indicating acknowledgement for a valid request, or rejection of an invalid one.
+   * The request is then added to a queue for async ingestion handling.
+   *
+   * The ingestion handling of each request in the stream is performed asynchronously.  The Ingestion Service writes
+   * data from the request to the "buckets" collection in MongoDB, adding one document to the collection for each
+   * "column" of data in the request's DataFrame object.
+   *
+   * A separate MongoDB "requestStatus" collection is used to note the processing status of each request,
+   * with a document for each handled request.  The collection is keyed by the providerId and clientRequestId
+   * specified in the IngestDataRequest.  This collection can be used by an administrative monitoring process
+   * to detect and notify about errors in the ingestion process.
+   * TODO: add API for querying requestStatus by providerId and clientRequestId.
+   *
+   * The method returns a stream of IngestDataResponse messages, one per request.  Each response includes providerId
+   * and clientRequestId for use by the client in mapping a response to the corresponding request.  The response
+   * message only indicates if validation succeeded or failed.  Because ingestion handling is performed asynchronously,
+   * the MongoDB "requestStatus" collection must be used to determine the success or failure of individual requests.
+   */
   rpc ingestDataStream (stream IngestDataRequest) returns (stream IngestDataResponse);
 }
 
@@ -55,9 +90,9 @@ service DpIngestionService {
  * created, stored, and returned.
  */
 message RegisterProviderRequest {
-  string providerName = 1;
-  repeated Attribute attributes = 2;
-  Timestamp requestTime = 3;
+  string providerName = 1; // Provider name uniquely identifies ingestion data provider.
+  repeated Attribute attributes = 2; // List of key/value attributes describing provider.
+  Timestamp requestTime = 3; // Specifies time request is sent.
 }
 
 /*
@@ -72,12 +107,18 @@ message RegisterProviderRequest {
  * If a data provider has previously registered with the Ingestion Service, its established
  * UID will be returned in the response.  For an initial registration a new UID is
  * created, stored, and returned.
+ *
+ * A particular registration request might receive the following types of responses:
+ *
+ *    - ResponseType.REJECT_RESPONSE: Request is rejected for being invalid, payload is RejectionDetails.
+ *    - ResponseType.DETAIL_RESPONSE: Registration was successful, payload is RegistrationDetails.
  */
 message RegisterProviderResponse {
 
-  ResponseType responseType = 1;
-  Timestamp responseTime = 2;
+  ResponseType responseType = 1; // Indicates the type of response, e.g., rejection or details.
+  Timestamp responseTime = 2; // Indicates time response is sent.
 
+  // details: Response payload containing either registration details or rejection details.
   oneof details {
     RegistrationDetails registrationDetails = 10;
     RejectionDetails rejectionDetails = 11;
@@ -90,7 +131,7 @@ message RegisterProviderResponse {
  * with the Ingestion Service.
  */
   message RegistrationDetails {
-    uint32 providerId = 1;
+    uint32 providerId = 1; // Id uniquely identifies provider, and is sent in subsequent data ingestion requests.
   }
 }
 
@@ -99,45 +140,74 @@ message RegisterProviderResponse {
 // ------------------- Data Ingestion ---------------------------
 //
 
+/*
+ * Data Ingestion Request
+ *
+ * Contains a set of data to be ingested. Message is used for both unary and streaming data ingestion RPC methods.
+ *
+ * For maximum performance, data ingestion is an asynchronous operation.  The response for a request only indicates
+ * if the request is accepted by the ingestion service.  Client (or monitoring tool) must check request status via API
+ * or in database to confirm successful handling.
+ */
 message IngestDataRequest {
-  uint32 providerId = 1;
-  string clientRequestId = 2;
-  Timestamp requestTime = 3;
-  repeated Attribute attributes = 4;
-  EventMetadata eventMetadata = 5;
-  IngestionDataFrame ingestionDataFrame = 6;
+  uint32 providerId = 1; // Required UID uniquely idenfies data provider, obtained via provider registration RPC.
+  string clientRequestId = 2; // Required, client generated identifier, uniquely identifies an ingestion request for a provider.
+  Timestamp requestTime = 3; // Required, indicates time request is sent.
+  repeated Attribute attributes = 4; // Optional, List of key/value attributes describing the request data.
+  EventMetadata eventMetadata = 5; // Optional, metadata describing event/snapshot that request data are associated with.
+  IngestionDataFrame ingestionDataFrame = 6; // Required, contains the data for the ingestion request.
 }
 
+/*
+ * Data Ingestion Response
+ *
+ * Response to a particular ingestion request. Message is used for both unary and streaming data ingestion RPC methods.
+ * The providerId and clientRequestId fields in a response match the values of those fields in the corresponding request.
+ *
+ * For maximum performance, data ingestion is an asynchronous operation.  The response for a request only indicates
+ * if the request is accepted by the ingestion service.  Client (or monitoring tool) must check request status via API
+ * or in database to confirm successful handling.
+ *
+ * A particular ingestion request might receive the following types of responses:
+ *
+ *    - ResponseType.REJECT_RESPONSE: Request is rejected for being invalid, payload is RejectionDetails.
+ *    - ResponseType.ACK_RESPONSE: Indicates that the Ingestion Service accepted the request, client (or monitoring tool)
+ *      must check request status to determine whether request is successfully handled.  Payload is AckDetails.
+ */
 message IngestDataResponse {
 
-  uint32 providerId = 1;
-  string clientRequestId = 2;
-  ResponseType responseType = 3;
-  Timestamp responseTime = 4;
+  uint32 providerId = 1; // Provider UID, echoed from the ingestion request.
+  string clientRequestId = 2; // Client generated request identifier, echoed from the ingestion request.
+  ResponseType responseType = 3; // Enum indicates type of response: rejection, error, or ack.
+  Timestamp responseTime = 4; // Indicates time response is generated.
 
+  // details: Indicates payload content of response message, either ack details or rejection details.
   oneof details {
     AckDetails ackDetails = 10;
     RejectionDetails rejectionDetails = 11;
   }
 }
 
+/*
+ * Acknowledgement details for a data ingestion response, echoes the number of rows and columns in the request's
+ * data frame.
+ */
 message AckDetails {
-  uint32 numRows = 1;
-  uint32 numColumns = 2;
+  uint32 numRows = 1; // Echoes number of rows in ingestion data frame.
+  uint32 numColumns = 2; // Echoes number of columns in ingestion data frame.
 }
 
 /*
  * The unit of ingestion.
  *
  * Data is ingested into the Data Platform in tabular form.  The table consists
- * of a collection of timestamps and an collection of table columns containing
- * heterogeneous data.
- *  - dataTimeSpec - set of (ordered) timestamps for each column
- *  - dataColumns - an (unordered) collection of DataColumn messages.
+ * of dataTimestamps (either an explicit list of timestamps, or using a SamplingClock with start time, sample period,
+ * and sample count) and a collection of table columns containing heterogeneous data, with a value in each column
+ * corresponding to each individual timestamp value.
  *
- * Each data column must be the same size, the number of timestamps identified in dataTimeSpec.
+ * Each data column must be the same size, with a value for each timestamp specified in dataTimestamps.
  */
 message IngestionDataFrame {
-  DataTimestamps dataTimestamps = 1;
-  repeated DataColumn dataColumns = 2;
+  DataTimestamps dataTimestamps = 1; // Specifies timestamps for data values.
+  repeated DataColumn dataColumns = 2; // Contains list of columns, each containing a data value for each timestamp.
 }
