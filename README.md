@@ -1,3 +1,15 @@
+# Data Platform Overview
+
+This repo is part of the Data Platform project.  The Data Platform consists of services for capturing and providing access to data captured from a particle accelerator facility.  The [data-platform repo](https://github.com/osprey-dcs/data-platform) provides a project overview and links to the various project componnents, as well as an installer for running the latest version.
+
+The service implementations are contained in the [dp-service](https://github.com/osprey-dcs/dp-service) repo, which includes both user-oriented and developer-oriented documentation about the services.
+
+The service APIs are built using [gRPC](https://grpc.io/docs/what-is-grpc/introduction/) for both interface definition and message interchange.  The latest gRPC proto files for the service APIs are contained and documented in the [dp-grpc repo](https://github.com/osprey-dcs/dp-grpc).  Using gRPC, client applications can be built to interact with the Data Platform services using practically any programming language.
+
+The [dp-support repo](https://github.com/osprey-dcs/dp-support) includes a set of utilities for managing the processes comprising the Data Platform ecosystem.
+
+The [dp-web-app repo](https://github.com/osprey-dcs/dp-web-app) contains a JavaScript web application that utilizes the Data Platform Query Service to navigate the archive.
+
 # Data Platform API
 
 ## API overview
