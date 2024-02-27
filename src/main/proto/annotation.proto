@@ -1,0 +1,139 @@
+//
+// annotation.proto
+//
+// Contains RPC messages and interface specific to the Annotation Service.
+//
+// since: February, 2024
+// version: 1.3.0
+//
+
+syntax = "proto3";
+
+option java_multiple_files = true;
+option java_package = "com.ospreydcs.dp.grpc.v1.annotation";
+
+import "common.proto";
+
+
+//
+// ------------------- RPC Interfaces ---------------------------
+//
+
+/*
+ * Annotation Service Interface
+ *
+ * Interface for annotating archived data.  Registered annotation authors can create and modify data
+ * annotations.
+ */
+service DpAnnotationService {
+
+  /*
+   * createComment: Add a comment to a DataBlock.
+   *
+   * TODO: Detailed comment.
+   *
+   * TODO: API not yet implemented.
+   */
+  rpc createAnnotationComment(CreateAnnotationCommentRequest) returns (CreateAnnotationResponse);
+}
+
+
+//
+// ------------------- Annotation Creation Request/Response ---------------------------
+//
+
+/*
+ * Create Comment Request.
+ *
+ * Contains details for request to add comment to a DataBlock.
+ */
+message CreateAnnotationCommentRequest {
+  uint32 authorId = 1;		// annotation author
+  repeated string	notes = 2;			// annotation notes
+  repeated Attribute attributes = 3;		// optional attributes
+  DataBlock dataBlock = 4;		// Specifies block of data to add comment to.
+}
+
+/*
+ * Create Annotation Response.
+ *
+ * Contains details for response to request to add an annotation to a DataBlock.  Intended to be used as the Response
+ * type for all RPC methods to create annotations. ResponseType and corresponding message payloads include:
+ *
+ *     - ResponseType.REJECT_RESPONSE: Indicates request was rejected by service. Payload is RejectionDetails.
+ *     - ResponseType.ERROR_RESPONSE: Indicates error was encountered processing the request. Payload is CreateAnnotationResult.ExceptionalResult.
+ *     - ResposneType.SUMMARY_RESPOONSE: Indicates request was processed successfully. Payload is CreateAnnotationResult.ExceptionalResult.
+ */
+message CreateAnnotationResponse {
+
+  ResponseType responseType = 1; // Indicates type of response as described above.
+  Timestamp responseTime = 2; // Indicates time response was generated.
+
+  // response: Response payload as described above.
+  oneof response {
+    CreateAnnotationResult createAnnotationResult = 10;
+    RejectionDetails rejectionDetails = 11;
+  }
+
+  /*
+   * Create Annotation Result.
+   *
+   * Contains the results of a request to add an annotation to a DataBlock.
+   */
+  message CreateAnnotationResult {
+    // result: Contains query result payload with either ExceptionalResult or SuccessfulResult as described above.
+    oneof result {
+      ExceptionalResult exceptionalResult = 1;
+      SuccessfulResult successfulResult = 2;
+    }
+
+    /*
+     * Exceptional Annotation Result.
+     *
+     * Used to describe the outcome of an annotation request that failed, such as an error in handling the request
+     * Usage depends on the particular query RPC and is described elsewhere as appropriate.
+     */
+    message ExceptionalResult {
+
+      StatusType statusType = 1; // Enum indicating the type of exceptional result.
+      string statusMessage = 2; // Message with details about the exceptional result.
+
+      enum StatusType {
+        STATUS_ERROR = 0; // Indicates an error was encountered in handling the request.
+      }
+    }
+
+    /*
+ * Successful Annotation Result.
+ *
+ * Contains the results of a successful request to add an annotation to a DataBlock.
+ */
+    message SuccessfulResult {
+      uint64 annotationId = 1;
+    }
+  }
+}
+
+
+//
+// ------------------- Annotation Data Model ---------------------------
+//
+
+/*
+ * Standardized Identifier for Block of Archived Data
+ *
+ * A DataBlock specifies archived data across multiple DataSets.  Each DataSet specifies a time range and list of
+ * data sources (columns/PVs).
+ *
+ */
+message DataBlock {
+
+  repeated DataSet dataSets = 1;
+
+}
+
+message DataSet {
+  Timestamp beginTime = 1; // Required, specifies beginning of time range for basis set.
+  Timestamp endTime = 2; // Required, specifies end of time range for basis set.
+  repeated string pvNames = 3; // Required, contains list of data source names for basis set.
+}

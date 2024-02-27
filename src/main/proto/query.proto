@@ -204,7 +204,7 @@ message QueryDataResponse {
  * Contains results from a time series data query in a tabular format for use by the DP web application (and other similar
  * uses. Types of response and corresponding message payloads include:
  *
- *     - ResponseType.REJECT_RESPONSE: Indicates response was rejected by service. Payload is RejectionDetails.
+ *     - ResponseType.REJECT_RESPONSE: Indicates request was rejected by service. Payload is RejectionDetails.
  *     - ResponseType.ERROR_RESPONSE: Indicates error was encountered processing the query. Payload is QueryResult.QueryStatus.
  *     - ResponseType.STATUS_RESPONSE: Indicates a query status such as no data returned by query. Payload is QueryResult.QueryStatus.
  *     - ResposneType.DETAIL_RESPOONSE: Indicates query was processed successfully. Payload is QueryResult.TableResult with tabular data.
