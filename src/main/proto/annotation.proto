@@ -28,13 +28,14 @@ import "common.proto";
 service DpAnnotationService {
 
   /*
-   * createComment: Add a comment to a DataBlock.
+   * createComment: Add a comment annotation to a DataSet.
    *
-   * TODO: Detailed comment.
-   *
-   * TODO: API not yet implemented.
+   * This RPC sends a request to the annotation service to create a comment annotation with the specified parameters.
+   * The annotation service performs validation, and for a valid request, attempts to create the annotation.
+   * The response may indicate rejection, an error in handling the request, or successful handling of the request.
+   * See CreateAnnotationResponse for more details.
    */
-  rpc createAnnotationComment(CreateAnnotationCommentRequest) returns (CreateAnnotationResponse);
+  rpc createCommentAnnotation(CreateCommentRequest) returns (CreateAnnotationResponse);
 }
 
 
@@ -45,19 +46,19 @@ service DpAnnotationService {
 /*
  * Create Comment Request.
  *
- * Contains details for request to add comment to a DataBlock.
+ * Contains details for request to add comment to a DataSet.
  */
-message CreateAnnotationCommentRequest {
+message CreateCommentRequest {
   uint32 authorId = 1;		// annotation author
   repeated string	notes = 2;			// annotation notes
   repeated Attribute attributes = 3;		// optional attributes
-  DataBlock dataBlock = 4;		// Specifies block of data to add comment to.
+  DataSet dataSet = 4;		// Specifies block of data to add comment to.
 }
 
 /*
  * Create Annotation Response.
  *
- * Contains details for response to request to add an annotation to a DataBlock.  Intended to be used as the Response
+ * Contains details for response to request to add an annotation to a DataSet.  Intended to be used as the Response
  * type for all RPC methods to create annotations. ResponseType and corresponding message payloads include:
  *
  *     - ResponseType.REJECT_RESPONSE: Indicates request was rejected by service. Payload is RejectionDetails.
@@ -78,7 +79,7 @@ message CreateAnnotationResponse {
   /*
    * Create Annotation Result.
    *
-   * Contains the results of a request to add an annotation to a DataBlock.
+   * Contains the results of a request to add an annotation to a DataSet.
    */
   message CreateAnnotationResult {
     // result: Contains query result payload with either ExceptionalResult or SuccessfulResult as described above.
@@ -106,7 +107,7 @@ message CreateAnnotationResponse {
     /*
  * Successful Annotation Result.
  *
- * Contains the results of a successful request to add an annotation to a DataBlock.
+ * Contains the results of a successful request to add an annotation to a DataSet.
  */
     message SuccessfulResult {
       uint64 annotationId = 1;
@@ -122,17 +123,15 @@ message CreateAnnotationResponse {
 /*
  * Standardized Identifier for Block of Archived Data
  *
- * A DataBlock specifies archived data across multiple DataSets.  Each DataSet specifies a time range and list of
+ * A DataSet specifies archived data across multiple DataBlocks.  Each DataBlock specifies a time range and list of
  * data sources (columns/PVs).
  *
  */
-message DataBlock {
-
-  repeated DataSet dataSets = 1;
-
+message DataSet {
+  repeated DataBlock dataBlocks = 1;
 }
 
-message DataSet {
+message DataBlock {
   Timestamp beginTime = 1; // Required, specifies beginning of time range for basis set.
   Timestamp endTime = 2; // Required, specifies end of time range for basis set.
   repeated string pvNames = 3; // Required, contains list of data source names for basis set.
