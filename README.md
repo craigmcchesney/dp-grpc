@@ -147,3 +147,7 @@ rpc queryAnnotations(QueryAnnotationsRequest) returns (QueryAnnotationsResponse)
 ```
 
 This RPC is used by clients to query over annotations added to ingested data, and is not yet implemented.  Client sends a single QueryAnnotationsRequest with the query parameters, and receives a single QueryAnnotationsResponse with the query results. The response may indicate rejection, error in handling, no data matching query, or otherwise contains the data matching the query specification.
+
+# dp-grpc Developer Notes
+
+- [protoc setup for generating javascript stubs from Data Platform grpc proto files](doc/developer/protoc-javascript.md)
