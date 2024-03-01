@@ -35,7 +35,7 @@ service DpAnnotationService {
    * The response may indicate rejection, an error in handling the request, or successful handling of the request.
    * See CreateAnnotationResponse for more details.
    */
-  rpc createCommentAnnotation(CreateCommentRequest) returns (CreateAnnotationResponse);
+  rpc createCommentAnnotation(CreateAnnotationRequest) returns (CreateAnnotationResponse);
 }
 
 
@@ -44,15 +44,26 @@ service DpAnnotationService {
 //
 
 /*
- * Create Comment Request.
+ * Create Annotation Request.
  *
- * Contains details for request to add comment to a DataSet.
+ * Contains details for adding an annotation to a DataSet with fields common to all requests for creating annotations,
+ * plus a oneof field for details specific to each type of annotation that is supported.
  */
-message CreateCommentRequest {
-  uint32 authorId = 1;		// annotation author
-  repeated string	notes = 2;			// annotation notes
-  repeated Attribute attributes = 3;		// optional attributes
-  DataSet dataSet = 4;		// Specifies block of data to add comment to.
+message CreateAnnotationRequest {
+
+  uint32 authorId = 1; // required annotation author TODO: this will be replaced by userid in header when proper auth is enabled
+  repeated string tags = 2; // optional tags/keywords
+  repeated Attribute attributes = 3; // optional attributes (key/value pairs)
+  DataSet dataSet = 4; // Specifies block of data to add comment to.
+
+  // requestDetails: contains details specific to type of annotation to be created.
+  oneof requestDetails {
+    CreateCommentDetails createCommentDetails = 10;
+  }
+
+  message CreateCommentDetails {
+    string	comment = 1;			// narrative comment text
+  }
 }
 
 /*
