@@ -121,7 +121,7 @@ message CreateAnnotationResponse {
  * Contains the results of a successful request to add an annotation to a DataSet.
  */
     message SuccessfulResult {
-      uint64 annotationId = 1;
+      string annotationId = 1;
     }
   }
 }
