@@ -30,12 +30,12 @@ service DpAnnotationService {
   /*
    * createComment: Add a comment annotation to a DataSet.
    *
-   * This RPC sends a request to the annotation service to create a comment annotation with the specified parameters.
+   * This RPC sends a request to the annotation service to create an annotation with the specified parameters.
    * The annotation service performs validation, and for a valid request, attempts to create the annotation.
    * The response may indicate rejection, an error in handling the request, or successful handling of the request.
    * See CreateAnnotationResponse for more details.
    */
-  rpc createCommentAnnotation(CreateAnnotationRequest) returns (CreateAnnotationResponse);
+  rpc createAnnotation(CreateAnnotationRequest) returns (CreateAnnotationResponse);
 }
 
 
@@ -56,12 +56,12 @@ message CreateAnnotationRequest {
   repeated Attribute attributes = 3; // optional attributes (key/value pairs)
   DataSet dataSet = 4; // Specifies block of data to add comment to.
 
-  // requestDetails: contains details specific to type of annotation to be created.
-  oneof requestDetails {
-    CreateCommentDetails createCommentDetails = 10;
+  // annotationTypeDetails: Contains details specific to type of annotation being created.
+  oneof annotationTypeDetails {
+    CommentDetails commentDetails = 10;
   }
 
-  message CreateCommentDetails {
+  message CommentDetails {
     string	comment = 1;			// narrative comment text
   }
 }
@@ -69,63 +69,45 @@ message CreateAnnotationRequest {
 /*
  * Create Annotation Response.
  *
- * Contains details for response to request to add an annotation to a DataSet.  Intended to be used as the Response
- * type for all RPC methods to create annotations. ResponseType and corresponding message payloads include:
- *
- *     - ResponseType.REJECT_RESPONSE: Indicates request was rejected by service. Payload is RejectionDetails.
- *     - ResponseType.ERROR_RESPONSE: Indicates error was encountered processing the request. Payload is CreateAnnotationResult.ExceptionalResult.
- *     - ResposneType.SUMMARY_RESPOONSE: Indicates request was processed successfully. Payload is CreateAnnotationResult.ExceptionalResult.
+ * Contains details for response to request to add an annotation to a DataSet.  Response includes either
+ * an ExceptionalResult describing a rejection or error situation, or a SuccessfulResult indicating the request
+ * was handled successfully.
  */
 message CreateAnnotationResponse {
 
-  ResponseType responseType = 1; // Indicates type of response as described above.
-  Timestamp responseTime = 2; // Indicates time response was generated.
+  Timestamp responseTime = 1; // Indicates time response was generated.
 
-  // response: Response payload as described above.
-  oneof response {
-    CreateAnnotationResult createAnnotationResult = 10;
-    RejectionDetails rejectionDetails = 11;
+  // result: Contains query result payload with either ExceptionalResult or SuccessfulResult as described above.
+  oneof result {
+    ExceptionalResult exceptionalResult = 10;
+    SuccessfulResult successfulResult = 11;
   }
 
   /*
-   * Create Annotation Result.
+   * Exceptional Annotation Result.
    *
-   * Contains the results of a request to add an annotation to a DataSet.
+   * Used to describe the outcome of an annotation request that failed, such as a rejection or error handling request.
    */
-  message CreateAnnotationResult {
-    // result: Contains query result payload with either ExceptionalResult or SuccessfulResult as described above.
-    oneof result {
-      ExceptionalResult exceptionalResult = 1;
-      SuccessfulResult successfulResult = 2;
+  message ExceptionalResult {
+
+    StatusType statusType = 1; // Enum indicating the type of exceptional result.
+    string statusMessage = 2; // Message with details about the exceptional result.
+
+    enum StatusType {
+      STATUS_REJECT = 0; // Indicates request was rejected during valiaation.
+      STATUS_ERROR = 1; // Indicates an error was encountered in handling the request.
     }
+  }
 
-    /*
-     * Exceptional Annotation Result.
-     *
-     * Used to describe the outcome of an annotation request that failed, such as an error in handling the request
-     * Usage depends on the particular query RPC and is described elsewhere as appropriate.
-     */
-    message ExceptionalResult {
-
-      StatusType statusType = 1; // Enum indicating the type of exceptional result.
-      string statusMessage = 2; // Message with details about the exceptional result.
-
-      enum StatusType {
-        STATUS_ERROR = 0; // Indicates an error was encountered in handling the request.
-      }
-    }
-
-    /*
+/*
  * Successful Annotation Result.
  *
  * Contains the results of a successful request to add an annotation to a DataSet.
  */
-    message SuccessfulResult {
-      string annotationId = 1;
-    }
+  message SuccessfulResult {
+    string annotationId = 1;
   }
 }
-
 
 //
 // ------------------- Annotation Data Model ---------------------------
