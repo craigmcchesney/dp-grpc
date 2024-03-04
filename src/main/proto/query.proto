@@ -190,7 +190,7 @@ message QueryTableResponse {
   Timestamp responseTime = 1; // Indicates time response was generated.
 
   // response: Response payload as described above.
-  oneof response {
+  oneof result {
     ExceptionalResult exceptionalResult = 10;
     TableResult tableResult = 11;
   }
@@ -251,7 +251,7 @@ message QueryMetadataResponse {
   Timestamp responseTime = 1; // Indicates time response was generated.
 
   // response: Response payload as described above.
-  oneof response {
+  oneof result {
     ExceptionalResult exceptionalResult = 10;
     MetadataResult metadataResult = 11;
   }
@@ -305,7 +305,7 @@ message QueryAnnotationsResponse {
   Timestamp responseTime = 2; // Indicates time response was generated.
 
   // response: Response payload as described above.
-  oneof response {
+  oneof result {
     ExceptionalResult exceptionalResult = 10;
     AnnotationsResult annotationsResult = 11;
   }
