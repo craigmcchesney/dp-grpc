@@ -148,52 +148,33 @@ message QueryDataRequest {
  * Time Series Data Query Response.
  *
  * Contains results from a time series data query.  Used as single response to unary RPC methods, or as a stream in the
- * streaming RPC methods.  Types of response and corresponding message payloads include:
- *
- *     - ResponseType.REJECT_RESPONSE: Indicates response was rejected by service. Payload is RejectionDetails.
- *     - ResponseType.ERROR_RESPONSE: Indicates error was encountered processing the query. Payload is QueryResult.QueryStatus.
- *     - ResponseType.STATUS_RESPONSE: Indicates a query status such as no data returned by query. Payload is QueryResult.QueryStatus.
- *     - ResposneType.DETAIL_RESPOONSE: Indicates query was processed successfully. Payload is QueryResult.QueryData with (partial) results.
+ * streaming RPC methods. Contains either ExceptionalResult indicating a problem handling the request, or the
+ * data returned by the query.
  */
 message QueryDataResponse {
 
-  ResponseType responseType = 1; // Indicates type of response.
-  Timestamp responseTime = 2; // Indicates time response was generated.
+  Timestamp responseTime = 1; // Indicates time response was generated.
 
-  // response: Contains response payload as described above, depending on responseType.
-  oneof response {
-    QueryResult queryResult = 10;
-    RejectionDetails rejectionDetails = 11;
+  // result: Contains ExceptionalResult indicating problem was encountered in handling request, or QueryData for request.
+  oneof result {
+    ExceptionalResult exceptionalResult = 10;
+    QueryData queryData = 11;
   }
 
   /*
-   * Time Series Data Query Result.
+   * Time Series Query Result Data.
    *
-   * Contains the results of a time series data query.
+   * Contains the data for a time series data query result, as a list of DataBucket objects.
    */
-  message QueryResult {
+  message QueryData {
 
-    // result: Contains query result payload with either QueryStatus or QueryData as described above.
-    oneof result {
-      QueryStatus queryStatus = 1;
-      QueryData queryData = 2;
-    }
+    repeated DataBucket dataBuckets = 1;
 
-    /*
-     * Time Series Query Result Data.
-     *
-     * Contains the data for a time series data query result, as a list of DataBucket objects.
-     */
-    message QueryData {
-
-      repeated DataBucket dataBuckets = 1;
-
-      message DataBucket {
-        DataTimestamps dataTimestamps = 1; // Specifies timestamps for bucket, using SamplingClock or explicit Timestamp list
-        repeated Attribute attributes = 2; // Specifies list of key/value attributes for bucket, if any.
-        EventMetadata eventMetadata = 3; // Specifies event/snapshot metadata for bucket, if any.
-        DataColumn dataColumn = 4; // Vector of column data for bucket.
-      }
+    message DataBucket {
+      DataTimestamps dataTimestamps = 1; // Specifies timestamps for bucket, using SamplingClock or explicit Timestamp list
+      repeated Attribute attributes = 2; // Specifies list of key/value attributes for bucket, if any.
+      EventMetadata eventMetadata = 3; // Specifies event/snapshot metadata for bucket, if any.
+      DataColumn dataColumn = 4; // Vector of column data for bucket.
     }
   }
 }
@@ -203,45 +184,25 @@ message QueryDataResponse {
  *
  * Contains results from a time series data query in a tabular format for use by the DP web application (and other similar
  * uses. Types of response and corresponding message payloads include:
- *
- *     - ResponseType.REJECT_RESPONSE: Indicates request was rejected by service. Payload is RejectionDetails.
- *     - ResponseType.ERROR_RESPONSE: Indicates error was encountered processing the query. Payload is QueryResult.QueryStatus.
- *     - ResponseType.STATUS_RESPONSE: Indicates a query status such as no data returned by query. Payload is QueryResult.QueryStatus.
- *     - ResposneType.DETAIL_RESPOONSE: Indicates query was processed successfully. Payload is QueryResult.TableResult with tabular data.
  */
 message QueryTableResponse {
 
-  ResponseType responseType = 1; // Indicates type of response as described above.
-  Timestamp responseTime = 2; // Indicates time response was generated.
+  Timestamp responseTime = 1; // Indicates time response was generated.
 
   // response: Response payload as described above.
   oneof response {
-    QueryResult queryResult = 10;
-    RejectionDetails rejectionDetails = 11;
+    ExceptionalResult exceptionalResult = 10;
+    TableResult tableResult = 11;
   }
 
   /*
-   * Tabular Time Series Data Query Result.
+   * Tabular Time Series Query Result Content.
    *
-   * Contains the results of a tabular time series data query.
+   * Contains the data for a time series data query result, in a tabular format.
    */
-  message QueryResult {
-
-    // result: Contains query result payload with either QueryStatus or TableResult as described above.
-    oneof result {
-      QueryStatus queryStatus = 1;
-      TableResult tableResult = 2;
-    }
-
-    /*
-     * Tabular Time Series Query Result Content.
-     *
-     * Contains the data for a time series data query result, in a tabular format.
-     */
-    message TableResult {
-      DataTimestamps dataTimestamps = 1; // Specifies the timestamps for the table, using an explicit list of times.
-      repeated DataColumn dataColumns = 2; // Contains a list of columns, each with a name and vector of values one for each timestamp.
-    }
+  message TableResult {
+    DataTimestamps dataTimestamps = 1; // Specifies the timestamps for the table, using an explicit list of times.
+    repeated DataColumn dataColumns = 2; // Contains a list of columns, each with a name and vector of values one for each timestamp.
   }
 }
 
@@ -284,52 +245,32 @@ message QueryMetadataRequest {
  * Metadata Query Response.
  *
  * Contains results from a metadata query. Types of response and corresponding message payloads include:
- *
- *     - ResponseType.REJECT_RESPONSE: Indicates response was rejected by service. Payload is RejectionDetails.
- *     - ResponseType.ERROR_RESPONSE: Indicates error was encountered processing the query. Payload is QueryResult.QueryStatus.
- *     - ResponseType.STATUS_RESPONSE: Indicates a query status such as "no data returned by query". Payload is QueryResult.QueryStatus.
- *     - ResposneType.DETAIL_RESPOONSE: Indicates query was processed successfully. Payload is QueryResult.MetadataResult.
  */
 message QueryMetadataResponse {
 
-  ResponseType responseType = 1; // Indicates type of response as described above.
-  Timestamp responseTime = 2; // Indicates time response was generated.
+  Timestamp responseTime = 1; // Indicates time response was generated.
 
   // response: Response payload as described above.
   oneof response {
-    QueryResult queryResult = 10;
-    RejectionDetails rejectionDetails = 11;
+    ExceptionalResult exceptionalResult = 10;
+    MetadataResult metadataResult = 11;
   }
 
   /*
-   * Metadata Query Result.
+   * Metadata Query Result Content.
    *
-   * Contains the results of a metadata query.
+   * Contains a list of PvInfo metadata objects, one for each column/PV name matching the query specification.
    */
-  message QueryResult {
+  message MetadataResult {
 
-    // result: Contains query result payload with either QueryStatus or MetadataResult as described above.
-    oneof result {
-      QueryStatus queryStatus = 1;
-      MetadataResult metadataResult = 2;
-    }
+    repeated PvInfo pvInfos = 1; // List of metadata objects matching query specificiation.
 
-    /*
-     * Metadata Query Result Content.
-     *
-     * Contains a list of PvInfo metadata objects, one for each column/PV name matching the query specification.
-     */
-    message MetadataResult {
-
-      repeated PvInfo pvInfos = 1; // List of metadata objects matching query specificiation.
-
-      message PvInfo {
-        string pvName = 1; // Name of PV.
-        string lastBucketDataType = 2; // Data type of last bucket for PV.
-        SamplingClock lastSamplingClock = 3; // SamplingClock for last bucket for PV (only contains start time if bucket uses a list of timestamps).
-        Timestamp firstTimestamp = 5; // Timestamp of first data value for PV.
-        Timestamp lastTimestamp = 6; // Timestamp of last data value for PV.
-      }
+    message PvInfo {
+      string pvName = 1; // Name of PV.
+      string lastBucketDataType = 2; // Data type of last bucket for PV.
+      SamplingClock lastSamplingClock = 3; // SamplingClock for last bucket for PV (only contains start time if bucket uses a list of timestamps).
+      Timestamp firstTimestamp = 5; // Timestamp of first data value for PV.
+      Timestamp lastTimestamp = 6; // Timestamp of last data value for PV.
     }
   }
 }
@@ -358,43 +299,23 @@ message QueryAnnotationsRequest {
  * This is a placeholder, annotation query is not yet implemented.
  *
  * Contains results from an annotations query. Types of response and corresponding message payloads include:
- *
- *     - ResponseType.REJECT_RESPONSE: Indicates response was rejected by service. Payload is RejectionDetails.
- *     - ResponseType.ERROR_RESPONSE: Indicates error was encountered processing the query. Payload is QueryResult.QueryStatus.
- *     - ResponseType.STATUS_RESPONSE: Indicates a query status such as no data returned by query. Payload is QueryResult.QueryStatus.
- *     - ResposneType.DETAIL_RESPOONSE: Indicates query was processed successfully. Payload is QueryResult.AnnotationsResult.
  */
 message QueryAnnotationsResponse {
 
-  ResponseType responseType = 1; // Indicates type of response as described above.
   Timestamp responseTime = 2; // Indicates time response was generated.
 
   // response: Response payload as described above.
   oneof response {
-    QueryResult queryResult = 10;
-    RejectionDetails rejectionDetails = 11;
+    ExceptionalResult exceptionalResult = 10;
+    AnnotationsResult annotationsResult = 11;
   }
 
   /*
- * Annotations Query Result.
- *
- * Contains the results of an annotations query.
- */
-  message QueryResult {
-
-    // result: Contains query result payload with either QueryStatus or AnnotationsResult as described above.
-    oneof result {
-      QueryStatus queryStatus = 1;
-      AnnotationsResult annotationsResult = 2;
-    }
-
-    /*
-     * Annotations Query Result Content.
-     *
-     * This is a placeholder, annotation query is not yet implemented.
-     */
-    message AnnotationsResult {
-    }
+   * Annotations Query Result Content.
+   *
+   * This is a placeholder, annotation query is not yet implemented.
+   */
+  message AnnotationsResult {
   }
 }
 
@@ -404,21 +325,19 @@ message QueryAnnotationsResponse {
 //
 
 /*
- * Query Status.
+ * Exceptional Result from Query Service.
  *
- * Used to describe the outcome of a query request that did not return data, such as an error in handling the request,
- * no data returned by the query, or an invalid cursor operation in a bidirectional streaming query RPC. Usage depends
- * on the particular query RPC and is described elsewhere as appropriate.
+ * Used to describe an exceptional result from the query service, such as a rejection or error handling request.
  */
-message QueryStatus {
+message ExceptionalResult {
 
-  QueryStatusType queryStatusType = 1; // Enum indicating the type of status response.
-  string statusMessage = 2; // Message with details about the status response.
+  StatusType statusType = 1; // Enum indicating the type of exceptional result.
+  string statusMessage = 2; // Message with details about the exceptional result.
 
-  enum QueryStatusType {
-    QUERY_STATUS_ERROR = 0; // Indicates an error was encountered in handling the query.
-    QUERY_STATUS_EMPTY = 1; // Indicates the query returned no data.
-    QUERY_STATUS_NOT_READY = 2; // Indicates an invalid bidirectional stream query cursor operation request.
+  enum StatusType {
+    STATUS_REJECT = 0; // Indicates request was rejected during valiaation.
+    STATUS_ERROR = 1; // Indicates an error was encountered in handling the request.
+    STATUS_EMPTY = 2; // Indicates the query returned no data.
+    STATUS_NOT_READY = 3; // Indicates an invalid bidirectional stream query cursor operation request.
   }
 }
-
