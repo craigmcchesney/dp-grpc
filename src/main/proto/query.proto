@@ -155,7 +155,8 @@ message QueryDataResponse {
 
   Timestamp responseTime = 1; // Indicates time response was generated.
 
-  // result: Contains ExceptionalResult indicating problem was encountered in handling request, or QueryData for request.
+  // result: Response contains either an ExceptionalResult indicating a problem handling the request,
+  // or QueryData with query result.
   oneof result {
     ExceptionalResult exceptionalResult = 10;
     QueryData queryData = 11;
@@ -189,7 +190,8 @@ message QueryTableResponse {
 
   Timestamp responseTime = 1; // Indicates time response was generated.
 
-  // response: Response payload as described above.
+  // result: Response contains either an ExceptionalResult indicating a problem handling the request,
+  // or TableResult with query result.
   oneof result {
     ExceptionalResult exceptionalResult = 10;
     TableResult tableResult = 11;
@@ -250,7 +252,8 @@ message QueryMetadataResponse {
 
   Timestamp responseTime = 1; // Indicates time response was generated.
 
-  // response: Response payload as described above.
+  // result: Response contains either an ExceptionalResult indicating a problem handling the request,
+  // or MetadataResult with query result.
   oneof result {
     ExceptionalResult exceptionalResult = 10;
     MetadataResult metadataResult = 11;
@@ -286,7 +289,6 @@ message QueryMetadataResponse {
  * This is a placeholder, annotation query is not yet implemented.
  */
 message QueryAnnotationsRequest {
-
   QuerySpec querySpec = 1;
 
   message QuerySpec {
@@ -304,7 +306,8 @@ message QueryAnnotationsResponse {
 
   Timestamp responseTime = 2; // Indicates time response was generated.
 
-  // response: Response payload as described above.
+  // result: Response contains either an ExceptionalResult indicating a problem handling the request,
+  // or AnnotationsResult with query result.
   oneof result {
     ExceptionalResult exceptionalResult = 10;
     AnnotationsResult annotationsResult = 11;
@@ -316,28 +319,5 @@ message QueryAnnotationsResponse {
    * This is a placeholder, annotation query is not yet implemented.
    */
   message AnnotationsResult {
-  }
-}
-
-
-//
-// ------------------- Common Query Support ---------------------------
-//
-
-/*
- * Exceptional Result from Query Service.
- *
- * Used to describe an exceptional result from the query service, such as a rejection or error handling request.
- */
-message ExceptionalResult {
-
-  StatusType statusType = 1; // Enum indicating the type of exceptional result.
-  string statusMessage = 2; // Message with details about the exceptional result.
-
-  enum StatusType {
-    STATUS_REJECT = 0; // Indicates request was rejected during valiaation.
-    STATUS_ERROR = 1; // Indicates an error was encountered in handling the request.
-    STATUS_EMPTY = 2; // Indicates the query returned no data.
-    STATUS_NOT_READY = 3; // Indicates an invalid bidirectional stream query cursor operation request.
   }
 }

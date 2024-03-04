@@ -80,23 +80,7 @@ message CreateAnnotationResponse {
   // result: Contains query result payload with either ExceptionalResult or SuccessfulResult as described above.
   oneof result {
     ExceptionalResult exceptionalResult = 10;
-    SuccessfulResult successfulResult = 11;
-  }
-
-  /*
-   * Exceptional Annotation Result.
-   *
-   * Used to describe the outcome of an annotation request that failed, such as a rejection or error handling request.
-   */
-  message ExceptionalResult {
-
-    StatusType statusType = 1; // Enum indicating the type of exceptional result.
-    string statusMessage = 2; // Message with details about the exceptional result.
-
-    enum StatusType {
-      STATUS_REJECT = 0; // Indicates request was rejected during valiaation.
-      STATUS_ERROR = 1; // Indicates an error was encountered in handling the request.
-    }
+    CreateAnnotationResult successfulResult = 11;
   }
 
 /*
@@ -104,7 +88,7 @@ message CreateAnnotationResponse {
  *
  * Contains the results of a successful request to add an annotation to a DataSet.
  */
-  message SuccessfulResult {
+  message CreateAnnotationResult {
     string annotationId = 1;
   }
 }

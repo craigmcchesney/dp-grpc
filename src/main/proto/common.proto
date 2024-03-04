@@ -271,27 +271,19 @@ message Image {
 //
 
 /*
- * Generic enum used to indicate the type of an RPC response.  Use varies by particular RPC definition.
+ * Exceptional Result Handling Request.
+ *
+ * Used to describe an exceptional result from the service, such as a rejection or error handling request.
  */
-enum ResponseType {
-  ACK_RESPONSE = 0;
-  REJECT_RESPONSE = 1;
-  SUMMARY_RESPONSE = 2;
-  DETAIL_RESPONSE = 3;
-  ERROR_RESPONSE = 4;
-  STATUS_RESPONSE = 5;
-}
+message ExceptionalResult {
 
-/*
- * Generic structure used to provide details when an API request is rejected by the service.
- */
-message RejectionDetails {
+  ExceptionalResultStatus exceptionalResultStatus = 1; // Enum indicating the type of exceptional result.
+  string message = 2; // Message with details about the exceptional result.
 
-  string message = 1; // Detailed message describing rejection.
-  Reason reason = 2; // Enum indicating reason for rejection.
-
-  enum Reason {
-    INVALID_REQUEST_REASON = 0;
+  enum ExceptionalResultStatus {
+    RESULT_STATUS_REJECT = 0; // Indicates request was rejected during valiaation.
+    RESULT_STATUS_ERROR = 1; // Indicates an error was encountered in handling the request.
+    RESULT_STATUS_EMPTY = 2; // Indicates the query returned no data.
+    RESULT_STATUS_NOT_READY = 3; // Indicates an invalid bidirectional stream query cursor operation request.
   }
 }
-

@@ -107,30 +107,25 @@ message RegisterProviderRequest {
  * If a data provider has previously registered with the Ingestion Service, its established
  * UID will be returned in the response.  For an initial registration a new UID is
  * created, stored, and returned.
- *
- * A particular registration request might receive the following types of responses:
- *
- *    - ResponseType.REJECT_RESPONSE: Request is rejected for being invalid, payload is RejectionDetails.
- *    - ResponseType.DETAIL_RESPONSE: Registration was successful, payload is RegistrationDetails.
  */
 message RegisterProviderResponse {
 
-  ResponseType responseType = 1; // Indicates the type of response, e.g., rejection or details.
-  Timestamp responseTime = 2; // Indicates time response is sent.
+  Timestamp responseTime = 1; // Indicates time response is sent.
 
-  // details: Response payload containing either registration details or rejection details.
-  oneof details {
-    RegistrationDetails registrationDetails = 10;
-    RejectionDetails rejectionDetails = 11;
+  // result: Response contains either an ExceptionalResult indicating a problem handling the request,
+  // or RegistrationResult indicating success.
+  oneof result {
+    ExceptionalResult exceptionalResult = 10;
+    RegistrationResult registrationResult = 11;
   }
 
  /*
- * Data Provider Registration Details
+ * Data Provider Registration Result
  *
  * This record message contains the UID of the data provider upon successful registration
  * with the Ingestion Service.
  */
-  message RegistrationDetails {
+  message RegistrationResult {
     uint32 providerId = 1; // Id uniquely identifies provider, and is sent in subsequent data ingestion requests.
   }
 }
@@ -156,46 +151,6 @@ message IngestDataRequest {
   repeated Attribute attributes = 4; // Optional, List of key/value attributes describing the request data.
   EventMetadata eventMetadata = 5; // Optional, metadata describing event/snapshot that request data are associated with.
   IngestionDataFrame ingestionDataFrame = 6; // Required, contains the data for the ingestion request.
-}
-
-/*
- * Data Ingestion Response
- *
- * Response to a particular ingestion request. Message is used for both unary and streaming data ingestion RPC methods.
- * The providerId and clientRequestId fields in a response match the values of those fields in the corresponding request.
- *
- * For maximum performance, data ingestion is an asynchronous operation.  The response for a request only indicates
- * if the request is accepted by the ingestion service.  Client (or monitoring tool) must check request status via API
- * or in database to confirm successful handling.
- *
- * A particular ingestion request might receive the following types of responses:
- *
- *    - ResponseType.REJECT_RESPONSE: Request is rejected for being invalid, payload is RejectionDetails.
- *    - ResponseType.ACK_RESPONSE: Indicates that the Ingestion Service accepted the request, client (or monitoring tool)
- *      must check request status to determine whether request is successfully handled.  Payload is AckDetails.
- */
-message IngestDataResponse {
-
-  uint32 providerId = 1; // Provider UID, echoed from the ingestion request.
-  string clientRequestId = 2; // Client generated request identifier, echoed from the ingestion request.
-  ResponseType responseType = 3; // Enum indicates type of response: rejection, error, or ack.
-  Timestamp responseTime = 4; // Indicates time response is generated.
-
-  // details: Indicates payload content of response message, either ack details or rejection details.
-  oneof details {
-    AckDetails ackDetails = 10;
-    RejectionDetails rejectionDetails = 11;
-  }
-}
-
-/*
- * Acknowledgement details for a data ingestion response, echoes the number of rows and columns in the request's
- * data frame.
- */
-message AckDetails {
-  uint32 numRows = 1; // Echoes number of rows in ingestion data frame.
-  uint32 numColumns = 2; // Echoes number of columns in ingestion data frame.
-}
 
 /*
  * The unit of ingestion.
@@ -207,7 +162,41 @@ message AckDetails {
  *
  * Each data column must be the same size, with a value for each timestamp specified in dataTimestamps.
  */
-message IngestionDataFrame {
-  DataTimestamps dataTimestamps = 1; // Specifies timestamps for data values.
-  repeated DataColumn dataColumns = 2; // Contains list of columns, each containing a data value for each timestamp.
+  message IngestionDataFrame {
+    DataTimestamps dataTimestamps = 1; // Specifies timestamps for data values.
+    repeated DataColumn dataColumns = 2; // Contains list of columns, each containing a data value for each timestamp.
+  }
+}
+
+/*
+ * Data Ingestion Response
+ *
+ * Response to a particular ingestion request. Message is used for both unary and streaming data ingestion RPC methods.
+ * The providerId and clientRequestId fields in a response match the values of those fields in the corresponding request.
+ *
+ * For maximum performance, data ingestion is an asynchronous operation.  The response for a request only indicates
+ * if the request is accepted by the ingestion service.  Client (or monitoring tool) must check request status via API
+ * or in database to confirm successful handling.
+ */
+message IngestDataResponse {
+
+  uint32 providerId = 1; // Provider UID, echoed from the ingestion request.
+  string clientRequestId = 2; // Client generated request identifier, echoed from the ingestion request.
+  Timestamp responseTime = 3; // Indicates time response is generated.
+
+  // result: Response contains either an ExceptionalResult indicating a problem handling the request,
+  // or AckResult with confirmation of request.
+  oneof result {
+    ExceptionalResult exceptionalResult = 10;
+    AckResult ackResult = 11;
+  }
+
+/*
+ * Acknowledgement details for a data ingestion response, echoes the number of rows and columns in the request's
+ * data frame.
+ */
+  message AckResult {
+    uint32 numRows = 1; // Echoes number of rows in ingestion data frame.
+    uint32 numColumns = 2; // Echoes number of columns in ingestion data frame.
+  }
 }
