@@ -80,7 +80,7 @@ message CreateAnnotationResponse {
   // result: Contains query result payload with either ExceptionalResult or SuccessfulResult as described above.
   oneof result {
     ExceptionalResult exceptionalResult = 10;
-    CreateAnnotationResult successfulResult = 11;
+    CreateAnnotationResult createAnnotationResult = 11;
   }
 
 /*
