@@ -225,23 +225,18 @@ message QueryTableResponse {
  */
 message QueryMetadataRequest {
 
-  QuerySpec querySpec = 1; // Contains the query specification payload.
+  // pvNameSpec: Contains either a list of column/PV names, or a single regex pattern string.
+  oneof pvNameSpec {
+    PvNameList pvNameList = 1;
+    PvNamePattern pvNamePattern = 2;
+  }
 
-  message QuerySpec {
+  message PvNameList {
+    repeated string pvNames = 1; // Specifies list of column/PV names to match and return metadata for.
+  }
 
-    // pvNameSpec: Contains either a list of column/PV names, or a single regex pattern string.
-    oneof pvNameSpec {
-      PvNameList pvNameList = 1;
-      PvNamePattern pvNamePattern = 2;
-    }
-
-    message PvNameList {
-      repeated string pvNames = 1; // Specifies list of column/PV names to match and return metadata for.
-    }
-
-    message PvNamePattern {
-      string pattern = 1; // Specifies regex pattern to use for matching column/PV names to return metadata for.
-    }
+  message PvNamePattern {
+    string pattern = 1; // Specifies regex pattern to use for matching column/PV names to return metadata for.
   }
 }
 
