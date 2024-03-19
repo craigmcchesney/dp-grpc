@@ -58,13 +58,9 @@ message CreateAnnotationRequest {
   repeated Attribute attributes = 3; // optional attributes (key/value pairs)
   DataSet dataSet = 4; // Specifies block of data to add comment to.
 
-  // annotationTypeDetails: Contains details specific to type of annotation being created.
-  oneof annotationTypeDetails {
-    CommentDetails commentDetails = 10;
-  }
-
-  message CommentDetails {
-    string	comment = 1;			// narrative comment text
+  // annotation: Contains details specific to type of annotation being created.
+  oneof annotation {
+    CommentAnnotation commentAnnotation = 10;
   }
 }
 
@@ -93,25 +89,4 @@ message CreateAnnotationResponse {
   message CreateAnnotationResult {
     string annotationId = 1;
   }
-}
-
-//
-// ------------------- Annotation Data Model ---------------------------
-//
-
-/*
- * Standardized Identifier for Block of Archived Data
- *
- * A DataSet specifies archived data across multiple DataBlocks.  Each DataBlock specifies a time range and list of
- * data sources (columns/PVs).
- *
- */
-message DataSet {
-  repeated DataBlock dataBlocks = 1;
-}
-
-message DataBlock {
-  Timestamp beginTime = 1; // Required, specifies beginning of time range for basis set.
-  Timestamp endTime = 2; // Required, specifies end of time range for basis set.
-  repeated string pvNames = 3; // Required, contains list of data source names for basis set.
 }

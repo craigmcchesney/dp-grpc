@@ -92,6 +92,29 @@ message DataTimestamps {
 }
 
 
+//
+// ------------------- Common Result Definitions ---------------------------
+//
+
+/*
+ * Exceptional Result Handling Request.
+ *
+ * Used to describe an exceptional result from the service, such as a rejection or error handling request.
+ */
+message ExceptionalResult {
+
+  ExceptionalResultStatus exceptionalResultStatus = 1; // Enum indicating the type of exceptional result.
+  string message = 2; // Message with details about the exceptional result.
+
+  enum ExceptionalResultStatus {
+    RESULT_STATUS_REJECT = 0; // Indicates request was rejected during valiaation.
+    RESULT_STATUS_ERROR = 1; // Indicates an error was encountered in handling the request.
+    RESULT_STATUS_EMPTY = 2; // Indicates the query returned no data.
+    RESULT_STATUS_NOT_READY = 3; // Indicates an invalid bidirectional stream query cursor operation request.
+  }
+}
+
+
 // ------------------- Data Definitions (Ingestion and Query)  ---------------------------
 //
 
@@ -267,23 +290,26 @@ message Image {
 
 
 //
-// ------------------- Common Messages ---------------------------
+// ------------------- Annotation Data Model ---------------------------
 //
 
 /*
- * Exceptional Result Handling Request.
+ * Standardized Identifier for Block of Archived Data
  *
- * Used to describe an exceptional result from the service, such as a rejection or error handling request.
+ * A DataSet specifies archived data across multiple DataBlocks.  Each DataBlock specifies a time range and list of
+ * data sources (columns/PVs).
+ *
  */
-message ExceptionalResult {
+message DataSet {
+  repeated DataBlock dataBlocks = 1;
+}
 
-  ExceptionalResultStatus exceptionalResultStatus = 1; // Enum indicating the type of exceptional result.
-  string message = 2; // Message with details about the exceptional result.
+message DataBlock {
+  Timestamp beginTime = 1; // Required, specifies beginning of time range for basis set.
+  Timestamp endTime = 2; // Required, specifies end of time range for basis set.
+  repeated string pvNames = 3; // Required, contains list of data source names for basis set.
+}
 
-  enum ExceptionalResultStatus {
-    RESULT_STATUS_REJECT = 0; // Indicates request was rejected during valiaation.
-    RESULT_STATUS_ERROR = 1; // Indicates an error was encountered in handling the request.
-    RESULT_STATUS_EMPTY = 2; // Indicates the query returned no data.
-    RESULT_STATUS_NOT_READY = 3; // Indicates an invalid bidirectional stream query cursor operation request.
-  }
+message CommentAnnotation {
+  string	comment = 1;			// narrative comment text
 }
