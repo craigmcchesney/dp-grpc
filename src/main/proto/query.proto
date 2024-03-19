@@ -296,7 +296,7 @@ message QueryAnnotationsRequest {
   }
 
   message CommentCriteria {
-    string commentPattern = 1;
+    string commentText = 1;
   }
 }
 
