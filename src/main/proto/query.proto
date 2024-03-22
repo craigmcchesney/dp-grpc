@@ -90,17 +90,6 @@ service DpQueryService {
    */
   rpc queryMetadata(QueryMetadataRequest) returns (QueryMetadataResponse);
 
-  /*
-   * queryAnnotations: Unary (non-streaming) annotations query.
-   *
-   * This RPC is used by clients to query over annotations added to ingested data, and is not yet implemented.
-   * Client sends a single QueryAnnotationsRequest with the query parameters, and receives a single
-   * QueryAnnotationsResponse with the query results. The response may indicate rejection, error in handling,
-   * no data matching query, or otherwise contains the data matching the query specification.
-   *
-   * TODO: this RPC is not yet implmented.
-   */
-  rpc queryAnnotations(QueryAnnotationsRequest) returns (QueryAnnotationsResponse);
 }
 
 
@@ -269,76 +258,8 @@ message QueryMetadataResponse {
       string pvName = 1; // Name of PV.
       string lastBucketDataType = 2; // Data type of last bucket for PV.
       SamplingClock lastSamplingClock = 3; // SamplingClock for last bucket for PV (only contains start time if bucket uses a list of timestamps).
-      Timestamp firstTimestamp = 5; // Timestamp of first data value for PV.
-      Timestamp lastTimestamp = 6; // Timestamp of last data value for PV.
-    }
-  }
-}
-
-
-//
-// ------------------- Annotations Query ---------------------------
-//
-
-/*
- * Annotations Query Request.
- *
- * This is a placeholder, annotation query is not yet implemented.
- */
-message QueryAnnotationsRequest {
-
-  uint32 authorId = 1; // required annotation author TODO: this will be replaced by userid in header when proper auth is enabled
-  repeated string tags = 2; // optional tags/keywords
-  repeated Attribute attributes = 3; // optional attributes (key/value pairs)
-
-  oneof criteria {
-    CommentCriteria commentCriteria = 10;
-  }
-
-  message CommentCriteria {
-    string commentText = 1;
-  }
-}
-
-/*
- * Annotations Query Response.
- *
- * This is a placeholder, annotation query is not yet implemented.
- *
- * Contains results from an annotations query. Types of response and corresponding message payloads include:
- */
-message QueryAnnotationsResponse {
-
-  Timestamp responseTime = 1; // Indicates time response was generated.
-
-  // result: Response contains either an ExceptionalResult indicating a problem handling the request,
-  // or AnnotationsResult with query result.
-  oneof result {
-    ExceptionalResult exceptionalResult = 10;
-    AnnotationsResult annotationsResult = 11;
-  }
-
-  /*
-   * Annotations Query Result Content.
-   *
-   * This is a placeholder, annotation query is not yet implemented.
-   */
-  message AnnotationsResult {
-
-    repeated Annotation annotations = 1;
-
-    message Annotation {
-
-      string annotationId = 1;
-      uint32 authorId = 2; // required annotation author TODO: this will be replaced by userid in header when proper auth is enabled
-      repeated string tags = 3; // optional tags/keywords
-      repeated Attribute attributes = 4; // optional attributes (key/value pairs)
-      DataSet dataSet = 5; // Specifies block of data for annotation scope.
-
-      // annotation: Contains details specific to type of annotation.
-      oneof annotation {
-        CommentAnnotation commentAnnotation = 10;
-      }
+      Timestamp firstTimestamp = 4; // Timestamp of first data value for PV.
+      Timestamp lastTimestamp = 5; // Timestamp of last data value for PV.
     }
   }
 }

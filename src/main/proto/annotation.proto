@@ -30,7 +30,24 @@ import "common.proto";
 service DpAnnotationService {
 
   /*
-   * createComment: Add a comment annotation to a DataSet.
+   * createDataSet: Create a DataSet.
+   *
+   * This RPC sends a request to the annotation service to create a DataSet with the specified parameters.
+   * The annotation service performs validation, and for a valid request, attempts to create the DataSet.
+   * The response may indicate rejection, an error in handling the request, or successful handling of the request.
+   * See CreateDataSetResponse for more details.
+   */
+  rpc createDataSet(CreateDataSetRequest) returns (CreateDataSetResponse);
+
+  /*
+   * queryDataSets: Unary (non-streaming) data sets query.
+   *
+   * TODO: this API is not yet implemented
+   */
+  rpc queryDataSets(QueryDataSetsRequest) returns (QueryDataSetsResponse);
+
+  /*
+   * createAnnotation: Add annotation to a DataSet.
    *
    * This RPC sends a request to the annotation service to create an annotation with the specified parameters.
    * The annotation service performs validation, and for a valid request, attempts to create the annotation.
@@ -38,6 +55,78 @@ service DpAnnotationService {
    * See CreateAnnotationResponse for more details.
    */
   rpc createAnnotation(CreateAnnotationRequest) returns (CreateAnnotationResponse);
+
+  /*
+   * queryAnnotations: Unary (non-streaming) annotations query.
+   *
+   * This RPC is used by clients to query over annotations added to ingested data, and is not yet implemented.
+   * Client sends a single QueryAnnotationsRequest with the query parameters, and receives a single
+   * QueryAnnotationsResponse with the query results. The response may indicate rejection, error in handling,
+   * no data matching query, or otherwise contains the data matching the query specification.
+   */
+  rpc queryAnnotations(QueryAnnotationsRequest) returns (QueryAnnotationsResponse);
+
+}
+
+
+//
+// ------------------- DataSet Creation Request/Response ---------------------------
+//
+
+/*
+ * Create DataSet Request.
+ *
+ * TODO: API not yet implemented.
+ */
+message CreateDataSetRequest {
+  DataSet dataSet = 1;
+}
+
+/*
+ * Create DataSet Request.
+ *
+ * TODO: API not yet implemented.
+ */
+message CreateDataSetResponse {
+
+  Timestamp responseTime = 1; // Indicates time response was generated.
+
+  // result: Contains query result payload with either ExceptionalResult or SuccessfulResult as described above.
+  oneof result {
+    ExceptionalResult exceptionalResult = 10;
+    CreateDataSetResult createDataSetResult = 11;
+  }
+
+  /*
+   * Successful Result.
+   *
+   * Contains the results of a successful request to create a DataSet.
+   */
+  message CreateDataSetResult {
+    string dataSetId = 1;
+  }
+}
+
+
+//
+// ------------------- DataSet Query ---------------------------
+//
+
+/*
+ * Query DataSet Request.
+ *
+ * TODO: API not yet implemented.
+ */
+message QueryDataSetsRequest {
+  string descriptionText = 1; // text to match in description
+}
+
+/*
+ * Query DataSet Request.
+ *
+ * TODO: API not yet implemented.
+ */
+message QueryDataSetsResponse {
 }
 
 
@@ -53,10 +142,8 @@ service DpAnnotationService {
  */
 message CreateAnnotationRequest {
 
-  uint32 authorId = 1; // required annotation author TODO: this will be replaced by userid in header when proper auth is enabled
-  repeated string tags = 2; // optional tags/keywords
-  repeated Attribute attributes = 3; // optional attributes (key/value pairs)
-  DataSet dataSet = 4; // Specifies block of data to add comment to.
+  string ownerId = 1; // required annotation owner
+  string dataSetId = 2;
 
   // annotation: Contains details specific to type of annotation being created.
   oneof annotation {
@@ -89,4 +176,106 @@ message CreateAnnotationResponse {
   message CreateAnnotationResult {
     string annotationId = 1;
   }
+}
+
+
+//
+// ------------------- Annotations Query ---------------------------
+//
+
+/*
+ * Annotations Query Request.
+ *
+ * This is a placeholder, annotation query is not yet implemented.
+ */
+message QueryAnnotationsRequest {
+  string ownerId = 1; // required annotation author
+  repeated QueryAnnotationsCriterion criteria = 2;
+}
+
+message QueryAnnotationsCriterion {
+
+  oneof criterion {
+    CommentCriterion commentCriterion = 1;
+  }
+
+  message CommentCriterion {
+    string commentText = 1;
+  }
+
+}
+
+/*
+ * Annotations Query Response.
+ *
+ * This is a placeholder, annotation query is not yet implemented.
+ *
+ * Contains results from an annotations query. Types of response and corresponding message payloads include:
+ */
+message QueryAnnotationsResponse {
+
+  Timestamp responseTime = 1; // Indicates time response was generated.
+
+  // result: Response contains either an ExceptionalResult indicating a problem handling the request,
+  // or AnnotationsResult with query result.
+  oneof result {
+    ExceptionalResult exceptionalResult = 10;
+    AnnotationsResult annotationsResult = 11;
+  }
+
+  /*
+   * Annotations Query Result Content.
+   *
+   * This is a placeholder, annotation query is not yet implemented.
+   */
+  message AnnotationsResult {
+
+    repeated Annotation annotations = 1;
+
+    message Annotation {
+
+      string annotationId = 1;
+      string ownerId = 2;
+      string dataSetId = 3;
+      DataSet dataSet = 4;
+
+      // annotation: Contains details specific to type of annotation.
+      oneof annotation {
+        CommentAnnotation commentAnnotation = 10;
+      }
+    }
+  }
+}
+
+
+//
+// ------------------- DataSet / DataBlock ---------------------------
+//
+
+/*
+ * Mechanism for identifying a set of data within the archive.  This will be used to support other features
+ * such as adding annotations to data sets or exporting data sets.
+ *
+ * A DataSet specifies archived data across multiple DataBlocks.  Each DataBlock specifies a time range and list of
+ * data sources (columns/PVs).
+ *
+ */
+message DataSet {
+  string description = 1; // optional textual description
+  repeated DataBlock dataBlocks = 2; // required list of DataBlocks identifying data to include in DataSet.
+}
+
+message DataBlock {
+  Timestamp beginTime = 1; // Required, specifies beginning of time range for basis set.
+  Timestamp endTime = 2; // Required, specifies end of time range for basis set.
+  repeated string pvNames = 3; // Required, contains list of data source names for basis set.
+}
+
+
+//
+// ------------------- Annotation Types (common to creating and retrieving) ---------------------------
+//
+
+message CommentAnnotation {
+  string	comment = 1;			// narrative comment text
 }
