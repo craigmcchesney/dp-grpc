@@ -186,31 +186,38 @@ message CreateAnnotationResponse {
 /*
  * Annotations Query Request.
  *
- * This is a placeholder, annotation query is not yet implemented.
  */
 message QueryAnnotationsRequest {
-  string ownerId = 1; // required annotation author
-  repeated QueryAnnotationsCriterion criteria = 2;
+
+  repeated QueryAnnotationsCriterion criteria = 1;
+
+  message QueryAnnotationsCriterion {
+
+    oneof criterion {
+      OwnerCriterion ownerCriterion = 10;
+      CommentCriterion commentCriterion = 11;
+    }
+
+    /*
+     * Criterion used to search ownerId field of Annotations.  "And" operator is used to combine with other criteria.
+     */
+    message OwnerCriterion {
+      string ownerId = 1;
+    }
+
+    /*
+     * Criterion used to search over Comment Annotations.  "Or" operator is used to combine with other criteria.
+     */
+    message CommentCriterion {
+      string commentText = 1;
+    }
+  }
 }
 
-message QueryAnnotationsCriterion {
-
-  oneof criterion {
-    CommentCriterion commentCriterion = 1;
-  }
-
-  message CommentCriterion {
-    string commentText = 1;
-  }
-
-}
 
 /*
  * Annotations Query Response.
  *
- * This is a placeholder, annotation query is not yet implemented.
- *
- * Contains results from an annotations query. Types of response and corresponding message payloads include:
  */
 message QueryAnnotationsResponse {
 
@@ -226,7 +233,6 @@ message QueryAnnotationsResponse {
   /*
    * Annotations Query Result Content.
    *
-   * This is a placeholder, annotation query is not yet implemented.
    */
   message AnnotationsResult {
 
