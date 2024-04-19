@@ -38,16 +38,6 @@ service DpQueryService {
   rpc queryData(QueryDataRequest) returns (QueryDataResponse);
 
   /*
-   * queryDataTable: Unary (non-streaming) time series data query with tabular result.
-   *
-   * This time series data query returns its result in a tabular format, for use by the Data Platform web application.
-   * The client sends a single QueryDataRequest with the query parameters and receives a single QueryTableResponse.
-   * The response content may indicate rejection, error in handling, no data matching query, or otherwise contains
-   * the tabular data matching the query specification.
-   */
-  rpc queryDataTable(QueryDataRequest) returns (QueryTableResponse);
-
-  /*
    * queryDataStream: Server-side streaming time series data query.
    *
    * Client sends a single QueryDataRequest with the query parameters, and receives a stream of QueryDataResponse
@@ -79,6 +69,16 @@ service DpQueryService {
    * contains the data matching the query specification.
    */
   rpc queryDataBidiStream(stream QueryDataRequest) returns (stream QueryDataResponse);
+
+  /*
+   * queryDataTable: Unary (non-streaming) time series data query with tabular result.
+   *
+   * This time series data query returns its result in a tabular format, for use by the Data Platform web application.
+   * The client sends a single QueryDataRequest with the query parameters and receives a single QueryTableResponse.
+   * The response content may indicate rejection, error in handling, no data matching query, or otherwise contains
+   * the tabular data matching the query specification.
+   */
+  rpc queryTable(QueryTableRequest) returns (QueryTableResponse);
 
   /*
    * queryMetadata: Unary (non-streaming) metadata query.
@@ -172,6 +172,30 @@ message QueryDataResponse {
 }
 
 /*
+ * Time Series Data Query With Tabular Result Format.
+ *
+ * Describes the parameters for a time series data query that returns data in a tabular format.
+ */
+message QueryTableRequest {
+
+  TableResultFormat format = 1; // Required, specifies table result format.
+  Timestamp beginTime = 2; // Required, specifies query start time.
+  Timestamp endTime = 3; // Required, specifies query end time.
+
+  // pvNameSpec: Contains either a list of column/PV names, or a single regex pattern string.
+  oneof pvNameSpec {
+    PvNameList pvNameList = 11;
+    PvNamePattern pvNamePattern = 12;
+  }
+
+  enum TableResultFormat {
+    TABLE_FORMAT_COLUMN = 0;
+    TABLE_FORMAT_ROW_MAP = 1;
+    TABLE_FORMAT_ROW_LIST = 2; // TODO: add handling for this option to return a list of values for each column instead of map
+  }
+}
+
+/*
  * Tabular Time Series Data Query Response.
  *
  * Contains results from a time series data query in a tabular format for use by the DP web application (and other similar
@@ -220,13 +244,6 @@ message QueryMetadataRequest {
     PvNamePattern pvNamePattern = 2;
   }
 
-  message PvNameList {
-    repeated string pvNames = 1; // Specifies list of column/PV names to match and return metadata for.
-  }
-
-  message PvNamePattern {
-    string pattern = 1; // Specifies regex pattern to use for matching column/PV names to return metadata for.
-  }
 }
 
 /*
@@ -262,4 +279,13 @@ message QueryMetadataResponse {
       Timestamp lastTimestamp = 5; // Timestamp of last data value for PV.
     }
   }
+}
+
+
+message PvNameList {
+  repeated string pvNames = 1; // Specifies list of column/PV names to match and return metadata for.
+}
+
+message PvNamePattern {
+  string pattern = 1; // Specifies regex pattern to use for matching column/PV names to return metadata for.
 }
