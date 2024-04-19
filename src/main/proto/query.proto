@@ -218,8 +218,30 @@ message QueryTableResponse {
    * Contains the data for a time series data query result, in a tabular format.
    */
   message TableResult {
+    oneof tableResult {
+      ColumnTable columnTable = 1;
+      RowMapTable rowMapTable = 2;
+    }
+  }
+
+  /*
+   * Column-oriented table result with list of columns.
+   */
+  message ColumnTable {
     DataTimestamps dataTimestamps = 1; // Specifies the timestamps for the table, using an explicit list of times.
     repeated DataColumn dataColumns = 2; // Contains a list of columns, each with a name and vector of values one for each timestamp.
+  }
+
+  /*
+   * Row-oriented table result where each row is a map whose keys are the column names and values are the column values
+   * for that row.
+   */
+  message RowMapTable {
+    repeated string columnNames = 1;
+    repeated DataRow rows = 2;
+    message DataRow {
+      map<string, string> columnValueMap = 1;
+    }
   }
 }
 
