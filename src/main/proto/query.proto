@@ -240,7 +240,7 @@ message QueryTableResponse {
     repeated string columnNames = 1;
     repeated DataRow rows = 2;
     message DataRow {
-      map<string, string> columnValueMap = 1;
+      map<string, DataValue> columnValueMap = 1;
     }
   }
 }
