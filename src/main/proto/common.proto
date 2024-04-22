@@ -161,6 +161,7 @@ message DataValue {
     Array		arrayValue = 10;			// heterogeneous array (no dimensional restrictions as of yet)
     Structure	structureValue = 11;		// general data structure (no width or depth restrictions yet)
     Image		imageValue = 12;		// general image value
+    Timestamp timestampValue = 13; // timestamp data value
   }
 
   /*
