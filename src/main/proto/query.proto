@@ -189,9 +189,8 @@ message QueryTableRequest {
   }
 
   enum TableResultFormat {
-    TABLE_FORMAT_COLUMN = 0;
-    TABLE_FORMAT_ROW_MAP = 1;
-    TABLE_FORMAT_ROW_LIST = 2; // TODO: add handling for this option to return a list of values for each column instead of map
+    TABLE_FORMAT_ROW_MAP = 0; // default value if not explicitly set
+    TABLE_FORMAT_COLUMN = 1;
   }
 }
 
