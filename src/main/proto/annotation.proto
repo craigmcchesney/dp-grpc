@@ -76,7 +76,7 @@ service DpAnnotationService {
 /*
  * Create DataSet Request.
  *
- * TODO: API not yet implemented.
+ * Contains a DataSet object to be created by the handler.
  */
 message CreateDataSetRequest {
   DataSet dataSet = 1;
@@ -85,7 +85,8 @@ message CreateDataSetRequest {
 /*
  * Create DataSet Request.
  *
- * TODO: API not yet implemented.
+ * Contains response to createDataSet() API request.  Message payload is exceptionalResult if request is rejected or an
+ * error is encountered by the handler, otherwise contains a CreateDataSetResult.
  */
 message CreateDataSetResponse {
 
@@ -138,7 +139,7 @@ message QueryDataSetsResponse {
  * Create Annotation Request.
  *
  * Contains details for adding an annotation to a DataSet with fields common to all requests for creating annotations,
- * plus a oneof field for details specific to each type of annotation that is supported.
+ * plus details specific to each type of annotation that is supported (via annotation oneof field).
  */
 message CreateAnnotationRequest {
 
@@ -155,7 +156,7 @@ message CreateAnnotationRequest {
  * Create Annotation Response.
  *
  * Contains details for response to request to add an annotation to a DataSet.  Response includes either
- * an ExceptionalResult describing a rejection or error situation, or a SuccessfulResult indicating the request
+ * an ExceptionalResult describing a rejection or error situation, or a CreateAnnotationResult indicating the request
  * was handled successfully.
  */
 message CreateAnnotationResponse {
@@ -186,6 +187,7 @@ message CreateAnnotationResponse {
 /*
  * Annotations Query Request.
  *
+ * Contains a list of criteria for querying annotations.  Each criterion option is described in more detail below.
  */
 message QueryAnnotationsRequest {
 
@@ -218,6 +220,9 @@ message QueryAnnotationsRequest {
 /*
  * Annotations Query Response.
  *
+ * Contains results from queryAnnotations() API request.  Message payload is either ExceptionalResult indicating
+ * rejection, an error handling the request, or an empty query result, otherwise contains an AnnotationsResult with
+ * the query results.
  */
 message QueryAnnotationsResponse {
 
@@ -233,6 +238,7 @@ message QueryAnnotationsResponse {
   /*
    * Annotations Query Result Content.
    *
+   * Result contains a list of Annotation messages, one for each annotation matching the query parameters.
    */
   message AnnotationsResult {
 

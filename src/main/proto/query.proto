@@ -71,12 +71,12 @@ service DpQueryService {
   rpc queryDataBidiStream(stream QueryDataRequest) returns (stream QueryDataResponse);
 
   /*
-   * queryDataTable: Unary (non-streaming) time series data query with tabular result.
+   * queryTable: Unary (non-streaming) time series data query with tabular result.
    *
    * This time series data query returns its result in a tabular format, for use by the Data Platform web application.
-   * The client sends a single QueryDataRequest with the query parameters and receives a single QueryTableResponse.
-   * The response content may indicate rejection, error in handling, no data matching query, or otherwise contains
-   * the tabular data matching the query specification.
+   * The client sends a single QueryTableRequest with the query parameters and receives a single QueryTableResponse.
+   * The response content may indicate an exception in handling such as rejection, database error, no data matching
+   * query, or otherwise contains the tabular data matching the query specification.
    */
   rpc queryTable(QueryTableRequest) returns (QueryTableResponse);
 
@@ -139,8 +139,8 @@ message QueryDataRequest {
  * Time Series Data Query Response.
  *
  * Contains results from a time series data query.  Used as single response to unary RPC methods, or as a stream in the
- * streaming RPC methods. Contains either ExceptionalResult indicating a problem handling the request, or the
- * data returned by the query.
+ * streaming RPC methods. Contains either ExceptionalResult indicating a problem handling the request, or QueryData
+ * containing the data returned by the query.
  */
 message QueryDataResponse {
 
@@ -174,7 +174,10 @@ message QueryDataResponse {
 /*
  * Time Series Data Query With Tabular Result Format.
  *
- * Describes the parameters for a time series data query that returns data in a tabular format.
+ * Describes the parameters for a time series data query that returns data in a tabular format.  The request format
+ * is used to specify either row-oriented or column-oriented tabular result format.  Time range must be specified
+ * using begin/endTime fields.  PV names are specified using either an explicit pvNameList or a pvNamePattern
+ * matched by regex.
  */
 message QueryTableRequest {
 
@@ -198,7 +201,9 @@ message QueryTableRequest {
  * Tabular Time Series Data Query Response.
  *
  * Contains results from a time series data query in a tabular format for use by the DP web application (and other similar
- * uses. Types of response and corresponding message payloads include:
+ * uses. Response message payload is either an ExceptionalResult message indicating a rejection, error,
+ * or empty query result, or a TableResult message containing the query result.  The TableResult is a ColumnTable
+ * if request format is specified to be TABLE_FORMAT_COLUMN, or RowMapTable if format is TABLE_FORMAT_ROW_MAP.
  */
 message QueryTableResponse {
 
@@ -270,7 +275,8 @@ message QueryMetadataRequest {
 /*
  * Metadata Query Response.
  *
- * Contains results from a metadata query. Types of response and corresponding message payloads include:
+ * Contains results from a metadata query. Response payload is ExceptionalResult if a rejection, error, or empty query
+ * result is encountered, otherwise is MetadataResult containing results of query.
  */
 message QueryMetadataResponse {
 
