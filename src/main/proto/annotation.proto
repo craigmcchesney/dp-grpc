@@ -116,18 +116,59 @@ message CreateDataSetResponse {
 /*
  * Query DataSet Request.
  *
- * TODO: API not yet implemented.
+ * TODO: document behavior
  */
 message QueryDataSetsRequest {
-  string descriptionText = 1; // text to match in description
+
+  repeated QueryDataSetsCriterion criteria = 1;
+
+  message QueryDataSetsCriterion {
+
+    oneof criterion {
+      OwnerCriterion ownerCriterion = 10;
+      DescriptionCriterion descriptionCriterion = 11;
+    }
+
+    /*
+     * Criterion used to search dataset ownerId field.  "And" operator is used to combine with other criteria.
+     */
+    message OwnerCriterion {
+      string ownerId = 1;
+    }
+
+    /*
+     * Criterion used to search dataset description field.  "Or" operator is used to combine with other criteria.
+     */
+    message DescriptionCriterion {
+      string descriptionText = 1;
+    }
+  }
 }
 
 /*
  * Query DataSet Request.
  *
- * TODO: API not yet implemented.
+ * TODO: document behavior
  */
 message QueryDataSetsResponse {
+
+  Timestamp responseTime = 1; // Indicates time response was generated.
+
+  // result: Response contains either an ExceptionalResult indicating a problem handling the request,
+  // or DataSetsResult with query result.
+  oneof result {
+    ExceptionalResult exceptionalResult = 10;
+    DataSetsResult dataSetsResult = 11;
+  }
+
+  /*
+   * Datasets Query Result Content.
+   *
+   * Result contains a list of DataSet messages matching the query parameters.
+   */
+  message DataSetsResult {
+    repeated DataSet dataSets = 1;
+  }
 }
 
 
@@ -273,8 +314,9 @@ message QueryAnnotationsResponse {
  *
  */
 message DataSet {
-  string description = 1; // optional textual description
-  repeated DataBlock dataBlocks = 2; // required list of DataBlocks identifying data to include in DataSet.
+  string dataSetId = 1;
+  string description = 2; // required textual description
+  repeated DataBlock dataBlocks = 3; // required list of DataBlocks identifying data to include in DataSet.
 }
 
 message DataBlock {
