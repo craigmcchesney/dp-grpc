@@ -300,10 +300,11 @@ message QueryMetadataResponse {
 
     message PvInfo {
       string pvName = 1; // Name of PV.
-      string lastBucketDataType = 2; // Data type of last bucket for PV.
-      SamplingClock lastSamplingClock = 3; // SamplingClock for last bucket for PV (only contains start time if bucket uses a list of timestamps).
-      Timestamp firstTimestamp = 4; // Timestamp of first data value for PV.
-      Timestamp lastTimestamp = 5; // Timestamp of last data value for PV.
+      int32 lastBucketDataTypeCase = 2; // Data type case (DataValue.ValueCase) for PV's most recent bucket.
+      string lastBucketDataType = 3; // Data type of PV's most recent bucket.
+      SamplingClock lastSamplingClock = 4; // SamplingClock for PV's most recent bucket (only contains start time if bucket uses a list of timestamps).
+      Timestamp firstTimestamp = 5; // Timestamp of first data value for PV.
+      Timestamp lastTimestamp = 6; // Timestamp of most recent data value for PV.
     }
   }
 }

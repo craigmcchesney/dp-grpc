@@ -213,21 +213,6 @@ message DataValue {
   }
 }
 
-enum DataValueType {
-  DATA_TYPE_STRING = 0;		// character string
-  DATA_TYPE_BOOLEAN = 1;		// logical Boolean
-  DATA_TYPE_UINT = 2;			// unsigned integer value
-  DATA_TYPE_ULONG = 3;			// unsigned long integer
-  DATA_TYPE_INT = 4;			// signed integer value
-  DATA_TYPE_LONG = 5;			// signed long integer
-  DATA_TYPE_FLOAT = 6;			// 32 byte float value
-  DATA_TYPE_DOUBLE = 7;		// 64 byte float value (double)
-  DATA_TYPE_BYTES = 8;		// raw data as byte string
-  DATA_TYPE_ARRAY = 9;			// heterogeneous array (no dimensional restrictions as of yet)
-  DATA_TYPE_STRUCT = 10;		// general data structure (no width or depth restrictions yet)
-  DATA_TYPE_IMAGE = 11;		// general image value
-}
-
 /*
  * Structure Data Value.
  *
