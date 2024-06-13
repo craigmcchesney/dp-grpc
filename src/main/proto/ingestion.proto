@@ -44,11 +44,9 @@ service DpIngestionService {
   /*
    * ingestData: Unary (non-streaming) data ingestion.
    *
-   * This unary data ingestion API is not yet implemented.  It is anticipated that the behavior will be exactly
-   * the same as for the *ingestDataStream()* method, except that the method only supports sending a single request
-   * and receiving a single response.  The response and processing performed will be the same as for the streaming case.
-   *
-   * TODO: this RPC is not yet implmented.
+   * This method sends a single IngestDataRequest and receives a single IngestDataResponse.  Validation,
+   * rejection / acknowledgment, asynchronous handling, and request status reporting is otherwise the same as for the
+   * ingestDataStream() method.
    */
   rpc ingestData (IngestDataRequest) returns (IngestDataResponse);
 
