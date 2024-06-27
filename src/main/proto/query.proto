@@ -300,11 +300,16 @@ message QueryMetadataResponse {
 
     message PvInfo {
       string pvName = 1; // Name of PV.
-      int32 lastBucketDataTypeCase = 2; // Data type case (DataValue.ValueCase) for PV's most recent bucket.
-      string lastBucketDataType = 3; // Data type of PV's most recent bucket.
-      SamplingClock lastSamplingClock = 4; // SamplingClock for PV's most recent bucket (only contains start time if bucket uses a list of timestamps).
-      Timestamp firstTimestamp = 5; // Timestamp of first data value for PV.
-      Timestamp lastTimestamp = 6; // Timestamp of most recent data value for PV.
+      string lastBucketId = 2; // Database identifier for PV's most recent bucket.
+      int32 lastBucketDataTypeCase = 3; // Data type case (DataValue.ValueCase) for PV's most recent bucket.
+      string lastBucketDataType = 4; // Data type name of PV's most recent bucket.
+      int32 lastBucketDataTimestampsCase = 5; // DataTimestamps case for PV's most recent bucket.
+      string lastBucketDataTimestampsType = 6; // DataTimestamps name for PV's most recent bucket.
+      Timestamp lastBucketStartTimestamp = 7; // Start time for PV's most recent bucket.
+      uint32 lastBucketSampleCount = 8; // Number of samples in PV's most recent bucket.
+      uint64 lastBucketSamplePeriod = 9; // Sample period in nanos for PV's most recent bucket (zero if DataTimestamps is TimestampList).
+      Timestamp firstDataTimestamp = 10; // Timestamp of first data value for PV.
+      Timestamp lastDataTimestamp = 11; // Timestamp of most recent data value for PV.
     }
   }
 }
