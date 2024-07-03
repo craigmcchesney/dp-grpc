@@ -315,9 +315,10 @@ message QueryAnnotationsResponse {
  */
 message DataSet {
   string dataSetId = 1; // id for existing dataset, used in query results
-  string ownerId = 2; // required owner
-  string description = 3; // required textual description
-  repeated DataBlock dataBlocks = 4; // required list of DataBlocks identifying data to include in DataSet.
+  string name = 2; // required name
+  string ownerId = 3; // required owner
+  string description = 4; // optional textual description
+  repeated DataBlock dataBlocks = 5; // required list of DataBlocks identifying data to include in DataSet.
 }
 
 message DataBlock {
