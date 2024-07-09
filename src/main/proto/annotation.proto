@@ -2,10 +2,6 @@
 // annotation.proto
 //
 // Contains RPC messages and interface specific to the Annotation Service.
-//
-// since: February, 2024
-// version: 1.3.0
-//
 
 syntax = "proto3";
 
@@ -24,8 +20,7 @@ import "common.proto";
 /*
  * Annotation Service Interface
  *
- * Interface for annotating archived data.  Registered annotation authors can create and modify data
- * annotations.
+ * Interface for annotating archived data.
  */
 service DpAnnotationService {
 
@@ -35,14 +30,15 @@ service DpAnnotationService {
    * This RPC sends a request to the annotation service to create a DataSet with the specified parameters.
    * The annotation service performs validation, and for a valid request, attempts to create the DataSet.
    * The response may indicate rejection, an error in handling the request, or successful handling of the request.
-   * See CreateDataSetResponse for more details.
    */
   rpc createDataSet(CreateDataSetRequest) returns (CreateDataSetResponse);
 
   /*
    * queryDataSets: Unary (non-streaming) data sets query.
    *
-   * TODO: this API is not yet implemented
+   * This RPC returns information about DataSets matching the specified query parameters. Client sends a single
+   * QueryDataSetsRequest and receives a single QueryDataSetsResponse. The response may indicate rejection,
+   * error in handling, no data matching query, or otherwise contains the data matching the query specification.
    */
   rpc queryDataSets(QueryDataSetsRequest) returns (QueryDataSetsResponse);
 
@@ -52,14 +48,13 @@ service DpAnnotationService {
    * This RPC sends a request to the annotation service to create an annotation with the specified parameters.
    * The annotation service performs validation, and for a valid request, attempts to create the annotation.
    * The response may indicate rejection, an error in handling the request, or successful handling of the request.
-   * See CreateAnnotationResponse for more details.
    */
   rpc createAnnotation(CreateAnnotationRequest) returns (CreateAnnotationResponse);
 
   /*
    * queryAnnotations: Unary (non-streaming) annotations query.
    *
-   * This RPC is used by clients to query over annotations added to ingested data, and is not yet implemented.
+   * This RPC is used by clients to query over annotations added to ingested data.
    * Client sends a single QueryAnnotationsRequest with the query parameters, and receives a single
    * QueryAnnotationsResponse with the query results. The response may indicate rejection, error in handling,
    * no data matching query, or otherwise contains the data matching the query specification.
@@ -83,7 +78,7 @@ message CreateDataSetRequest {
 }
 
 /*
- * Create DataSet Request.
+ * Create DataSet Response.
  *
  * Contains response to createDataSet() API request.  Message payload is exceptionalResult if request is rejected or an
  * error is encountered by the handler, otherwise contains a CreateDataSetResult.
@@ -101,7 +96,7 @@ message CreateDataSetResponse {
   /*
    * Successful Result.
    *
-   * Contains the results of a successful request to create a DataSet.
+   * Contains the results of a successful request to create a DataSet, with the id of the newly created DataSet.
    */
   message CreateDataSetResult {
     string dataSetId = 1;
@@ -116,7 +111,11 @@ message CreateDataSetResponse {
 /*
  * Query DataSet Request.
  *
- * TODO: document behavior
+ * Contains parameters for a query over existing DataSets.  A query includes a list of
+ * (one or more) QueryDataSetsCriterion. OwnerCriterion, NameCriterion, and DescriptionCriterion are used to perform
+ * queries over DataSet owner, name, and description, respectively.  The criterion can be used individually or combined
+ * for compound queries.  E.g., a query request might use an OwnerCriterion and NameCriterion to find DataSets
+ * for the specified owner matching the name filter.
  */
 message QueryDataSetsRequest {
 
@@ -154,9 +153,11 @@ message QueryDataSetsRequest {
 }
 
 /*
- * Query DataSet Request.
+ * Query DataSet Response.
  *
- * TODO: document behavior
+ * Contains the results of a DataSets query.  Payload is an ExceptionalResult if the request is invalid, an error is
+ * encountered processing the query, or the query result is empty.  Otherwise payload is a DataSetsResult with a list
+ * of DataSets matching the query parameters.
  */
 message QueryDataSetsResponse {
 
@@ -221,7 +222,8 @@ message CreateAnnotationResponse {
 /*
  * Successful Annotation Result.
  *
- * Contains the results of a successful request to add an annotation to a DataSet.
+ * Contains the results of a successful request to add an annotation to a DataSet, including the id for the newly
+ * created annotation.
  */
   message CreateAnnotationResult {
     string annotationId = 1;
@@ -236,7 +238,10 @@ message CreateAnnotationResponse {
 /*
  * Annotations Query Request.
  *
- * Contains a list of criteria for querying annotations.  Each criterion option is described in more detail below.
+ * Contains a list of QueryAnnotationsCriterion for querying annotations. OwnerCriterion and CommentCriterion are used
+ * to search by owner and comment text, respectively. List can include a single criterion, or multiple criterion for a
+ * compound query. E.g., a query request might use an OwnerCriterion and CommentCriterion to find annotations
+ * for the specified owner matching the comment filter.
  */
 message QueryAnnotationsRequest {
 

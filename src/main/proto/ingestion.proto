@@ -2,10 +2,6 @@
 // ingestion.proto
 //
 // Contains RPC messages and interface specific to the Ingestion Service.
-//
-// since: July, 2023
-// version: 1.2.0
-//
 
 syntax = "proto3";
 
@@ -26,8 +22,6 @@ import "common.proto";
  *
  * Defines RPC operations for data provider registration and ingestion.
  *
-  * ingestData - data ingestion via unary gRPC
- * ingestDataStream - data ingestion via streaming gRPC
  */
 service DpIngestionService {
 
@@ -143,24 +137,36 @@ message RegisterProviderResponse {
  * For maximum performance, data ingestion is an asynchronous operation.  The response for a request only indicates
  * if the request is accepted by the ingestion service.  Client (or monitoring tool) must check request status via API
  * or in database to confirm successful handling.
+ *
+ * The providerId is a unique provider id returned by the registerProvider() rpc. TODO: For now this is a hardwired
+ * integer.
+ *
+ * The clientRequestId is unique to the provider, and clients may use whatever notation makes sense for the
+ * application.  It is assumed that each IngestDataRequest uses a unique clientRequestId so that there is a unique
+ * mapping from an ingestion request to the corresponding RequestStatus document in the database.
  */
 message IngestDataRequest {
   uint32 providerId = 1; // Required UID uniquely idenfies data provider, obtained via provider registration RPC.
-  string clientRequestId = 2; // Required, client generated identifier, uniquely identifies an ingestion request for a provider.
+  string clientRequestId = 2; // Required, client generated identifier uniquely identifying an ingestion request for a provider.
   Timestamp requestTime = 3; // Required, indicates time request is sent.
   repeated Attribute attributes = 4; // Optional, List of key/value attributes describing the request data.
-  EventMetadata eventMetadata = 5; // Optional, metadata describing event/snapshot that request data are associated with.
+  EventMetadata eventMetadata = 5; // Optional, metadata describing event that request data are associated with.
   IngestionDataFrame ingestionDataFrame = 6; // Required, contains the data for the ingestion request.
 
 /*
  * The unit of ingestion.
  *
- * Data is ingested into the Data Platform in tabular form.  The table consists
- * of dataTimestamps (either an explicit list of timestamps, or using a SamplingClock with start time, sample period,
- * and sample count) and a collection of table columns containing heterogeneous data, with a value in each column
- * corresponding to each individual timestamp value.
+ * An IngestionDataFrame contains the data for an ingestion request.  It includes a set of vectors of data and a
+ * a specification of the timestamps for the values in those vectors.
  *
- * Each data column must be the same size, with a value for each timestamp specified in dataTimestamps.
+ * DataTimestamps can be expressed using either a SamplingClock with start time, sample period,
+ * and sample count, or using a TimestampsList with an explicit list of timestamps for the data values.
+ *
+ * Each DataColumn is a vector of heterogeneous data values for a particular PV, with a single data value for each
+ * data timestamp.  Each DataColumn includes the name of the corresponding PV, and a list of DataValues.
+ *
+ * Each data column must be the same size, with a value for each timestamp specified in dataTimestamps. Ingestion
+ * requests with inconsistent dimensions are rejected.
  */
   message IngestionDataFrame {
     DataTimestamps dataTimestamps = 1; // Specifies timestamps for data values.
@@ -177,6 +183,13 @@ message IngestDataRequest {
  * For maximum performance, data ingestion is an asynchronous operation.  The response for a request only indicates
  * if the request is accepted by the ingestion service.  Client (or monitoring tool) must check request status via API
  * or in database to confirm successful handling.
+ *
+ * The Ingestion Service performs validation on receipt of an ingestion request, and sends a rejection for an invalid
+ * request (e.g., providerId or clientRequestId not specified, inconsistent dimensions of data timestamps and data
+ * vectors in request's IngestionDataFrame).
+ *
+ * For ingestion requests determined to be valid, an AckResult is sent back to the client echoing the dimensions of
+ * the request's IngestionDataFrame (numRows and numColumns).
  */
 message IngestDataResponse {
 

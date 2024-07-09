@@ -2,9 +2,6 @@
 // common.proto
 //
 // Contains RPC messages common to all services.
-//
-// since: July, 2023
-// version: 1.2.0
 
 syntax = "proto3";
 
@@ -25,7 +22,7 @@ message Attribute {
 }
 
 /*
- * Metadata associated with an ingestion event or snapshot.
+ * Metadata associated with ingested data.
  */
 message EventMetadata {
   string description = 1; // Description of the event.
@@ -39,7 +36,7 @@ message EventMetadata {
 //
 
 /*
- * Time instant described by epoch.
+ * Time instant containing fields for seconds since epoch and nanoseconds offset.
  */
 message Timestamp {
   uint64 epochSeconds = 1;  // Seconds past unix epoch - 1st january 1970.
@@ -79,12 +76,11 @@ message SamplingClock {
 }
 
 /*
- * Specifies the set of timestamps for a dataset collection, either as an explicit list of timestamps, or using a
- * Sampling Clock to specify interval start time, sampling period, and sample count.
+ * Specifies the set of timestamps for ingested data, either using an explicit list of timestamps, or a
+ * Sampling Clock specifying interval start time, sampling period, and sample count.
  */
 message DataTimestamps {
 
-  // value: Payload is either SamplingClock to specify interval parameters, or TimestampList with explicit list of times.
   oneof value {
     SamplingClock samplingClock = 1;
     TimestampList timestampList = 2;
@@ -97,9 +93,10 @@ message DataTimestamps {
 //
 
 /*
- * Exceptional Result Handling Request.
+ * Exceptional Method Result.
  *
- * Used to describe an exceptional result from the service, such as a rejection or error handling request.
+ * Used to describe an exceptional result from a service method, such as a rejection or error handling request.
+ * This message is used by all service RPC methods to indicate a problem executing the method.
  */
 message ExceptionalResult {
 
@@ -107,7 +104,7 @@ message ExceptionalResult {
   string message = 2; // Message with details about the exceptional result.
 
   enum ExceptionalResultStatus {
-    RESULT_STATUS_REJECT = 0; // Indicates request was rejected during valiaation.
+    RESULT_STATUS_REJECT = 0; // Indicates request was rejected during validation.
     RESULT_STATUS_ERROR = 1; // Indicates an error was encountered in handling the request.
     RESULT_STATUS_EMPTY = 2; // Indicates the query returned no data.
     RESULT_STATUS_NOT_READY = 3; // Indicates an invalid bidirectional stream query cursor operation request.
@@ -119,29 +116,31 @@ message ExceptionalResult {
 //
 
 /*
- * A named vector of heterogeneous data values.
+ * Data Column
+ *
+ * Contains a named vector of heterogeneous data values sampled for a particular PV.
  *
  */
 message DataColumn {
-  string name = 1; // Name of column.
-  repeated DataValue dataValues = 2; // List of column data values.
+  string name = 1; // Name of PV.
+  repeated DataValue dataValues = 2; // List of heterogeneous column data values.
 }
 
 
 /*
  * Unit of Heterogeneous Data
  *
- * The message includes both a data field 'value' and a status field 'status'.
- * The 'value' field is the actual data value while the 'status' field represents the
+ * The message includes both a data field 'value' and a status field 'valueStatus'.
+ * The 'value' field is the actual data value while the 'valueStatus' field represents the
  * condition of the value (i.e., typically at acquisition time).  Future versions may include
  * the status of the value within the archive (e.g., corrupt, truncated, etc.).
  *
  * The field 'value' is a union of all possible data types currently supported.  It represents one
  * unit of heterogeneous data.  Only one data type may be included in the message.
  *
- * The 'status' field is structure defined as an enclosed RPC message.  It contains information about
+ * The 'valueStatus' field is structure defined as an enclosed RPC message.  It contains information about the
  * value during acquisition, such as value alarm conditions, acquisition conditions, and any associated
- * message.  This field is subject to future modification for expanded use case.
+ * message.  This field is subject to future modification for expanded use cases.
  */
 message DataValue {
 
@@ -216,9 +215,10 @@ message DataValue {
 /*
  * Structure Data Value.
  *
+ * Represents a unit of data whose value is a structure.
+ *
  * Each level of a data structure may have an indefinite number of fields consisting
- * of (name, value) pairs.  There may be practical restrictions on the number of fields within
- * service implementations (as of yet unreported).
+ * of (name, value) pairs.
  *
  * Note that the Structure message supports nested structure, and thus, complex data structures
  * can be represented.  The 'value' field within a (name, value) pair may contain another Structure
@@ -238,7 +238,9 @@ message Structure {
 /*
  * Array Data Value.
  *
- * Used for columns whose values are arrays instead of individual scalar values.  Data values are any of the defined
+ * Represents a unit of data whose value is an array.
+ *
+ * Used for vectors whose values are arrays instead of individual scalar values.  Data values are any of the defined
  * DataValue types including simple scalars as well as more complex types like structures, images, and other nested
  * arrays.  The depth of array nesting is currently indefinite but may have practical restrictions within service
  * implementation (yet unreported).
@@ -249,6 +251,8 @@ message Array {
 
 /*
  * Image Data Value.
+ *
+ * Represents a unit of data whose value is an image file.
  *
  * Images are stored as raw data as a byte vector.  Interpretation is determined by standard
  * image file formats enumerated by FileType.
