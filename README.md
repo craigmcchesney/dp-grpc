@@ -35,5 +35,5 @@ The [Data Platform Technical Overview](https://github.com/osprey-dcs/data-platfo
   * [time-series data query](https://github.com/osprey-dcs/data-platform/blob/main/doc/documents/dp/dp-tech.md#261-time-series-data-query)
   * [metadata query](https://github.com/osprey-dcs/data-platform/blob/main/doc/documents/dp/dp-tech.md#262-metadata-query)
 * [Data Platform API - annotation service](https://github.com/osprey-dcs/data-platform/blob/main/doc/documents/dp/dp-tech.md#27-data-platform-api---annotation-service)
-  * [creating datasets](https://github.com/osprey-dcs/data-platform/blob/main/doc/documents/dp/dp-tech.md#271-creating-datasets)
+  * [creating and querying datasets](https://github.com/osprey-dcs/data-platform/blob/main/doc/documents/dp/dp-tech.md#271-creating-and-querying-datasets)
   * [creating and querying annotations](https://github.com/osprey-dcs/data-platform/blob/main/doc/documents/dp/dp-tech.md#272-creating-and-querying-annotations)
