@@ -16,11 +16,12 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 
-        <!-- Protobuf -->
-        <io.grpc.version>1.49.0</io.grpc.version>
-        <protobuf.version>4.26.1</protobuf.version>
+        <protobuf.version>4.27.2</protobuf.version>
         <protobuf-java-format.version>1.4</protobuf-java-format.version>
-        <protoc-gen-validate.version>0.6.7</protoc-gen-validate.version>
+        <io.grpc.version>1.65.1</io.grpc.version>
+
+        <!-- updating pgv-java-stub beyond 0.6.13 breaks the protobuf-maven-plugin -->
+        <protoc-gen-validate.version>1.0.4</protoc-gen-validate.version>
 
     </properties>
 
@@ -41,6 +42,12 @@
             <artifactId>protoc</artifactId>
             <version>${protobuf.version}</version>
             <type>pom</type>
+        </dependency>
+
+        <dependency>
+            <groupId>com.google.protobuf</groupId>
+            <artifactId>protobuf-java</artifactId>
+            <version>${protobuf.version}</version>
         </dependency>
 
         <dependency>
@@ -69,13 +76,7 @@
         </dependency>
 
         <dependency>
-            <groupId>com.google.protobuf</groupId>
-            <artifactId>protobuf-java</artifactId>
-            <version>${protobuf.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>io.envoyproxy.protoc-gen-validate</groupId>
+            <groupId>build.buf.protoc-gen-validate</groupId>
             <artifactId>pgv-java-stub</artifactId>
             <version>${protoc-gen-validate.version}</version>
         </dependency>
@@ -96,7 +97,7 @@
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-compiler-plugin</artifactId>
-                    <version>3.10.1</version>
+                    <version>3.13.0</version>
                     <configuration>
                             <release>21</release>
                     </configuration>
@@ -108,7 +109,7 @@
             <extension>
                 <groupId>kr.motd.maven</groupId>
                 <artifactId>os-maven-plugin</artifactId>
-                <version>1.7.0</version>
+                <version>1.7.1</version>
             </extension>
         </extensions>
 
@@ -145,7 +146,7 @@
                             <pluginParameter>lang=java</pluginParameter>
                             <pluginId>java-pgv</pluginId>
                             <pluginArtifact>
-                                io.envoyproxy.protoc-gen-validate:protoc-gen-validate:${protoc-gen-validate.version}:exe:${os.detected.classifier}
+                                build.buf.protoc-gen-validate:protoc-gen-validate:${protoc-gen-validate.version}:exe:${os.detected.classifier}
                             </pluginArtifact>
                         </configuration>
                     </execution>
@@ -155,7 +156,7 @@
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>build-helper-maven-plugin</artifactId>
-                <version>3.3.0</version>
+                <version>3.6.0</version>
 
                 <executions>
 
