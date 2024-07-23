@@ -45,6 +45,13 @@ service DpIngestionService {
   rpc ingestData (IngestDataRequest) returns (IngestDataResponse);
 
   /*
+   * ingestDataStream: Unidirectional client-side streaming data ingestion.
+   *
+   * TODO: docs
+   */
+  rpc ingestDataStream (stream IngestDataRequest) returns (IngestDataStreamResponse);
+
+  /*
    * ingestDataBidiStream(): Bidirectional streaming data ingestion.
    *
    * The Ingestion Service performs initial validation on each IngestDataRequest in the stream, and replies immediately
@@ -211,5 +218,27 @@ message IngestDataResponse {
   message AckResult {
     uint32 numRows = 1; // Echoes number of rows in ingestion data frame.
     uint32 numColumns = 2; // Echoes number of columns in ingestion data frame.
+  }
+}
+
+/*
+ * Unidirectional Streaming Ingestion Response
+ *
+ * TODO: docs
+ */
+message IngestDataStreamResponse {
+
+  uint32 providerId = 1; // Provider UID, echoed from the ingestion request.
+  Timestamp responseTime = 2; // Indicates time response is generated.
+  repeated string clientRequestIds = 3; // List of clientRequestIds received in the request stream.
+  repeated string rejectedRequestIds = 4; // List of clientRequestIds received in the request stream rejected by service.
+
+  oneof result {
+    ExceptionalResult exceptionalResult = 10; // Sent if the service rejected messages in the request stream.
+    IngestDataStreamResult ingestDataStreamResult = 11; // Sent if the service accepted all reqquests in stream.
+  }
+
+  message IngestDataStreamResult {
+    uint32 numRequests = 1; // Number of requests sent in the request stream and accepted by the service.
   }
 }
