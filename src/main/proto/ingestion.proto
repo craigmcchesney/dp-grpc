@@ -40,12 +40,12 @@ service DpIngestionService {
    *
    * This method sends a single IngestDataRequest and receives a single IngestDataResponse.  Validation,
    * rejection / acknowledgment, asynchronous handling, and request status reporting is otherwise the same as for the
-   * ingestDataStream() method.
+   * ingestDataBidiStream() method.
    */
   rpc ingestData (IngestDataRequest) returns (IngestDataResponse);
 
   /*
-   * ingestDataStream(): Bidirectional streaming data ingestion.
+   * ingestDataBidiStream(): Bidirectional streaming data ingestion.
    *
    * The Ingestion Service performs initial validation on each IngestDataRequest in the stream, and replies immediately
    * with a IngestDataResponse message indicating acknowledgement for a valid request, or rejection of an invalid one.
@@ -66,7 +66,7 @@ service DpIngestionService {
    * message only indicates if validation succeeded or failed.  Because ingestion handling is performed asynchronously,
    * the MongoDB "requestStatus" collection must be used to determine the success or failure of individual requests.
    */
-  rpc ingestDataStream (stream IngestDataRequest) returns (stream IngestDataResponse);
+  rpc ingestDataBidiStream (stream IngestDataRequest) returns (stream IngestDataResponse);
 }
 
 
