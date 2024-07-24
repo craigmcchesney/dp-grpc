@@ -228,10 +228,9 @@ message IngestDataResponse {
  */
 message IngestDataStreamResponse {
 
-  uint32 providerId = 1; // Provider UID, echoed from the ingestion request.
-  Timestamp responseTime = 2; // Indicates time response is generated.
-  repeated string clientRequestIds = 3; // List of clientRequestIds received in the request stream.
-  repeated string rejectedRequestIds = 4; // List of clientRequestIds received in the request stream rejected by service.
+  Timestamp responseTime = 1; // Indicates time response is generated.
+  repeated string clientRequestIds = 2; // List of clientRequestIds received in the request stream.
+  repeated string rejectedRequestIds = 3; // List of clientRequestIds received in the request stream rejected by service.
 
   oneof result {
     ExceptionalResult exceptionalResult = 10; // Sent if the service rejected messages in the request stream.
