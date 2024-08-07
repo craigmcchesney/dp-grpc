@@ -74,6 +74,13 @@ service DpIngestionService {
    * the MongoDB "requestStatus" collection must be used to determine the success or failure of individual requests.
    */
   rpc ingestDataBidiStream (stream IngestDataRequest) returns (stream IngestDataResponse);
+
+  /*
+   * queryRequestStatus()
+   *
+   * TODO: docs
+   */
+  rpc queryRequestStatus(QueryRequestStatusRequest) returns (QueryRequestStatusResponse);
 }
 
 
@@ -240,4 +247,87 @@ message IngestDataStreamResponse {
   message IngestDataStreamResult {
     uint32 numRequests = 1; // Number of requests sent in the request stream and accepted by the service.
   }
+}
+
+
+//
+// ------------------- Request Status ---------------------------
+//
+
+/*
+ * QueryRequestStatusRequest
+ *
+ * TODO: docs
+ */
+message QueryRequestStatusRequest {
+
+  repeated QueryRequestStatusCriterion criteria = 1;
+
+  message QueryRequestStatusCriterion {
+
+    oneof criterion {
+      ProviderIdCriterion providerIdCriterion = 10;
+      ProviderNameCriterion providerNameCriterion = 11;
+      RequestIdCriterion requestIdCriterion = 12;
+      StatusCriterion statusCriterion = 13;
+      TimeRangeCriterion timeRangeCriterion = 14;
+    }
+
+    message ProviderIdCriterion {
+      uint32 providerId = 1;
+    }
+
+    message ProviderNameCriterion {
+      string providerName = 1;
+    }
+
+    message RequestIdCriterion {
+      string requestId = 1;
+    }
+
+    message StatusCriterion {
+      IngestionRequestStatus status = 1;
+    }
+
+    message TimeRangeCriterion {
+      Timestamp beginTime = 1;
+      Timestamp endTime = 2;
+    }
+  }
+}
+
+/*
+ * QueryRequestStatusResponse
+ *
+ * TODO: docs
+ */
+message QueryRequestStatusResponse {
+
+  Timestamp responseTime = 1; // Indicates time response was generated.
+
+  oneof result {
+    ExceptionalResult exceptionalResult = 10;
+    RequestStatusResult requestStatusResult = 11;
+  }
+
+  message RequestStatusResult {
+
+    repeated RequestStatus requestStatus = 1;
+
+    message RequestStatus {
+      string requestStatusId = 1;
+      int32 providerId = 2;
+      string requestId = 3;
+      IngestionRequestStatus ingestionRequestStatus = 4;
+      string statusMessage = 5;
+      repeated string idsCreated = 6;
+      Timestamp updateTime = 7;
+    }
+  }
+}
+
+enum IngestionRequestStatus {
+  INGESTION_REQUEST_STATUS_SUCCESS = 0;
+  INGESTION_REQUEST_STATUS_REJECTED = 1;
+  INGESTION_REQUEST_STATUS_ERROR = 2;
 }
