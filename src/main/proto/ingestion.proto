@@ -286,7 +286,7 @@ message QueryRequestStatusRequest {
     }
 
     message StatusCriterion {
-      IngestionRequestStatus status = 1;
+      repeated IngestionRequestStatus status = 1;
     }
 
     message TimeRangeCriterion {
