@@ -26,12 +26,9 @@ import "common.proto";
 service DpIngestionService {
 
   /*
-   * registerProvider: Registers an ingestion data provider and obtains providerId.
+   * registerProvider: Registers an ingestion data provider.
    *
-   * The provider registration API is not yet implemented.  For now, data ingestion clients should send a unique
-   * integer identifier in ingestion requests to distinguish providers as appropriate.
-   *
-   * TODO: this RPC is not yet implemented.
+   * TODO: docs
    */
   rpc registerProvider (RegisterProviderRequest) returns (RegisterProviderResponse);
 
@@ -66,7 +63,6 @@ service DpIngestionService {
    * with a document for each handled request.  The collection is keyed by the providerId and clientRequestId
    * specified in the IngestDataRequest.  This collection can be used by an administrative monitoring process
    * to detect and notify about errors in the ingestion process.
-   * TODO: add API for querying requestStatus by providerId and clientRequestId.
    *
    * The method returns a stream of IngestDataResponse messages, one per request.  Each response includes providerId
    * and clientRequestId for use by the client in mapping a response to the corresponding request.  The response
@@ -134,7 +130,9 @@ message RegisterProviderResponse {
  * with the Ingestion Service.
  */
   message RegistrationResult {
-    uint32 providerId = 1; // Id uniquely identifies provider, and is sent in subsequent data ingestion requests.
+    string providerId = 1; // Id uniquely identifies provider, and is sent in subsequent data ingestion requests.
+    string providerName = 2; // Echoed from request.
+    bool isNewProvider = 3; // flag indicating if provider is determined to be new or previously existing.
   }
 }
 
@@ -152,8 +150,7 @@ message RegisterProviderResponse {
  * if the request is accepted by the ingestion service.  Client (or monitoring tool) must check request status via API
  * or in database to confirm successful handling.
  *
- * The providerId is a unique provider id returned by the registerProvider() rpc. TODO: For now this is a hardwired
- * integer.
+ * TODO: docs for provider name validation
  *
  * The clientRequestId is unique to the provider, and clients may use whatever notation makes sense for the
  * application.  It is assumed that each IngestDataRequest uses a unique clientRequestId so that there is a unique
@@ -192,14 +189,14 @@ message IngestDataRequest {
  * Data Ingestion Response
  *
  * Response to a particular ingestion request. Message is used for both unary and streaming data ingestion RPC methods.
- * The providerId and clientRequestId fields in a response match the values of those fields in the corresponding request.
+ * The providerName and clientRequestId fields in a response match the values of those fields in the corresponding request.
  *
  * For maximum performance, data ingestion is an asynchronous operation.  The response for a request only indicates
  * if the request is accepted by the ingestion service.  Client (or monitoring tool) must check request status via API
  * or in database to confirm successful handling.
  *
  * The Ingestion Service performs validation on receipt of an ingestion request, and sends a rejection for an invalid
- * request (e.g., providerId or clientRequestId not specified, inconsistent dimensions of data timestamps and data
+ * request (e.g., providerName or clientRequestId not specified, inconsistent dimensions of data timestamps and data
  * vectors in request's IngestionDataFrame).
  *
  * For ingestion requests determined to be valid, an AckResult is sent back to the client echoing the dimensions of
