@@ -157,7 +157,7 @@ message RegisterProviderResponse {
  * mapping from an ingestion request to the corresponding RequestStatus document in the database.
  */
 message IngestDataRequest {
-  uint32 providerId = 1; // Required UID uniquely idenfies data provider, obtained via provider registration RPC.
+  string providerName = 1; // Required provider name must match name sent to registerProvider() API method.
   string clientRequestId = 2; // Required, client generated identifier uniquely identifying an ingestion request for a provider.
   Timestamp requestTime = 3; // Required, indicates time request is sent.
   repeated Attribute attributes = 4; // Optional, List of key/value attributes describing the request data.
@@ -204,7 +204,7 @@ message IngestDataRequest {
  */
 message IngestDataResponse {
 
-  uint32 providerId = 1; // Provider UID, echoed from the ingestion request.
+  string providerName = 1; // Provider name, echoed from the ingestion request.
   string clientRequestId = 2; // Client generated request identifier, echoed from the ingestion request.
   Timestamp responseTime = 3; // Indicates time response is generated.
 
