@@ -313,7 +313,7 @@ message QueryRequestStatusResponse {
 
     message RequestStatus {
       string requestStatusId = 1;
-      int32 providerId = 2;
+      string providerId = 2;
       string requestId = 3;
       IngestionRequestStatus ingestionRequestStatus = 4;
       string statusMessage = 5;
