@@ -271,7 +271,7 @@ message QueryRequestStatusRequest {
     }
 
     message ProviderIdCriterion {
-      uint32 providerId = 1;
+      string providerId = 1;
     }
 
     message ProviderNameCriterion {
