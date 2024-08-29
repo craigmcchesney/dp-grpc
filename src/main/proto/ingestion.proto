@@ -38,9 +38,9 @@ service DpIngestionService {
    * The response message indicates whether or not the registration was successful.  The response payload is an
    * ExceptionalResult if the request is unsuccessful, otherwise it is a RegistrationResult that includes details about
    * the new provider including providerId (for use in calls to data ingestion methods) and a flag indicating if the
-   * provider is new.  On success, if a document already exists in the MongoDB providers collection for the provider
+   * provider is new.  On success, if a document already exists in the MongoDB "providers" collection for the provider
    * name specified in the RegisterProviderRequest, the method returns the corresponding provider id in the response,
-   * otherwise a new document is created in the providers collection and its id returned in the response.
+   * otherwise a new document is created in the "providers" collection and its id returned in the response.
    *
    * It is safe (and recommended) to call this method each time a data ingestion client is run.  If a document already
    * exists in the MongoDB providers collection for the specified provider, the attributes are updated to the values in
@@ -98,7 +98,21 @@ service DpIngestionService {
    * is used to determine the status of an individual data ingestion request, or to find data ingestion errors for a
    * specified time range.
    *
+   * The QueryRequestStatusRequest message contains a list of criteria for searching by provider id, provider name,
+   * request id, status, and time range. The criteria can be combined arbitrarily, but we envision three primary use
+   * cases:
    *
+   * 1) Query by provider id or name and request id to find the status of a specific ingestion request.
+   * 2) Query by provider id or name, status (e.g., rejected or error) and time range.
+   * 3) Query by status and time range without specifying a provider (e.g., "find all ingestion errors for today").
+   *
+   * The QueryRequestStatusResponse message payload is either an ExceptionalResult containing details about a
+   * rejection or error, or a RequestStatusResult containing a list of RequestStatus messages, one for each document
+   * in the MongoDB "requestStatus" collection that matches the search criteria.
+   *
+   * Each RequestStatus message contains details about the status of an individual ingestion request, including
+   * provider id/name, request id, status enum, status message, and list of bucket ids created (documents added to the
+   * MongoDB "buckets" collection).
    */
   rpc queryRequestStatus(QueryRequestStatusRequest) returns (QueryRequestStatusResponse);
 }
@@ -109,50 +123,37 @@ service DpIngestionService {
 //
 
 /*
- * Data provider Registration Request
+ * RegisterProviderRequest
  *
- * Data providers are registered by name, which must be unique (field providerName).
- *
- * If a data provider has previously registered with the Ingestion Service, its established
- * UID will be returned in the response.  For an initial registration a new UID is
- * created, stored, and returned.
+ * Encapsulates parameters for a registerProvider() API method request.  The required providerName field uniquely
+ * identifies a provider.  The list of descriptive metadata key/value attributes is optional.
  */
 message RegisterProviderRequest {
-  string providerName = 1; // Provider name uniquely identifies ingestion data provider.
-  repeated Attribute attributes = 2; // List of key/value attributes describing provider.
+  string providerName = 1; // Required provider name uniquely identifies ingestion data provider.
+  repeated Attribute attributes = 2; // Optional list of key/value attributes describing provider.
   Timestamp requestTime = 3; // Specifies time request is sent.
 }
 
 /*
- * Data Provider Registration Response
+ * RegisterProviderResponse
  *
- * The response message contains the UID for the data provider.
+ * Encapsulates response from registerProvider() API method.  Payload is either an ExceptionalResult message with
+ * details about a rejection or error, or a RegistrationResult containing details about the provider registration
+ * including provider id/name, and a flag indicating if the provider is new or previously existing.
  *
- * The data provider UID is contained with the RegistrationDetails message.  If the
- * registration fails a RejectionDetails message is set in lieu of the RegistrationDetails
- * message.
- *
- * If a data provider has previously registered with the Ingestion Service, its established
- * UID will be returned in the response.  For an initial registration a new UID is
- * created, stored, and returned.
+ * The providerId contained in the RegistrationResult should be used for the corresponding parameter in
+ * IngestDataRequests sent to any of the data ingestion API methods.  Those methods confirm that the specified
+ * providerId is valid before processing the ingestion request.
  */
 message RegisterProviderResponse {
 
   Timestamp responseTime = 1; // Indicates time response is sent.
 
-  // result: Response contains either an ExceptionalResult indicating a problem handling the request,
-  // or RegistrationResult indicating success.
   oneof result {
-    ExceptionalResult exceptionalResult = 10;
-    RegistrationResult registrationResult = 11;
+    ExceptionalResult exceptionalResult = 10; // Payload for an unsuccessful registerProvider() request.
+    RegistrationResult registrationResult = 11; // Payload for a successful registerProvider() request.
   }
 
- /*
- * Data Provider Registration Result
- *
- * This record message contains the UID of the data provider upon successful registration
- * with the Ingestion Service.
- */
   message RegistrationResult {
     string providerId = 1; // Id uniquely identifies provider, and is sent in subsequent data ingestion requests.
     string providerName = 2; // Echoed from request.
@@ -166,30 +167,38 @@ message RegisterProviderResponse {
 //
 
 /*
- * Data Ingestion Request
+ * IngestDataRequest
  *
- * Contains a set of data to be ingested. Message is used for both unary and streaming data ingestion RPC methods.
+ * Contains a set of data to be ingested. Message is used for all data ingestion API methods.
+ *
+ * The providerId field uniquely identifies the data ingestion provider and must be obtained via a call to the
+ * registerProvider() API method.
+ *
+ * The clientRequestId field uniquely identifies a request for a particular providerId, so the combination of providerId and
+ * requestId uniquely identifies an ingestion request and therefore the corresponding request status document. Clients
+ * may use whatever notation for clientRequestId makes sense for the paricular application. NOTE that for the sake of
+ * performance and simplicity, the service does not check uniqueness of incoming clientRequestId values, it is up to
+ * the client to enforce uniqueness.
+ *
+ * The attributes and eventMetadata fields are optional metadata used to further describe the ingested data or
+ * associate it with an experiment, event, subsystem, etc.
+ *
+ * The required ingestionDataFrame field contains the column data vectors to be ingested.
  *
  * For maximum performance, data ingestion is an asynchronous operation.  The response for a request only indicates
  * if the request is accepted by the ingestion service.  Client (or monitoring tool) must check request status via API
  * or in database to confirm successful handling.
- *
- * TODO: docs for provider name validation
- *
- * The clientRequestId is unique to the provider, and clients may use whatever notation makes sense for the
- * application.  It is assumed that each IngestDataRequest uses a unique clientRequestId so that there is a unique
- * mapping from an ingestion request to the corresponding RequestStatus document in the database.
  */
 message IngestDataRequest {
-  string providerId = 1; // Required provider name must match name sent to registerProvider() API method.
-  string clientRequestId = 2; // Required, client generated identifier uniquely identifying an ingestion request for a provider.
+  string providerId = 1; // Required providerId must match id returned via registerProvider() API method.
+  string clientRequestId = 2; // Required clientRequestId uniquely identifies an ingestion request for a provider.
   Timestamp requestTime = 3; // Required, indicates time request is sent.
   repeated Attribute attributes = 4; // Optional, List of key/value attributes describing the request data.
   EventMetadata eventMetadata = 5; // Optional, metadata describing event that request data are associated with.
   IngestionDataFrame ingestionDataFrame = 6; // Required, contains the data for the ingestion request.
 
 /*
- * The unit of ingestion.
+ * IngestionDataFrame
  *
  * An IngestionDataFrame contains the data for an ingestion request.  It includes a set of vectors of data and a
  * a specification of the timestamps for the values in those vectors.
@@ -197,50 +206,51 @@ message IngestDataRequest {
  * DataTimestamps can be expressed using either a SamplingClock with start time, sample period,
  * and sample count, or using a TimestampsList with an explicit list of timestamps for the data values.
  *
- * Each DataColumn is a vector of heterogeneous data values for a particular PV, with a single data value for each
+ * Each DataColumn is a vector of data values for a particular PV, with a single data value for each
  * data timestamp.  Each DataColumn includes the name of the corresponding PV, and a list of DataValues.
  *
  * Each data column must be the same size, with a value for each timestamp specified in dataTimestamps. Ingestion
  * requests with inconsistent dimensions are rejected.
  */
   message IngestionDataFrame {
-    DataTimestamps dataTimestamps = 1; // Specifies timestamps for data values.
-    repeated DataColumn dataColumns = 2; // Contains list of columns, each containing a data value for each timestamp.
+    DataTimestamps dataTimestamps = 1; // Required, specifies timestamps for data values.
+    repeated DataColumn dataColumns = 2; // Required list of columns, each containing a data value for each timestamp.
   }
 }
 
 /*
- * Data Ingestion Response
+ * IngestDataResponse
  *
- * Response to a particular ingestion request. Message is used for both unary and streaming data ingestion RPC methods.
- * The providerName and clientRequestId fields in a response match the values of those fields in the corresponding request.
+ * Encapsulates response to a particular ingestion request. Message is used for both unary and bidirectional streaming
+ * data ingestion API methods (ingestData() and ingestDataBidiStream().
+ *
+ * The providerid and clientRequestId fields in a response match the values of those fields in the corresponding
+ * IngestDataRequest.
  *
  * For maximum performance, data ingestion is an asynchronous operation.  The response for a request only indicates
  * if the request is accepted by the ingestion service.  Client (or monitoring tool) must check request status via API
  * or in database to confirm successful handling.
  *
- * The Ingestion Service performs validation on receipt of an ingestion request, and sends a rejection for an invalid
- * request (e.g., providerName or clientRequestId not specified, inconsistent dimensions of data timestamps and data
- * vectors in request's IngestionDataFrame).
+ * The Ingestion Service performs validation on receipt of an IngestDataRequest, and sends a rejection for an invalid
+ * request (e.g., providerId or clientRequestId not specified, inconsistent dimensions of data timestamps and data
+ * vectors in request's IngestionDataFrame, invalid providerId, etc).
  *
- * For ingestion requests determined to be valid, an AckResult is sent back to the client echoing the dimensions of
+ * For IngestDataRequests determined to be valid, an AckResult is sent back to the client echoing the dimensions of
  * the request's IngestionDataFrame (numRows and numColumns).
  */
 message IngestDataResponse {
 
-  string providerId = 1; // Provider name, echoed from the ingestion request.
-  string clientRequestId = 2; // Client generated request identifier, echoed from the ingestion request.
+  string providerId = 1; // providerId echoed from the corresponding IngestDataRequest.
+  string clientRequestId = 2; // clientRequestid echoed from the corresponding IngestDataRequest.
   Timestamp responseTime = 3; // Indicates time response is generated.
 
-  // result: Response contains either an ExceptionalResult indicating a problem handling the request,
-  // or AckResult with confirmation of request.
   oneof result {
-    ExceptionalResult exceptionalResult = 10;
-    AckResult ackResult = 11;
+    ExceptionalResult exceptionalResult = 10; // Payload for an invalid IngestDataRequest.
+    AckResult ackResult = 11; // Payload for a valid IngestDataRequest.
   }
 
 /*
- * Acknowledgement details for a data ingestion response, echoes the number of rows and columns in the request's
+ * Acknowledgment sent for a valid IngestDataRequest, echoes the number of rows and columns in the request's
  * data frame.
  */
   message AckResult {
@@ -250,9 +260,16 @@ message IngestDataResponse {
 }
 
 /*
- * Unidirectional Streaming Ingestion Response
+ * IngestDataStreamResponse
  *
- * TODO: docs
+ * Encapsulates response to ingestDataStream() client-side streaming API method.  A single response message is sent
+ * when the API method stream is closed by the client or in response to an error handling the request stream.
+ *
+ * All responses include the list of clientRequestIds received in the method's request stream, and a list of
+ * rejectedRequestids, indicating which of the clientRequestIds received in the request stream are rejected.
+ *
+ * Message payload is an ExceptionalResult if any IngestDataRequest sent in the method's request stream is rejected,
+ * otherwise payload is an ingestDataStreamResult with stats about the request stream.
  */
 message IngestDataStreamResponse {
 
@@ -261,8 +278,8 @@ message IngestDataStreamResponse {
   repeated string rejectedRequestIds = 3; // List of clientRequestIds received in the request stream rejected by service.
 
   oneof result {
-    ExceptionalResult exceptionalResult = 10; // Sent if the service rejected messages in the request stream.
-    IngestDataStreamResult ingestDataStreamResult = 11; // Sent if the service accepted all reqquests in stream.
+    ExceptionalResult exceptionalResult = 10; // Payload if any IngestDataRequest in request stream is rejected.
+    IngestDataStreamResult ingestDataStreamResult = 11; // Payload if all IngestDataRequests in request stream are valid.
   }
 
   message IngestDataStreamResult {
@@ -278,7 +295,24 @@ message IngestDataStreamResponse {
 /*
  * QueryRequestStatusRequest
  *
- * TODO: docs
+ * Encapsulates parameters to queryRequestStatus() API method. Includes a list of criteria that can be arbitrarily
+ * combined for the query filter. We envision three primary use cases:
+ *
+ * 1) Query by provider id or name and request id to find the status of a specific ingestion request.
+ * 2) Query by provider id or name, status (e.g., rejected or error) and time range.
+ * 3) Query by status and time range without specifying a provider (e.g., "find all ingestion errors for today").
+ *
+ * ProviderIdCriterion is used to filter by providerId (as returned by registerProvider()) and sent in the
+ * IngestDataRequest.
+ *
+ * ProviderNameCriterion is used to filter by providerName (as sent to registerProvider()) and sent in the
+ * IngestDataRequest.
+ *
+ * RequestIdCriterion is used to filter by clientRequestId as specified in the IngestDataRequest.
+ *
+ * StatusCriterion is used to filter by status indicated for the IngestDataRequest (success, rejected, or error).
+ *
+ * TimeRangeCriterion is used to filter by time range, matched against the time indicated for the IngestDataRequest.
  */
 message QueryRequestStatusRequest {
 
@@ -320,7 +354,14 @@ message QueryRequestStatusRequest {
 /*
  * QueryRequestStatusResponse
  *
- * TODO: docs
+ * Encapsulates response from queryRequestStatus() API method. Payload is an ExceptionalResult if the query is rejected
+ * or there is an error handling it, otherwise payload is a RequestStatusResult which contains a list of RequestStatus
+ * messages, corresponding to the documents in the MongoDB "requestStatus" collection that match the specified query
+ * criteria.
+ *
+ * Each RequestStatus message includes details from the document in the "requestStatus" collection, including a
+ * unique identifier for the request status document, provider id and name, client request id, status enum value,
+ * status message, and a list of idsCreated in the MongoDB "buckets" collection for the request's data.
  */
 message QueryRequestStatusResponse {
 
