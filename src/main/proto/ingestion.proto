@@ -1,7 +1,7 @@
 //
 // ingestion.proto
 //
-// Contains RPC messages and interface specific to the Ingestion Service.
+// Contains methods and data types specific to the Ingestion Service.
 
 syntax = "proto3";
 
@@ -26,14 +26,30 @@ import "common.proto";
 service DpIngestionService {
 
   /*
-   * registerProvider: Registers an ingestion data provider.
+   * registerProvider(): Data provider registration.
    *
-   * TODO: docs
+   * This unary method sends a single RegisterProviderRequest and receives a single RegisterProviderResponse.  It is
+   * required to call this method to register a data provider before calling one of the data ingestion methods using
+   * the id of that provider.
+   *
+   * Provider name is required in the RegisterProviderRequest, which may also contain optional metadata key/value
+   * attributes describing the provider.
+   *
+   * The response message indicates whether or not the registration was successful.  The response payload is an
+   * ExceptionalResult if the request is unsuccessful, otherwise it is a RegistrationResult that includes details about
+   * the new provider including providerId (for use in calls to data ingestion methods) and a flag indicating if the
+   * provider is new.  On success, if a document already exists in the MongoDB providers collection for the provider
+   * name specified in the RegisterProviderRequest, the method returns the corresponding provider id in the response,
+   * otherwise a new document is created in the providers collection and its id returned in the response.
+   *
+   * It is safe (and recommended) to call this method each time a data ingestion client is run.  If a document already
+   * exists in the MongoDB providers collection for the specified provider, the attributes are updated to the values in
+   * the RegisterProviderRequest.
    */
   rpc registerProvider (RegisterProviderRequest) returns (RegisterProviderResponse);
 
   /*
-   * ingestData: Unary (non-streaming) data ingestion.
+   * ingestData(): Unary (non-streaming) data ingestion.
    *
    * This method sends a single IngestDataRequest and receives a single IngestDataResponse.  Validation,
    * rejection / acknowledgment, asynchronous handling, and request status reporting is otherwise the same as for the
@@ -42,9 +58,13 @@ service DpIngestionService {
   rpc ingestData (IngestDataRequest) returns (IngestDataResponse);
 
   /*
-   * ingestDataStream: Unidirectional client-side streaming data ingestion.
+   * ingestDataStream(): Unidirectional client-side streaming data ingestion.
    *
-   * TODO: docs
+   * This client-side streaming ingestion method sends a stream of IngestDataRequest messages and receives a single
+   * IngestDataStreamResponse. Validation, rejection / acknowledgment, asynchronous handling, and request status
+   * reporting is otherwise the same as for the ingestDataBidiStream() method, with the only difference being that
+   * there is a single summary response message for the request stream instead of a stream of individual responses to
+   * each request message.
    */
   rpc ingestDataStream (stream IngestDataRequest) returns (IngestDataStreamResponse);
 
@@ -72,9 +92,13 @@ service DpIngestionService {
   rpc ingestDataBidiStream (stream IngestDataRequest) returns (stream IngestDataResponse);
 
   /*
-   * queryRequestStatus()
+   * queryRequestStatus(): Ingestion request status query.
    *
-   * TODO: docs
+   * This unary method sends a single QueryRequestStatusRequest and receives a single QueryRequestStatusResponse.  It
+   * is used to determine the status of an individual data ingestion request, or to find data ingestion errors for a
+   * specified time range.
+   *
+   *
    */
   rpc queryRequestStatus(QueryRequestStatusRequest) returns (QueryRequestStatusResponse);
 }
@@ -314,11 +338,12 @@ message QueryRequestStatusResponse {
     message RequestStatus {
       string requestStatusId = 1;
       string providerId = 2;
-      string requestId = 3;
-      IngestionRequestStatus ingestionRequestStatus = 4;
-      string statusMessage = 5;
-      repeated string idsCreated = 6;
-      Timestamp updateTime = 7;
+      string providerName = 3;
+      string requestId = 4;
+      IngestionRequestStatus ingestionRequestStatus = 5;
+      string statusMessage = 6;
+      repeated string idsCreated = 7;
+      Timestamp updateTime = 8;
     }
   }
 }
