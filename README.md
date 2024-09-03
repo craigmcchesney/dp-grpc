@@ -26,8 +26,10 @@ The [Data Platform Technical Overview](https://github.com/osprey-dcs/data-platfo
   * [data vectors](https://github.com/osprey-dcs/data-platform/blob/main/doc/documents/dp/dp-tech.md#data-vectors)
   * [handling heterogeneous data](https://github.com/osprey-dcs/data-platform/blob/main/doc/documents/dp/dp-tech.md#handling-heterogeneous-data)
   * [timestamps](https://github.com/osprey-dcs/data-platform/blob/main/doc/documents/dp/dp-tech.md#timestamps)
+  * [data providers](https://github.com/osprey-dcs/data-platform/blob/main/doc/documents/dp/dp-tech.md#data-providers)]
   * [ingestion data frame](https://github.com/osprey-dcs/data-platform/blob/main/doc/documents/dp/dp-tech.md#ingestion-data-frame)
   * [bucketed time-series data](https://github.com/osprey-dcs/data-platform/blob/main/doc/documents/dp/dp-tech.md#bucketed-time-series-data)
+  * [ingestion request status information](https://github.com/osprey-dcs/data-platform/blob/main/doc/documents/dp/dp-tech.md#ingestion-request-status-information)]
   * [datasets](https://github.com/osprey-dcs/data-platform/blob/main/doc/documents/dp/dp-tech.md#datasets)
   * [annotations](https://github.com/osprey-dcs/data-platform/blob/main/doc/documents/dp/dp-tech.md#annotations)
   * [ingestion metadata](https://github.com/osprey-dcs/data-platform/blob/main/doc/documents/dp/dp-tech.md#ingestion-metadata)
@@ -35,6 +37,7 @@ The [Data Platform Technical Overview](https://github.com/osprey-dcs/data-platfo
 * [Data Platform API - ingestion service](https://github.com/osprey-dcs/data-platform/blob/main/doc/documents/dp/dp-tech.md#data-platform-api---ingestion-service)
   * [provider registration](https://github.com/osprey-dcs/data-platform/blob/main/doc/documents/dp/dp-tech.md#provider-registration)
   * [data ingestion](https://github.com/osprey-dcs/data-platform/blob/main/doc/documents/dp/dp-tech.md#data-ingestion)
+  * [request status](https://github.com/osprey-dcs/data-platform/blob/main/doc/documents/dp/dp-tech.md#request-status)
 
 * [Data Platform API - query service](https://github.com/osprey-dcs/data-platform/blob/main/doc/documents/dp/dp-tech.md#data-platform-api---query-service)
   * [time-series data query](https://github.com/osprey-dcs/data-platform/blob/main/doc/documents/dp/dp-tech.md#time-series-data-query)
