@@ -61,6 +61,12 @@ service DpAnnotationService {
    */
   rpc queryAnnotations(QueryAnnotationsRequest) returns (QueryAnnotationsResponse);
 
+  /*
+   * exportDataSet(): Export a DataSet.
+   *
+   * TODO: docs
+   */
+  rpc exportDataSet(ExportDataSetRequest) returns (ExportDataSetResponse);
 }
 
 
@@ -312,6 +318,40 @@ message QueryAnnotationsResponse {
     }
   }
 }
+
+
+//
+//
+//
+
+/*
+ * ExportDataSetRequest
+ *
+ * TODO: doc
+ */
+message ExportDataSetRequest {
+  string dataSetId = 1;
+}
+
+/*
+ * ExportDataSetResponse
+ *
+ * TODO: doc
+ */
+message ExportDataSetResponse {
+
+  Timestamp responseTime = 1; // Indicates time response was generated.
+
+  oneof result {
+    ExceptionalResult exceptionalResult = 10;
+    ExportDataSetResult exportDataSetResult = 11;
+  }
+
+  message ExportDataSetResult {
+    string exportId = 1;
+  }
+}
+
 
 
 //
