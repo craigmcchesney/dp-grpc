@@ -348,7 +348,8 @@ message ExportDataSetResponse {
   }
 
   message ExportDataSetResult {
-    string exportId = 1;
+    string filePath = 1;
+    string fileUrl = 2;
   }
 }
 
