@@ -335,9 +335,10 @@ message ExportDataSetRequest {
   ExportOutputFormat outputFormat = 2;
 
   enum ExportOutputFormat {
-    EXPORT_FORMAT_HDF5 = 0; // HDF5 file containing bucketed data for multiple PVs.
-    EXPORT_FORMAT_CSV = 1; // Tabular comma-separated values format.
-    EXPORT_FORMAT_XLSX = 2; // Tabular Excel format.
+    EXPORT_FORMAT_UNSPECIFIED = 0; // Indicates no enum value has been specified, and the request will be rejected.
+    EXPORT_FORMAT_HDF5 = 1; // HDF5 file containing bucketed data for multiple PVs.
+    EXPORT_FORMAT_CSV = 2; // Tabular comma-separated values format.
+    EXPORT_FORMAT_XLSX = 3; // Tabular Excel format.
   }
 }
 
