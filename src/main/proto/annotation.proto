@@ -258,7 +258,7 @@ message QueryAnnotationsRequest {
 
     oneof criterion {
       OwnerCriterion ownerCriterion = 10;
-      DatasetCriterion datasetCriterion = 11;
+      DataSetCriterion dataSetCriterion = 11;
       CommentCriterion commentCriterion = 12;
     }
 
@@ -272,7 +272,7 @@ message QueryAnnotationsRequest {
     /*
      * Criterion used to search dataSetId field Annotations.  "And" operator is used to combine with other criteria.
      */
-    message DatasetCriterion {
+    message DataSetCriterion {
       string dataSetId = 1;
     }
 
