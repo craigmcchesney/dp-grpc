@@ -64,7 +64,10 @@ service DpAnnotationService {
   /*
    * exportDataSet(): Export a DataSet.
    *
-   * TODO: docs
+   * This RPC is used by clients to export a DataSet to file.  Client sends a single ExportDataSetRequest specifying
+   * the id of the DataSet to be exported and the desired output file format, and receives a single response.  The
+   * response may indicate a problem handling the request, or otherwise contains details about the exported file
+   * including the path and optional (if configured) URL for accessing the file.
    */
   rpc exportDataSet(ExportDataSetRequest) returns (ExportDataSetResponse);
 }
@@ -245,10 +248,9 @@ message CreateAnnotationResponse {
 /*
  * Annotations Query Request.
  *
- * Contains a list of QueryAnnotationsCriterion for querying annotations. OwnerCriterion and CommentCriterion are used
- * to search by owner and comment text, respectively. List can include a single criterion, or multiple criterion for a
- * compound query. E.g., a query request might use an OwnerCriterion and CommentCriterion to find annotations
- * for the specified owner matching the comment filter.
+ * Contains a list of QueryAnnotationsCriterion for querying annotations. List can include a single criterion,
+ * or multiple criteria for a compound query. E.g., a query request might use an OwnerCriterion and CommentCriterion
+ * to find annotations for the specified owner matching the comment filter.
  */
 message QueryAnnotationsRequest {
 
@@ -263,21 +265,21 @@ message QueryAnnotationsRequest {
     }
 
     /*
-     * Criterion used to search ownerId field of Annotations.  "And" operator is used to combine with other criteria.
+     * Criterion used to search ownerId field of Annotations.
      */
     message OwnerCriterion {
       string ownerId = 1;
     }
 
     /*
-     * Criterion used to search dataSetId field Annotations.  "And" operator is used to combine with other criteria.
+     * Criterion used to search dataSetId field Annotations.
      */
     message DataSetCriterion {
       string dataSetId = 1;
     }
 
     /*
-     * Criterion used to search over Comment Annotations.  "Or" operator is used to combine with other criteria.
+     * Criterion used to search commentText field of Comment Annotations.
      */
     message CommentCriterion {
       string commentText = 1;
@@ -336,12 +338,13 @@ message QueryAnnotationsResponse {
 /*
  * ExportDataSetRequest
  *
- * TODO: doc
+ * Used as parameter to the exportDataSet() method.  Includes fields for specifying the id of the DataSet to be
+ * exported, and an enum for specifying output format.
  */
 message ExportDataSetRequest {
 
-  string dataSetId = 1;
-  ExportOutputFormat outputFormat = 2;
+  string dataSetId = 1;  // Required, specifies id of DataSet to be exported.
+  ExportOutputFormat outputFormat = 2;  // Required, specifies export output file format.
 
   enum ExportOutputFormat {
     EXPORT_FORMAT_UNSPECIFIED = 0; // Indicates no enum value has been specified, and the request will be rejected.
@@ -354,20 +357,24 @@ message ExportDataSetRequest {
 /*
  * ExportDataSetResponse
  *
- * TODO: doc
+ * Used as response from the exportDataSet() method.  Payload includes either an ExceptionalResult indicating a problem
+ * in handling the export request, or an ExportDataSetResult for a successful request.
+ *
+ * ExportDataSetResult includes fields specifying the full path for the export output file and
+ * (optionally if configured) the URL for accessing the file via a web server.
  */
 message ExportDataSetResponse {
 
   Timestamp responseTime = 1; // Indicates time response was generated.
 
   oneof result {
-    ExceptionalResult exceptionalResult = 10;
-    ExportDataSetResult exportDataSetResult = 11;
+    ExceptionalResult exceptionalResult = 10; // Indicates a problem was encountered in handling the request.
+    ExportDataSetResult exportDataSetResult = 11; // Indicates the request was handled successfully.
   }
 
   message ExportDataSetResult {
-    string filePath = 1;
-    string fileUrl = 2;
+    string filePath = 1; // Specifies full path to export output file.
+    string fileUrl = 2; // (If configured to generate URLs) Specifies URL for accessing file via web server.
   }
 }
 
