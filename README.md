@@ -46,3 +46,4 @@ The [Data Platform Technical Overview](https://github.com/osprey-dcs/data-platfo
 * [Data Platform API - annotation service](https://github.com/osprey-dcs/data-platform/blob/main/doc/documents/dp/dp-tech.md#data-platform-api---annotation-service)
   * [creating and querying datasets](https://github.com/osprey-dcs/data-platform/blob/main/doc/documents/dp/dp-tech.md#creating-and-querying-datasets)
   * [creating and querying annotations](https://github.com/osprey-dcs/data-platform/blob/main/doc/documents/dp/dp-tech.md#creating-and-querying-annotations)
+  * [exporting datasets](https://github.com/osprey-dcs/data-platform/blob/main/doc/documents/dp/dp-tech.md#exporting-datasets)
