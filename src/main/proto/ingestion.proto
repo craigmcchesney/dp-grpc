@@ -115,6 +115,11 @@ service DpIngestionService {
    * MongoDB "buckets" collection).
    */
   rpc queryRequestStatus(QueryRequestStatusRequest) returns (QueryRequestStatusResponse);
+
+  /*
+   * TODO: docs
+   */
+  rpc processStream(ProcessStreamRequest) returns (stream ProcessStreamResponse);
 }
 
 
@@ -391,4 +396,54 @@ enum IngestionRequestStatus {
   INGESTION_REQUEST_STATUS_SUCCESS = 0;
   INGESTION_REQUEST_STATUS_REJECTED = 1;
   INGESTION_REQUEST_STATUS_ERROR = 2;
+}
+
+//
+// ------------------- Stream Processing ---------------------------
+//
+
+message ProcessStreamRequest {
+
+  oneof processType {
+    Condition condition = 10;
+  }
+
+  message Condition {
+    string pvName = 1;
+    ConditionOperator operator= 2;
+    DataValue operandValue = 3;
+
+    enum ConditionOperator {
+      CONDITION_OPERATOR_UNSPECIFIED = 0;
+      CONDITION_OPERATOR_LESS = 1;
+      CONDITION_OPERATOR_LESSOREQUAL = 2;
+      CONDITION_OPERATOR_EQUAL = 3;
+      CONDITION_OPERATOR_GREATEROREQUAL = 4;
+      CONDITION_OPERATOR_GREATER = 5;
+    }
+  }
+}
+
+message ProcessStreamResponse {
+
+  oneof result {
+    ExceptionalResult exceptionalResult = 10;
+    ProcessStreamResult processStreamResult = 11;
+  }
+
+  message ProcessStreamResult {
+
+    repeated ProcessOutput processOutput = 1;
+
+    message ProcessOutput {
+      oneof outputType {
+        ConditionOutput conditionOutput = 10;
+      }
+    }
+
+    message ConditionOutput {
+      Timestamp timestamp = 1;
+      DataValue dataValue = 2;
+    }
+  }
 }
