@@ -123,7 +123,7 @@ message CreateDataSetResponse {
  *
  * Contains parameters for a query over existing DataSets.  A query includes a list of
  * (one or more) QueryDataSetsCriterion. OwnerCriterion, NameCriterion, and DescriptionCriterion are used to perform
- * queries over DataSet owner, name, and description, respectively.  The criterion can be used individually or combined
+ * queries over DataSet id, owner, name, and description, respectively.  The criterion can be used individually or combined
  * for compound queries.  E.g., a query request might use an OwnerCriterion and NameCriterion to find DataSets
  * for the specified owner matching the name filter.
  */
@@ -134,9 +134,17 @@ message QueryDataSetsRequest {
   message QueryDataSetsCriterion {
 
     oneof criterion {
-      OwnerCriterion ownerCriterion = 10;
-      NameCriterion nameCriterion = 11;
-      DescriptionCriterion descriptionCriterion = 12;
+      IdCriterion idCriterion = 10;
+      OwnerCriterion ownerCriterion = 11;
+      NameCriterion nameCriterion = 12;
+      DescriptionCriterion descriptionCriterion = 13;
+    }
+
+    /*
+     * Criterion used to search dataset id field.  "And" operator is used to combine with other criteria.
+     */
+    message IdCriterion {
+      string id = 1;
     }
 
     /*
@@ -259,9 +267,17 @@ message QueryAnnotationsRequest {
   message QueryAnnotationsCriterion {
 
     oneof criterion {
-      OwnerCriterion ownerCriterion = 10;
-      DataSetCriterion dataSetCriterion = 11;
-      CommentCriterion commentCriterion = 12;
+      IdCriterion idCriterion = 10;
+      OwnerCriterion ownerCriterion = 11;
+      DataSetCriterion dataSetCriterion = 12;
+      CommentCriterion commentCriterion = 13;
+    }
+
+    /*
+     * Criterion used to search dataset id field of Annotations.
+     */
+    message IdCriterion {
+      string id = 1;
     }
 
     /*
