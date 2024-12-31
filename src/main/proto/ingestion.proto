@@ -399,16 +399,16 @@ enum IngestionRequestStatus {
 }
 
 //
-// ------------------- Stream Processing ---------------------------
+// ------------------- Ingestion Stream Processing ---------------------------
 //
 
-message ProcessStreamRequest {
+message DataEventRequest {
 
-  oneof processType {
-    Condition condition = 10;
+  oneof eventDef {
+    ConditionEventDef conditionEventDef = 10;
   }
 
-  message Condition {
+  message ConditionEventDef {
     string pvName = 1;
     ConditionOperator operator= 2;
     DataValue operandValue = 3;
@@ -424,24 +424,24 @@ message ProcessStreamRequest {
   }
 }
 
-message ProcessStreamResponse {
+message DataEventResponse {
 
   oneof result {
     ExceptionalResult exceptionalResult = 10;
-    ProcessStreamResult processStreamResult = 11;
+    DataEventResult dataEventResult = 11;
   }
 
-  message ProcessStreamResult {
+  message DataEventResult {
 
-    repeated ProcessOutput processOutput = 1;
+    repeated DataEvent dataEvents = 1;
 
-    message ProcessOutput {
-      oneof outputType {
-        ConditionOutput conditionOutput = 10;
+    message DataEvent {
+      oneof eventType {
+        ConditionEvent conditionEvent = 10;
       }
     }
 
-    message ConditionOutput {
+    message ConditionEvent {
       Timestamp timestamp = 1;
       DataValue dataValue = 2;
     }
