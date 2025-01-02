@@ -119,7 +119,7 @@ service DpIngestionService {
   /*
    * TODO: docs
    */
-  rpc processStream(ProcessStreamRequest) returns (stream ProcessStreamResponse);
+  rpc subscribeData(SubscribeDataRequest) returns (stream SubscribeDataResponse);
 }
 
 
@@ -398,52 +398,25 @@ enum IngestionRequestStatus {
   INGESTION_REQUEST_STATUS_ERROR = 2;
 }
 
+
 //
-// ------------------- Ingestion Stream Processing ---------------------------
+// ------------------- Ingestion Data Stream Monitoring ---------------------------
 //
 
-message DataEventRequest {
-
-  oneof eventDef {
-    ConditionEventDef conditionEventDef = 10;
-  }
-
-  message ConditionEventDef {
-    string pvName = 1;
-    ConditionOperator operator= 2;
-    DataValue operandValue = 3;
-
-    enum ConditionOperator {
-      CONDITION_OPERATOR_UNSPECIFIED = 0;
-      CONDITION_OPERATOR_LESS = 1;
-      CONDITION_OPERATOR_LESSOREQUAL = 2;
-      CONDITION_OPERATOR_EQUAL = 3;
-      CONDITION_OPERATOR_GREATEROREQUAL = 4;
-      CONDITION_OPERATOR_GREATER = 5;
-    }
-  }
+message SubscribeDataRequest {
+  repeated string pvNames = 1;
 }
 
-message DataEventResponse {
+message SubscribeDataResponse {
 
   oneof result {
     ExceptionalResult exceptionalResult = 10;
-    DataEventResult dataEventResult = 11;
+    SubscribeDataResult monitorDataResult = 11;
   }
 
-  message DataEventResult {
-
-    repeated DataEvent dataEvents = 1;
-
-    message DataEvent {
-      oneof eventType {
-        ConditionEvent conditionEvent = 10;
-      }
-    }
-
-    message ConditionEvent {
-      Timestamp timestamp = 1;
-      DataValue dataValue = 2;
-    }
+  message SubscribeDataResult {
+    DataTimestamps dataTimestamps = 1; // Specifies timestamps for DataColumn values.
+    repeated DataColumn dataColumns = 2; // List of PV column vectors, each containing a data value for each timestamp.
   }
+
 }

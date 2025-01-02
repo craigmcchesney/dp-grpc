@@ -1,0 +1,82 @@
+//
+// ingestion.proto
+//
+// Contains methods and data types specific to the Ingestion Service.
+
+syntax = "proto3";
+
+package dp.service.ingestionstream;
+
+option java_multiple_files = true;
+option java_package = "com.ospreydcs.dp.grpc.v1.ingestionstream";
+
+import "common.proto";
+
+
+//
+// ------------------- RPC Interfaces ---------------------------
+//
+
+/*
+ * The Ingestion Stream Service Interface
+ *
+ * Defines RPC operations for processing of the ingestion data stream.
+ *
+ */
+service DpIngestionStreamService {
+
+/*
+ * TODO: docs
+ */
+  rpc subscribeDataEvent(SubscribeDataEventRequest) returns (stream SubscribeDataEventResponse);
+
+}
+
+
+//
+// ------------------- Ingestion Stream Processing ---------------------------
+//
+
+message SubscribeDataEventRequest {
+
+  oneof dataEventDef {
+    ConditionEventDef conditionEventDef = 10;
+  }
+
+  message ConditionEventDef {
+
+    repeated string pvNames = 1;
+    ConditionOperator operator= 2;
+    DataValue operandValue = 3;
+
+    enum ConditionOperator {
+      CONDITION_OPERATOR_UNSPECIFIED = 0;
+      CONDITION_OPERATOR_LESS = 1;
+      CONDITION_OPERATOR_LESSOREQUAL = 2;
+      CONDITION_OPERATOR_EQUAL = 3;
+      CONDITION_OPERATOR_GREATEROREQUAL = 4;
+      CONDITION_OPERATOR_GREATER = 5;
+    }
+  }
+}
+
+message SubscribeDataEventResponse {
+
+  oneof result {
+    ExceptionalResult exceptionalResult = 10;
+    SubscribeDataEventResult subscribeDataEventResult = 11;
+  }
+
+  message SubscribeDataEventResult {
+
+    oneof dataEvent {
+      ConditionEvent conditionEvent = 10;
+    }
+
+    message ConditionEvent {
+      string pvName = 1;
+      Timestamp timestamp = 2;
+      DataValue dataValue = 3;
+    }
+  }
+}
