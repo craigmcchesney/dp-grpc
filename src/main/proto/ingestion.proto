@@ -409,9 +409,11 @@ message SubscribeDataRequest {
 
 message SubscribeDataResponse {
 
+  Timestamp responseTime = 1; // Indicates time response is generated.
+
   oneof result {
     ExceptionalResult exceptionalResult = 10;
-    SubscribeDataResult monitorDataResult = 11;
+    SubscribeDataResult subscribeDataResult = 11;
   }
 
   message SubscribeDataResult {
