@@ -413,7 +413,12 @@ message SubscribeDataResponse {
 
   oneof result {
     ExceptionalResult exceptionalResult = 10;
-    SubscribeDataResult subscribeDataResult = 11;
+    AckResult ackResult = 11;
+    SubscribeDataResult subscribeDataResult = 12;
+  }
+
+  message AckResult {
+    // empty message sent to confirm subscription
   }
 
   message SubscribeDataResult {
