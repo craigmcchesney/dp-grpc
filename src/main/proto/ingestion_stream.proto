@@ -62,9 +62,16 @@ message SubscribeDataEventRequest {
 
 message SubscribeDataEventResponse {
 
+  Timestamp responseTime = 1; // Indicates time response is generated.
+
   oneof result {
     ExceptionalResult exceptionalResult = 10;
-    SubscribeDataEventResult subscribeDataEventResult = 11;
+    AckResult ackResult = 11;
+    SubscribeDataEventResult subscribeDataEventResult = 12;
+  }
+
+  message AckResult {
+    // empty message sent to confirm subscription
   }
 
   message SubscribeDataEventResult {
