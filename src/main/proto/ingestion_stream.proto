@@ -39,15 +39,16 @@ service DpIngestionStreamService {
 
 message SubscribeDataEventRequest {
 
+  repeated string pvNames = 1;
+
   oneof dataEventDef {
     ConditionEventDef conditionEventDef = 10;
   }
 
   message ConditionEventDef {
 
-    repeated string pvNames = 1;
-    ConditionOperator operator= 2;
-    DataValue operandValue = 3;
+    ConditionOperator operator= 1;
+    DataValue operandValue = 2;
 
     enum ConditionOperator {
       CONDITION_OPERATOR_UNSPECIFIED = 0;
