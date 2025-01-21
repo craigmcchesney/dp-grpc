@@ -119,7 +119,7 @@ service DpIngestionService {
   /*
    * TODO: docs
    */
-  rpc subscribeData(SubscribeDataRequest) returns (stream SubscribeDataResponse);
+  rpc subscribeData(stream SubscribeDataRequest) returns (stream SubscribeDataResponse);
 }
 
 
@@ -403,10 +403,24 @@ enum IngestionRequestStatus {
 // ------------------- Ingestion Data Stream Monitoring ---------------------------
 //
 
+// TODO: docs
 message SubscribeDataRequest {
-  repeated string pvNames = 1;
+
+  oneof request {
+    NewSubscription newSubscription = 10;
+    CancelSubscription cancelSubscription = 11;
+  }
+
+  message NewSubscription {
+    repeated string pvNames = 1;
+  }
+
+  message CancelSubscription {
+    // emtpy message sent to cancel subscription
+  }
 }
 
+// TODO: docs
 message SubscribeDataResponse {
 
   Timestamp responseTime = 1; // Indicates time response is generated.
