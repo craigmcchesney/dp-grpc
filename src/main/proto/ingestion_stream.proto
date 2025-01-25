@@ -25,18 +25,53 @@ import "common.proto";
  */
 service DpIngestionStreamService {
 
-/*
- * TODO: docs
- */
+  /*
+    * subscribeDataEvent(): Register a subscription for data events triggered by new data in the ingestion stream.
+    *
+    * This method allows the client to register a subscription for a data event, and receive notification when new data
+    * is received by the Ingestion Service that triggers the specified event.  The method uses server-side streaming,
+    * where the client sends a single SubscribeDataEventRequest message and receives a stream of
+    * SubscribeDataEventResponse messages in the response stream.
+    *
+    * To initiate a new subscription, the client sends a SubscribeDataEventRequest message whose payload message
+    * specifies the details for the data event to be monitored.
+    *
+    * The service responds with a single SubscribeDataEventResponse message, containing either an ExceptionalResult
+    * message payload if the request is rejected by the service or an AckResult message if the service accepts the
+    * request and registers the subscription.
+    *
+    * The service then sends a stream of SubscribeDataEventResponse messages, each containing a SubscribeDataEventResult
+    * payload containing details of a data event triggered by the monitor.
+    *
+    * There is not an explicit cancel mechanism, so the subscription lives until the client application closes.
+    * An explicit cancel mechanism, following the pattern of the Ingestion Service's subscribeData() API method,
+    * will be added when we revisit the Ingestion Stream Service and associated plugin application framework in an
+    * upcoming release.
+    *
+    * The service sends a response with an ExceptionalResult payload if it rejects the subscription request or an error
+    * occurs while handling the subscription.  In either case, after sending the ExceptionalResult message the service
+    * closes the API method response stream.
+    */
   rpc subscribeDataEvent(SubscribeDataEventRequest) returns (stream SubscribeDataEventResponse);
 
 }
 
 
 //
-// ------------------- Ingestion Stream Processing ---------------------------
+// ------------------- Ingestion Stream Data Event Monitoring ---------------------------
 //
 
+/*
+ * SubscribeDataEventRequest
+ *
+ * The client sends a single SubscribeDataEventRequest message when invoking the subscribeData() API method.
+ * Each request contains a list of PVs and a payload message defining the type of data event to be monitored
+ * for the subscription.
+ *
+ * The prototype supports only a single type of data event definition, ConditionEventDef, which is used to create a
+ * simple data condition event monitor specifying a list of PVs, an operator (like <, ==, >) and an operand.
+ * A response message is sent by the service each time the condition is satisfied.
+ */
 message SubscribeDataEventRequest {
 
   repeated string pvNames = 1;
@@ -61,6 +96,24 @@ message SubscribeDataEventRequest {
   }
 }
 
+/*
+ * SubscribeDataEventResponse
+ *
+ * The service sends SubscribeDataEventResponse messages in the response stream for the subscribeDataEvent() method.
+ * Each response contains one of three payload messages.  1) An ExceptionalResult payload is sent if the service
+ * rejects the subscription request or an error occurs while processing the subscription. 2) An AckResult payload
+ * is sent when the service accepts a subscription request.  3) A SubscribeDataEventResult is sent when new data
+ * are received by the Ingestion Service that triggers the data event monitor for the subscription.
+ *
+ * Each SubscribeDataEventResult message contains a payload determined by the type data event definition specified for
+ * the subscription's request.
+ *
+ * For this prototype implementation, there is a single result payload message ConditionEvent that corresponds
+ * to the request data event definition type ConditionEventDef.  A ConditionEvent contains the name of the PV,
+ * timestamp, and data value for a data value satisfying the condition event definition specified in the corresponding
+ * request.  A separate ConditionEvent message is sent each time the monitor is satisfied during the life
+ * of the subscription.
+ */
 message SubscribeDataEventResponse {
 
   Timestamp responseTime = 1; // Indicates time response is generated.
