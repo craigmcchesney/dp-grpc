@@ -38,6 +38,7 @@ The [Data Platform Technical Overview](https://github.com/osprey-dcs/data-platfo
   * [provider registration](https://github.com/osprey-dcs/data-platform/blob/main/doc/documents/dp/dp-tech.md#provider-registration)
   * [data ingestion](https://github.com/osprey-dcs/data-platform/blob/main/doc/documents/dp/dp-tech.md#data-ingestion)
   * [request status](https://github.com/osprey-dcs/data-platform/blob/main/doc/documents/dp/dp-tech.md#request-status)
+  * [data subscription](https://github.com/osprey-dcs/data-platform/blob/main/doc/documents/dp/dp-tech.md#data-subscription)
 
 * [Data Platform API - query service](https://github.com/osprey-dcs/data-platform/blob/main/doc/documents/dp/dp-tech.md#data-platform-api---query-service)
   * [time-series data query](https://github.com/osprey-dcs/data-platform/blob/main/doc/documents/dp/dp-tech.md#time-series-data-query)
