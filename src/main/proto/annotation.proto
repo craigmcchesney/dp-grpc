@@ -233,13 +233,15 @@ message QueryDataSetsResponse {
 
 message AnnotationDetails {
 
-  string ownerId = 1; // required annotation owner
-  string dataSetIds = 2; // required list of associated datasets, might contain a single dataset
-  string	comment = 3; // required free-form comment text (minimally a description is required)
-  repeated string tags = 4; // optional list of keywords / tags
-  repeated Attribute attributes = 5; // optional list of key/value attributes
-  EventMetadata eventMetadata = 6; // optional event metadata to associate data with an experiment / event
-  repeated CalculationDataFrame calculationDataFrame = 7; // optional list of frames containing calculations
+  string id = 1; // field is ignored when creating a new annotation via createAnnotation()
+  string ownerId = 2; // required annotation owner
+  repeated string dataSetIds = 3; // required list of associated datasets, might contain a single dataset
+  string name = 4; // required name / description
+  string	comment = 5; // optional free-form comment text
+  repeated string tags = 6; // optional list of keywords / tags
+  repeated Attribute attributes = 7; // optional list of key/value attributes
+  EventMetadata eventMetadata = 8; // optional event metadata to associate data with an experiment / event
+  repeated CalculationDataFrame calculationDataFrame = 9; // optional list of frames containing calculations
 
   message CalculationDataFrame {
     DataTimestamps dataTimestamps = 1; // Required, specifies timestamps for data values.
