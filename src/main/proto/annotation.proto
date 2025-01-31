@@ -231,22 +231,9 @@ message QueryDataSetsResponse {
 // ------------------- Annotation Model ---------------------------
 //
 
-message AnnotationDetails {
-
-  string id = 1; // field is ignored when creating a new annotation via createAnnotation()
-  string ownerId = 2; // required annotation owner
-  repeated string dataSetIds = 3; // required list of associated datasets, might contain a single dataset
-  string name = 4; // required name / description
-  string	comment = 5; // optional free-form comment text
-  repeated string tags = 6; // optional list of keywords / tags
-  repeated Attribute attributes = 7; // optional list of key/value attributes
-  EventMetadata eventMetadata = 8; // optional event metadata to associate data with an experiment / event
-  repeated CalculationDataFrame calculationDataFrame = 9; // optional list of frames containing calculations
-
-  message CalculationDataFrame {
-    DataTimestamps dataTimestamps = 1; // Required, specifies timestamps for data values.
-    repeated DataColumn dataColumns = 2; // Required list of columns, each containing a data value for each timestamp.
-  }
+message CalculationDataFrame {
+  DataTimestamps dataTimestamps = 1; // Required, specifies timestamps for data values.
+  repeated DataColumn dataColumns = 2; // Required list of columns, each containing a data value for each timestamp.
 }
 
 
@@ -260,7 +247,15 @@ message AnnotationDetails {
  * TODO
  */
 message CreateAnnotationRequest {
-  AnnotationDetails annotationDetails = 1;
+  string ownerId = 1; // required annotation owner
+  repeated string dataSetIds = 2; // required list of associated datasets, might contain a single dataset
+  string name = 3; // required name / description
+  repeated string annotationIds = 4; // optional list of associated annotations, for provenance / linking of calculations
+  string	comment = 5; // optional free-form comment text
+  repeated string tags = 6; // optional list of keywords / tags
+  repeated Attribute attributes = 7; // optional list of key/value attributes
+  EventMetadata eventMetadata = 8; // optional event metadata to associate data with an experiment / event
+  repeated CalculationDataFrame calculationDataFrame = 9; // optional list of frames containing calculations
 }
 
 /*
@@ -395,7 +390,21 @@ message QueryAnnotationsResponse {
    * Result contains a list of Annotation messages, one for each annotation matching the query parameters.
    */
   message AnnotationsResult {
-    repeated AnnotationDetails annotations = 1;
+
+    repeated Annotation annotations = 1;
+
+    message Annotation {
+      string id = 1; // required annotation id
+      string ownerId = 2; // required annotation owner
+      repeated string dataSetIds = 3; // required list of associated datasets, might contain a single dataset
+      string name = 4; // required name / description
+      repeated string annotationIds = 5; // optional list of associated annotations, for provenance / linking of calculations
+      string	comment = 6; // optional free-form comment text
+      repeated string tags = 7; // optional list of keywords / tags
+      repeated Attribute attributes = 8; // optional list of key/value attributes
+      EventMetadata eventMetadata = 9; // optional event metadata to associate data with an experiment / event
+      repeated CalculationDataFrame calculationDataFrame = 10; // optional list of frames containing calculations
+    }
   }
 }
 
