@@ -308,10 +308,12 @@ message QueryAnnotationsRequest {
       IdCriterion idCriterion = 10;
       OwnerCriterion ownerCriterion = 11;
       DataSetCriterion dataSetCriterion = 12;
-      CommentCriterion commentCriterion = 13;
-      TagsCriterion tagsCriterion = 14;
-      AttributesCriterion attributesCriterion = 15;
-      EventCriterion eventCriterion = 16;
+      NameCriterion nameCriterion = 13;
+      AssociatedAnnotationIdCriterion annotationCriterion = 14;
+      CommentCriterion commentCriterion = 15;
+      TagsCriterion tagsCriterion = 16;
+      AttributesCriterion attributesCriterion = 17;
+      EventCriterion eventCriterion = 18;
     }
 
     /*
@@ -333,6 +335,20 @@ message QueryAnnotationsRequest {
      */
     message DataSetCriterion {
       string dataSetId = 1;
+    }
+
+    /*
+     * Criterion used to search dataSetId field Annotations.
+     */
+    message NameCriterion {
+      string nameText = 1;
+    }
+
+    /*
+     * Criterion used to search dataSetId field Annotations.
+     */
+    message AssociatedAnnotationIdCriterion {
+      string annotationId = 1;
     }
 
     /*
@@ -361,7 +377,7 @@ message QueryAnnotationsRequest {
      * Criterion used to search eventMetadata field of Annotations.
      */
     message EventCriterion {
-      string eventDescription = 1;
+      string descriptionText = 1;
     }
   }
 }
