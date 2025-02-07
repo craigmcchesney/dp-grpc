@@ -308,12 +308,11 @@ message QueryAnnotationsRequest {
       IdCriterion idCriterion = 10;
       OwnerCriterion ownerCriterion = 11;
       DataSetCriterion dataSetCriterion = 12;
-      NameCriterion nameCriterion = 13;
-      AssociatedAnnotationIdCriterion annotationCriterion = 14;
-      CommentCriterion commentCriterion = 15;
-      TagsCriterion tagsCriterion = 16;
-      AttributesCriterion attributesCriterion = 17;
-      EventCriterion eventCriterion = 18;
+      AssociatedAnnotationIdCriterion annotationCriterion = 13;
+      TextCriterion textCriterion = 14;
+      TagsCriterion tagsCriterion = 15;
+      AttributesCriterion attributesCriterion = 16;
+      EventCriterion eventCriterion = 17;
     }
 
     /*
@@ -340,22 +339,15 @@ message QueryAnnotationsRequest {
     /*
      * Criterion used to search dataSetId field Annotations.
      */
-    message NameCriterion {
-      string nameText = 1;
-    }
-
-    /*
-     * Criterion used to search dataSetId field Annotations.
-     */
     message AssociatedAnnotationIdCriterion {
       string annotationId = 1;
     }
 
     /*
-     * Criterion used to search commentText field of Annotations.
+     * Criterion used to search name and comment fields of Annotations.
      */
-    message CommentCriterion {
-      string commentText = 1;
+    message TextCriterion {
+      string text = 1;
     }
 
     /*
