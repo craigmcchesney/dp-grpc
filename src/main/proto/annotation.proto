@@ -164,8 +164,7 @@ message QueryDataSetsRequest {
     oneof criterion {
       IdCriterion idCriterion = 10;
       OwnerCriterion ownerCriterion = 11;
-      NameCriterion nameCriterion = 12;
-      DescriptionCriterion descriptionCriterion = 13;
+      TextCriterion textCriterion = 12;
     }
 
     /*
@@ -183,17 +182,10 @@ message QueryDataSetsRequest {
     }
 
     /*
-     * Criterion used to search dataset description field.  "Or" operator is used to combine with other criteria.
+     * Criterion used to search dataset name and description fields.  "Or" operator is used to combine with other criteria.
      */
-    message NameCriterion {
-      string namePattern = 1;
-    }
-
-    /*
-     * Criterion used to search dataset description field.  "Or" operator is used to combine with other criteria.
-     */
-    message DescriptionCriterion {
-      string descriptionText = 1;
+    message TextCriterion {
+      string text = 1;
     }
   }
 }
