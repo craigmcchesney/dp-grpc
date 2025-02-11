@@ -300,56 +300,56 @@ message QueryAnnotationsRequest {
       IdCriterion idCriterion = 10;
       OwnerCriterion ownerCriterion = 11;
       DataSetCriterion dataSetCriterion = 12;
-      AssociatedAnnotationIdCriterion annotationCriterion = 13;
+      AnnotationCriterion annotationCriterion = 13;
       TextCriterion textCriterion = 14;
       TagsCriterion tagsCriterion = 15;
       AttributesCriterion attributesCriterion = 16;
     }
 
     /*
-     * Criterion used to search id field of Annotations.
+     * Criterion used to query annotations by id.
      */
     message IdCriterion {
       string id = 1;
     }
 
     /*
-     * Criterion used to search ownerId field of Annotations.
+     * Criterion used to query annotations by owner id.
      */
     message OwnerCriterion {
       string ownerId = 1;
     }
 
     /*
-     * Criterion used to search dataSetId field Annotations.
+     * Criterion used to query annotations by id of associated dataset.
      */
     message DataSetCriterion {
       string dataSetId = 1;
     }
 
     /*
-     * Criterion used to search dataSetId field Annotations.
+     * Criterion used to query annotations by id of associated annotation.
      */
-    message AssociatedAnnotationIdCriterion {
+    message AnnotationCriterion {
       string annotationId = 1;
     }
 
     /*
-     * Criterion used to search name, comment, and eventMetadata description fields of Annotations.
+     * Criterion used to query annotations by text contained in the name, comment, and eventMetadata description fields.
      */
     message TextCriterion {
       string text = 1;
     }
 
     /*
-     * Criterion used to search tags field of Annotations.
+     * Criterion used to query annotations by tag value.
      */
     message TagsCriterion {
       string tagValue = 1;
     }
 
     /*
-     * Criterion used to search attributes field of Annotations.
+     * Criterion used to query annotations by attribute key and value.
      */
     message AttributesCriterion {
       string key = 1;
