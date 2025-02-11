@@ -304,7 +304,6 @@ message QueryAnnotationsRequest {
       TextCriterion textCriterion = 14;
       TagsCriterion tagsCriterion = 15;
       AttributesCriterion attributesCriterion = 16;
-      EventCriterion eventCriterion = 17;
     }
 
     /*
@@ -336,7 +335,7 @@ message QueryAnnotationsRequest {
     }
 
     /*
-     * Criterion used to search name and comment fields of Annotations.
+     * Criterion used to search name, comment, and eventMetadata description fields of Annotations.
      */
     message TextCriterion {
       string text = 1;
@@ -355,13 +354,6 @@ message QueryAnnotationsRequest {
     message AttributesCriterion {
       string key = 1;
       string value = 2;
-    }
-
-    /*
-     * Criterion used to search eventMetadata field of Annotations.
-     */
-    message EventCriterion {
-      string descriptionText = 1;
     }
   }
 }
