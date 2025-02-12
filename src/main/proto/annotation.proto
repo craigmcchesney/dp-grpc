@@ -299,8 +299,8 @@ message QueryAnnotationsRequest {
     oneof criterion {
       IdCriterion idCriterion = 10;
       OwnerCriterion ownerCriterion = 11;
-      DataSetCriterion dataSetCriterion = 12;
-      AnnotationCriterion annotationCriterion = 13;
+      DataSetsCriterion dataSetsCriterion = 12;
+      AnnotationsCriterion annotationsCriterion = 13;
       TextCriterion textCriterion = 14;
       TagsCriterion tagsCriterion = 15;
       AttributesCriterion attributesCriterion = 16;
@@ -323,14 +323,14 @@ message QueryAnnotationsRequest {
     /*
      * Criterion used to query annotations by id of associated dataset.
      */
-    message DataSetCriterion {
+    message DataSetsCriterion {
       string dataSetId = 1;
     }
 
     /*
      * Criterion used to query annotations by id of associated annotation.
      */
-    message AnnotationCriterion {
+    message AnnotationsCriterion {
       string annotationId = 1;
     }
 
