@@ -86,7 +86,7 @@ service DpAnnotationService {
  *
  */
 message DataSet {
-  string dataSetId = 1; // Query results contain id of existing dataSet object, field is ignored when creating a new dataset via createDataSet().
+  string id = 1; // Query results contain id of existing dataSet object, field is ignored when creating a new dataset via createDataSet().
   string name = 2; // required name
   string ownerId = 3; // required owner
   string description = 4; // optional textual description
@@ -389,13 +389,14 @@ message QueryAnnotationsResponse {
       string id = 1; // required annotation id
       string ownerId = 2; // required annotation owner
       repeated string dataSetIds = 3; // required list of associated datasets, might contain a single dataset
-      string name = 4; // required name / description
-      repeated string annotationIds = 5; // optional list of associated annotations, for provenance / linking of calculations
-      string	comment = 6; // optional free-form comment text
-      repeated string tags = 7; // optional list of keywords / tags
-      repeated Attribute attributes = 8; // optional list of key/value attributes
-      EventMetadata eventMetadata = 9; // optional event metadata to associate data with an experiment / event
-      repeated CalculationDataFrame calculationDataFrame = 10; // optional list of frames containing calculations
+      repeated DataSet dataSets = 4; // content for list of associated datasets
+      string name = 5; // required name / description
+      repeated string annotationIds = 6; // optional list of associated annotations, for provenance / linking of calculations
+      string	comment = 7; // optional free-form comment text
+      repeated string tags = 8; // optional list of keywords / tags
+      repeated Attribute attributes = 9; // optional list of key/value attributes
+      EventMetadata eventMetadata = 10; // optional event metadata to associate data with an experiment / event
+      repeated CalculationDataFrame calculationDataFrame = 11; // optional list of frames containing calculations
     }
   }
 }
