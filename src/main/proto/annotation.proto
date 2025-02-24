@@ -165,6 +165,7 @@ message QueryDataSetsRequest {
       IdCriterion idCriterion = 10;
       OwnerCriterion ownerCriterion = 11;
       TextCriterion textCriterion = 12;
+      PvNameCriterion pvNameCriterion = 13;
     }
 
     /*
@@ -186,6 +187,13 @@ message QueryDataSetsRequest {
      */
     message TextCriterion {
       string text = 1;
+    }
+
+    /*
+     * Criterion used to search data blocks for the specified PV name.  "Or" operator is used to combine with other criteria.
+     */
+    message PvNameCriterion {
+      string name = 1;
     }
   }
 }
