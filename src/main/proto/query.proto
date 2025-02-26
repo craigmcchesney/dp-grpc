@@ -86,6 +86,11 @@ service DpQueryService {
    */
   rpc queryMetadata(QueryMetadataRequest) returns (QueryMetadataResponse);
 
+  /*
+   * TODO: docs
+   */
+  rpc queryProviderMetadata(QueryProviderMetadataRequest) returns (QueryProviderMetadataResponse);
+
 }
 
 
@@ -177,6 +182,7 @@ message QueryDataResponse {
 
     message DataBucket {
       DataTimestamps dataTimestamps = 1; // Specifies timestamps for bucket, using SamplingClock or explicit Timestamp list.
+      repeated string tags = 2; // Specifies list of tags for bucket, if any.
       repeated Attribute attributes = 2; // Specifies list of key/value attributes for bucket, if any.
       EventMetadata eventMetadata = 3; // Specifies event metadata for bucket, if any.
       DataColumn dataColumn = 4; // Vector of data values corresponding to data timestamps.
@@ -339,3 +345,28 @@ message PvNameList {
 message PvNamePattern {
   string pattern = 1; // Specifies regex pattern to use for matching column/PV names to return metadata for.
 }
+
+
+//
+// ------------------- Provider Metadata Query ---------------------------
+//
+
+/*
+ * QueryProviderMetadataRequest
+ *
+ * TODO: docs
+ */
+message QueryProviderMetadataRequest {
+  TODO
+}
+
+/*
+ * QueryProviderMetadataRequest
+ *
+ * TODO: docs
+ */
+message QueryProviderMetadataResponse {
+    TODO
+}
+
+

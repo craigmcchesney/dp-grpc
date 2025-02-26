@@ -154,11 +154,13 @@ service DpIngestionService {
  * RegisterProviderRequest
  *
  * Encapsulates parameters for a registerProvider() API method request.  The required providerName field uniquely
- * identifies a provider.  The list of descriptive metadata key/value attributes is optional.
+ * identifies a provider.  The other descriptive fields are optional.
  */
 message RegisterProviderRequest {
   string providerName = 1; // Required provider name uniquely identifies ingestion data provider.
-  repeated Attribute attributes = 2; // Optional list of key/value attributes describing provider.
+  string	description = 2; // optional description
+  repeated string tags = 3; // optional list of keywords / tags
+  repeated Attribute attributes = 4; // optional list of key/value attributes
 }
 
 /*
@@ -219,9 +221,10 @@ message RegisterProviderResponse {
 message IngestDataRequest {
   string providerId = 1; // Required providerId must match id returned via registerProvider() API method.
   string clientRequestId = 2; // Required clientRequestId uniquely identifies an ingestion request for a provider.
-  repeated Attribute attributes = 3; // Optional, List of key/value attributes describing the request data.
-  EventMetadata eventMetadata = 4; // Optional, metadata describing event that request data are associated with.
-  IngestionDataFrame ingestionDataFrame = 5; // Required, contains the data for the ingestion request.
+  repeated string tags = 3; // Optional, list of keywords / tags.
+  repeated Attribute attributes = 4; // Optional, List of key/value attributes describing the request data.
+  EventMetadata eventMetadata = 5; // Optional, metadata describing event that request data are associated with.
+  IngestionDataFrame ingestionDataFrame = 6; // Required, contains the data for the ingestion request.
 
 /*
  * IngestionDataFrame

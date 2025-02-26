@@ -1,0 +1,124 @@
+syntax = "proto3";
+package dp.service.annotation;
+option java_multiple_files = true;
+option java_package = "com.ospreydcs.dp.grpc.v1.annotation";
+import "common.proto";
+
+
+
+//
+// ------------------- current calculations model ---------------------------
+//
+
+message Calculations {
+
+  string id = 1;
+  repeated CalculationsDataFrame calculationDataFrames = 2;
+
+  message CalculationsDataFrame {
+    DataTimestamps dataTimestamps = 1; // Required, specifies timestamps for data values.
+    repeated DataColumn dataColumns = 2; // Required list of columns, each containing a data value for each timestamp.
+  }
+}
+
+
+
+// **********
+// new type for common.proto that can be used to specify calculations id and optional map of frame->column names to include in 1) export and 2) query
+
+message CalculationsSpec {
+  repeated string calculationsId = 4;
+  map<string, ColumnNameList> frameColumns = 5; // (assumes that we add a "name" field to CalculationsDataFrame), list column names to include for each frame name.  Returns everything if map is empty.
+  // defining list of strings as a type so it can be used as the map value (can't use "repeated string" as map value)
+  message ColumnNameList {
+    repeated string names = 1;
+  }
+}
+
+// **********
+
+
+
+// **********
+// Include CalculationsSpec in query request and Calculations data in response.
+// **********
+
+message QueryDataRequest {
+  // <snip>
+  message QuerySpec {
+    Timestamp beginTime = 1; // Required, specifies query start time.
+    Timestamp endTime = 2; // Required, specifies query end time.
+    repeated string pvNames = 3; // Required, contains list of PV names to query for specified time range.
+
+// **********
+// Specify Calculations object and optionally map of frame->column names to include in query result.
+     CalculationsSpec calculationsSpec = 4; // Optional, to include calculations data alongside PV data in result
+// **********
+  }
+}
+
+// **********
+// Query result includes DataBuckets and Calculations, both of which use DataTimestamps and DataColumns.
+// **********
+
+message QueryDataResponse {
+  // <snip>
+  oneof result {
+    ExceptionalResult exceptionalResult = 10;
+    QueryData queryData = 11;
+// **********
+// add new nested message for CalculationsData in query result
+    CalculationsData calculationsData = 12;
+// **********
+  }
+
+  message QueryData {
+    repeated DataBucket dataBuckets = 1;
+
+    message DataBucket {
+      DataTimestamps dataTimestamps = 1; // Specifies timestamps for bucket, using SamplingClock or explicit Timestamp list.
+      repeated Attribute attributes = 2; // Specifies list of key/value attributes for bucket, if any.
+      EventMetadata eventMetadata = 3; // Specifies event metadata for bucket, if any.
+      DataColumn dataColumn = 4; // Vector of data values corresponding to data timestamps.
+    }
+  }
+
+// **********
+// add new nested message for CalculationsData in query result
+  message CalculationsData {
+    string calculationsId = 1;
+    repeated CalculationsDataFrame dataFrames = 2;
+
+    message CalculationsDataFrame {
+      DataTimestamps dataTimestamps = 3;
+      repeated DataColumn dataColumns = 4;
+    }
+  }
+// **********
+
+}
+
+
+
+// **********
+// Modify export API to include calculations as a parameter in request.
+// **********
+
+message ExportDataSetRequest {
+
+  string dataSetId = 1;  // Required, specifies id of DataSet to be exported.
+
+  // **********
+  // Specify Calculations object and optionally map of frame->column names to include in export.
+  CalculationsSpec calculationsSpec = 2;
+  // **********
+
+  ExportOutputFormat outputFormat = 3;  // Required, specifies export output file format.
+
+  enum ExportOutputFormat {
+    EXPORT_FORMAT_UNSPECIFIED = 0; // Indicates no enum value has been specified, and the request will be rejected.
+    EXPORT_FORMAT_HDF5 = 1; // HDF5 file containing bucketed data for multiple PVs.
+    EXPORT_FORMAT_CSV = 2; // Tabular comma-separated values format.
+    EXPORT_FORMAT_XLSX = 3; // Tabular Excel format.
+  }
+}
