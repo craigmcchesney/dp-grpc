@@ -183,9 +183,9 @@ message QueryDataResponse {
     message DataBucket {
       DataTimestamps dataTimestamps = 1; // Specifies timestamps for bucket, using SamplingClock or explicit Timestamp list.
       repeated string tags = 2; // Specifies list of tags for bucket, if any.
-      repeated Attribute attributes = 2; // Specifies list of key/value attributes for bucket, if any.
-      EventMetadata eventMetadata = 3; // Specifies event metadata for bucket, if any.
-      DataColumn dataColumn = 4; // Vector of data values corresponding to data timestamps.
+      repeated Attribute attributes = 3; // Specifies list of key/value attributes for bucket, if any.
+      EventMetadata eventMetadata = 4; // Specifies event metadata for bucket, if any.
+      DataColumn dataColumn = 5; // Vector of data values corresponding to data timestamps.
     }
   }
 }
@@ -357,7 +357,47 @@ message PvNamePattern {
  * TODO: docs
  */
 message QueryProviderMetadataRequest {
-  TODO
+
+  repeated QueryProviderCriterion criteria = 1;
+
+  message QueryProviderCriterion {
+
+    oneof criterion {
+      IdCriterion idCriterion = 10; // Query by provider id.
+      TextCriterion textCriterion = 14; // Full text search over provider name and description fields.
+      TagsCriterion tagsCriterion = 15; // Query by tag value.
+      AttributesCriterion attributesCriterion = 16; // Query by attribute key and value.
+    }
+
+    /*
+     * Criterion used to query providers by id.
+     */
+    message IdCriterion {
+      string id = 1;
+    }
+
+    /*
+     * Criterion used to query provders by text contained in the name and description fields.
+     */
+    message TextCriterion {
+      string text = 1;
+    }
+
+    /*
+     * Criterion used to query providers by tag value.
+     */
+    message TagsCriterion {
+      string tagValue = 1;
+    }
+
+    /*
+     * Criterion used to query providers by attribute key and value.
+     */
+    message AttributesCriterion {
+      string key = 1;
+      string value = 2;
+    }
+  }
 }
 
 /*
@@ -366,7 +406,36 @@ message QueryProviderMetadataRequest {
  * TODO: docs
  */
 message QueryProviderMetadataResponse {
-    TODO
+
+  Timestamp responseTime = 1; // Indicates time response was generated.
+
+  // result: Response contains either an ExceptionalResult indicating a problem handling the request,
+  // or MetadataResult with query result.
+  oneof result {
+    ExceptionalResult exceptionalResult = 10;
+    MetadataResult metadataResult = 11;
+  }
+
+  /*
+   * Metadata Query Result Content.
+   *
+   * Contains a list of ProviderInfo metadata objects, one for each provider matching the query specification.
+   */
+  message MetadataResult {
+
+    repeated ProviderInfo providerInfos = 1; // List of metadata objects matching query specificiation.
+
+    message ProviderInfo {
+      string name = 1; // Provider name.
+      string	description = 2; // Provider description.
+      repeated string tags = 3; // List of tags.
+      repeated Attribute attributes = 4; // List of key/value attributes.
+      repeated string pvNames = 5; // List of PV names with buckets using provider.
+      Timestamp firstBucketTime = 6; // Timstamp of first bucket using provider.
+      Timestamp lastBucketTime = 7; // Timestamp of most recent bucket using provider.
+      int32 numBuckets = 8; // Number of buckets using provider.
+    }
+  }
 }
 
 
