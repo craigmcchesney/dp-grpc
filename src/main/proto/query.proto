@@ -89,6 +89,11 @@ service DpQueryService {
   /*
    * TODO: docs
    */
+  rpc queryProviders(QueryProvidersRequest) returns (QueryProvidersResponse);
+
+  /*
+   * TODO: docs
+   */
   rpc queryProviderMetadata(QueryProviderMetadataRequest) returns (QueryProviderMetadataResponse);
 
 }
@@ -348,19 +353,19 @@ message PvNamePattern {
 
 
 //
-// ------------------- Provider Metadata Query ---------------------------
+// ------------------- Providers Query ---------------------------
 //
 
 /*
- * QueryProviderMetadataRequest
+ * QueryProvidersRequest
  *
  * TODO: docs
  */
-message QueryProviderMetadataRequest {
+message QueryProvidersRequest {
 
-  repeated QueryProviderCriterion criteria = 1;
+  repeated Criterion criteria = 1;
 
-  message QueryProviderCriterion {
+  message Criterion {
 
     oneof criterion {
       IdCriterion idCriterion = 10; // Query by provider id.
@@ -401,7 +406,56 @@ message QueryProviderMetadataRequest {
 }
 
 /*
+ * QueryProvidersRequest
+ *
+ * TODO: docs
+ */
+message QueryProvidersResponse {
+
+  Timestamp responseTime = 1; // Indicates time response was generated.
+
+  // result: Response contains either an ExceptionalResult indicating a problem handling the request,
+  // or ProvidersResult with query result.
+  oneof result {
+    ExceptionalResult exceptionalResult = 10;
+    ProvidersResult providersResult = 11;
+  }
+
+  /*
+   * ProvidersResult
+   *
+   * Contains a list of ProviderInfo objects, one for each provider matching the query specification.
+   */
+  message ProvidersResult {
+
+    repeated ProviderInfo providerInfos = 1; // List of metadata objects matching query specificiation.
+
+    message ProviderInfo {
+      string id = 1; // Provider unique id.
+      string name = 2; // Provider name.
+      string	description = 3; // Provider description.
+      repeated string tags = 4; // List of tags.
+      repeated Attribute attributes = 5; // List of key/value attributes.
+    }
+  }
+}
+
+
+//
+// ------------------- Provider Metadata Query ---------------------------
+//
+
+/*
  * QueryProviderMetadataRequest
+ *
+ * TODO: docs
+ */
+message QueryProviderMetadataRequest {
+  string providerId = 1;
+}
+
+/*
+ * QueryProviderMetadataResponse
  *
  * TODO: docs
  */
@@ -423,17 +477,14 @@ message QueryProviderMetadataResponse {
    */
   message MetadataResult {
 
-    repeated ProviderInfo providerInfos = 1; // List of metadata objects matching query specificiation.
+    repeated ProviderMetadata providerMetadatas = 1; // List of metadata objects matching query specificiation.
 
-    message ProviderInfo {
-      string name = 1; // Provider name.
-      string	description = 2; // Provider description.
-      repeated string tags = 3; // List of tags.
-      repeated Attribute attributes = 4; // List of key/value attributes.
-      repeated string pvNames = 5; // List of PV names with buckets using provider.
-      Timestamp firstBucketTime = 6; // Timstamp of first bucket using provider.
-      Timestamp lastBucketTime = 7; // Timestamp of most recent bucket using provider.
-      int32 numBuckets = 8; // Number of buckets using provider.
+    message ProviderMetadata {
+      string id = 1; // Provider name.
+      repeated string pvNames = 2; // List of PV names with buckets using provider.
+      Timestamp firstBucketTime = 3; // Timstamp of first bucket using provider.
+      Timestamp lastBucketTime = 4; // Timestamp of most recent bucket using provider.
+      int32 numBuckets = 5; // Number of buckets using provider.
     }
   }
 }
