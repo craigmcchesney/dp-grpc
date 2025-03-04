@@ -77,14 +77,14 @@ service DpQueryService {
   rpc queryTable(QueryTableRequest) returns (QueryTableResponse);
 
   /*
-   * queryMetadata: Unary (non-streaming) metadata query.
+   * queryPvMetadata: Unary (non-streaming) metadata query.
    *
    * This RPC is used by clients to learn about data sources (PVs/columns) available in the archive.  Client sends
    * a single QueryMetadataRequest with the query parameters, and receives a single QueryMetadataResponse
    * with the query results. The response may indicate rejection, error in handling, no data matching query, or
    * otherwise contains the data matching the query specification.
    */
-  rpc queryMetadata(QueryMetadataRequest) returns (QueryMetadataResponse);
+  rpc queryPvMetadata(QueryPvMetadataRequest) returns (QueryPvMetadataResponse);
 
   /*
    * TODO: docs
@@ -285,14 +285,14 @@ message QueryTableResponse {
 //
 
 /*
- * Metadata Query Request.
+ * QueryPvMetadataRequest
  *
  * Describes the parameters for querying metadata for PVs managed in the archive.
  *
  * A request may contain one of two payloads, either a PvNameList with an explicit list of
  * column/PV names, or a PvNamePattern with a regular expression pattern used to match against column/PV names.
  */
-message QueryMetadataRequest {
+message QueryPvMetadataRequest {
 
   // pvNameSpec: Contains either a list of column/PV names, or a single regex pattern string.
   oneof pvNameSpec {
@@ -303,12 +303,12 @@ message QueryMetadataRequest {
 }
 
 /*
- * Metadata Query Response.
+ * QueryPvMetadataResponse
  *
  * Contains results from a metadata query. Payload is an ExceptionalResult if a rejection, error, or empty query
  * result is encountered, otherwise is a MetadataResult containing results of query.
  */
-message QueryMetadataResponse {
+message QueryPvMetadataResponse {
 
   Timestamp responseTime = 1; // Indicates time response was generated.
 
@@ -339,6 +339,7 @@ message QueryMetadataResponse {
       uint64 lastBucketSamplePeriod = 9; // Sample period in nanos for PV's most recent bucket (zero if DataTimestamps is TimestampList).
       Timestamp firstDataTimestamp = 10; // Timestamp of first data value for PV.
       Timestamp lastDataTimestamp = 11; // Timestamp of most recent data value for PV.
+      int32 numBuckets = 12; // Number of buckets for this PV.
     }
   }
 }
