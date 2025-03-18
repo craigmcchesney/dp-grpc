@@ -32,8 +32,7 @@ service DpIngestionService {
    * required to call this method to register a data provider before calling one of the data ingestion methods using
    * the id of that provider.
    *
-   * Provider name is required in the RegisterProviderRequest, which may also contain optional metadata key/value
-   * attributes describing the provider.
+   * Provider name is required in the RegisterProviderRequest, which may also contain optional descriptive fields.
    *
    * The response message indicates whether or not the registration was successful.  The response payload is an
    * ExceptionalResult if the request is unsuccessful, otherwise it is a RegistrationResult that includes details about
@@ -160,7 +159,7 @@ message RegisterProviderRequest {
   string providerName = 1; // Required provider name uniquely identifies ingestion data provider.
   string	description = 2; // optional description
   repeated string tags = 3; // optional list of keywords / tags
-  repeated Attribute attributes = 4; // optional list of key/value attributes
+  repeated Attribute attributes = 4; // optional list of key/value attribute pairs
 }
 
 /*
@@ -209,7 +208,7 @@ message RegisterProviderResponse {
  * performance and simplicity, the service does not check uniqueness of incoming clientRequestId values, it is up to
  * the client to enforce uniqueness.
  *
- * The attributes and eventMetadata fields are optional metadata used to further describe the ingested data or
+ * The tags, attributes and eventMetadata fields are optional are optional and  used to further describe the ingested data or
  * associate it with an experiment, event, subsystem, etc.
  *
  * The required ingestionDataFrame field contains the column data vectors to be ingested.
@@ -222,7 +221,7 @@ message IngestDataRequest {
   string providerId = 1; // Required providerId must match id returned via registerProvider() API method.
   string clientRequestId = 2; // Required clientRequestId uniquely identifies an ingestion request for a provider.
   repeated string tags = 3; // Optional, list of keywords / tags.
-  repeated Attribute attributes = 4; // Optional, List of key/value attributes describing the request data.
+  repeated Attribute attributes = 4; // Optional, list of key/value attributes describing the request data.
   EventMetadata eventMetadata = 5; // Optional, metadata describing event that request data are associated with.
   IngestionDataFrame ingestionDataFrame = 6; // Required, contains the data for the ingestion request.
 

@@ -77,22 +77,32 @@ service DpQueryService {
   rpc queryTable(QueryTableRequest) returns (QueryTableResponse);
 
   /*
-   * queryPvMetadata: Unary (non-streaming) metadata query.
+   * queryPvMetadata(): Unary (non-streaming) metadata query.
    *
    * This RPC is used by clients to learn about data sources (PVs/columns) available in the archive.  Client sends
-   * a single QueryMetadataRequest with the query parameters, and receives a single QueryMetadataResponse
+   * a single QueryPvMetadataRequest with the query parameters, and receives a single QueryPvMetadataResponse
    * with the query results. The response may indicate rejection, error in handling, no data matching query, or
    * otherwise contains the data matching the query specification.
    */
   rpc queryPvMetadata(QueryPvMetadataRequest) returns (QueryPvMetadataResponse);
 
   /*
-   * TODO: docs
+   * queryProviders(): Unary Providers query.
+   *
+   * This rpc is used by clients to retrieve details about ingestion data Providers defined in the archive.
+   * It accepts a single "QueryProvidersRequest" containing the query parameters and returns a single
+   * "QueryProvidersResponse".  The response may indicate an exceptional result such as rejection or error in handling
+   * the request, otherwise it contains information about each Provider matching the query criteria.
    */
   rpc queryProviders(QueryProvidersRequest) returns (QueryProvidersResponse);
 
   /*
-   * TODO: docs
+   * queryProviderMetadata(): Unary Provider metadata query.
+   *
+   * This rpc is used by clients to retrieve ingestion statistics for data Providers defined in the archive.
+   * It accepts a single "QueryProviderMetadataRequest" message containing the query parameters, and returns a single
+   * "QueryProviderMetadataResponse".  The response may indicate an exceptional result such as rejection or error in
+   * handling the request, otherwise it contains ingestion metadata for the specified data provider.
    */
   rpc queryProviderMetadata(QueryProviderMetadataRequest) returns (QueryProviderMetadataResponse);
 
@@ -151,9 +161,9 @@ message QueryDataRequest {
 }
 
 /*
- * Time Series Data Query Response.
+ * QueryDataResponse
  *
- * Contains results from a time series data query.  Sent as single response to unary method queryData(),
+ * Contains results from a time-series data query.  Sent as single response to unary method queryData(),
  * or in the response streams from queryDataStream() and queryDataBidiStream().
 
  * Contains either ExceptionalResult indicating a problem handling the request, or QueryData
@@ -173,7 +183,7 @@ message QueryDataResponse {
   }
 
   /*
-   * Time Series Query Result Data.
+   * QueryData
    *
    * Contains the data for a time series data query result, as a list of DataBucket objects. Each DataBucket minimally
    * includes a vector of PV data values (in a DataColumn) and a DataTimestamps object specifying the timestamps
@@ -305,7 +315,7 @@ message QueryPvMetadataRequest {
 /*
  * QueryPvMetadataResponse
  *
- * Contains results from a metadata query. Payload is an ExceptionalResult if a rejection, error, or empty query
+ * Contains results from a PV metadata query. Payload is an ExceptionalResult if a rejection, error, or empty query
  * result is encountered, otherwise is a MetadataResult containing results of query.
  */
 message QueryPvMetadataResponse {
@@ -320,7 +330,7 @@ message QueryPvMetadataResponse {
   }
 
   /*
-   * Metadata Query Result Content.
+   * MetadataResult
    *
    * Contains a list of PvInfo metadata objects, one for each column/PV name matching the query specification.
    */
@@ -358,9 +368,11 @@ message PvNamePattern {
 //
 
 /*
- * QueryProvidersRequest
+ * QueryProvidersRequest.
  *
- * TODO: docs
+ * Contains a list of criteria for querying Providers. List can include a single criterion,
+ * or multiple criteria for a compound query.  For example, query might include both a TagsCriterion and
+ * AttributesCriterion to specify a query over both the tags and attributes fields, respectively.
  */
 message QueryProvidersRequest {
 
@@ -376,28 +388,28 @@ message QueryProvidersRequest {
     }
 
     /*
-     * Criterion used to query providers by id.
+     * Criterion used to query Providers by id.
      */
     message IdCriterion {
       string id = 1;
     }
 
     /*
-     * Criterion used to query provders by text contained in the name and description fields.
+     * Criterion used to query Providers by text contained in the name and description fields.
      */
     message TextCriterion {
       string text = 1;
     }
 
     /*
-     * Criterion used to query providers by tag value.
+     * Criterion used to query Providers by tag value.
      */
     message TagsCriterion {
       string tagValue = 1;
     }
 
     /*
-     * Criterion used to query providers by attribute key and value.
+     * Criterion used to query Providers by attribute key and value.
      */
     message AttributesCriterion {
       string key = 1;
@@ -407,9 +419,11 @@ message QueryProvidersRequest {
 }
 
 /*
- * QueryProvidersRequest
+ * QueryProvidersResponse
  *
- * TODO: docs
+ * Contains results from a queryProviders() API method request.  Message payload is either an ExceptionalResult
+ * indicating rejection or an error handling the request, or a ProvidersResult with a ProviderInfo entry for each
+ * Provider matching the query criteria.
  */
 message QueryProvidersResponse {
 
@@ -449,7 +463,7 @@ message QueryProvidersResponse {
 /*
  * QueryProviderMetadataRequest
  *
- * TODO: docs
+ * Encapsulates the single parameter for a queryProviderMetadata() request, the unique id of a data Provider.
  */
 message QueryProviderMetadataRequest {
   string providerId = 1;
@@ -458,7 +472,9 @@ message QueryProviderMetadataRequest {
 /*
  * QueryProviderMetadataResponse
  *
- * TODO: docs
+ * Contains results from a queryProviderMetadata() API method request.  Message payload is either an
+ * ExceptionalResult indicating rejection or an error handling the request, or a MetadataResult with a
+ * ProviderMetadata entry for the Provider matching the id specified in the request.
  */
 message QueryProviderMetadataResponse {
 

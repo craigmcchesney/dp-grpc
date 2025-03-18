@@ -149,11 +149,9 @@ message CreateDataSetResponse {
  * Query DataSet Request.
  *
  * Contains parameters for a query over existing DataSets.  A query includes a list of
- * (one or more) QueryDataSetsCriterion. IdCriterion, OwnerCriterion, NameCriterion, and DescriptionCriterion are used
- * specify query filters over DataSet id, owner, name, and description, respectively.
- * The criterion can be used individually or combined for compound queries.
- * E.g., a query request might use an OwnerCriterion and NameCriterion to find DataSets
- * for the specified owner matching the name filter.
+ * (one or more) criteria. The criterion can be used individually or combined for compound queries.
+ * E.g., a query request might use an OwnerCriterion and TextCriterion to find DataSets
+ * for the specified owner matching containing the specified text.
  */
 message QueryDataSetsRequest {
 
@@ -162,10 +160,10 @@ message QueryDataSetsRequest {
   message QueryDataSetsCriterion {
 
     oneof criterion {
-      IdCriterion idCriterion = 10;
-      OwnerCriterion ownerCriterion = 11;
-      TextCriterion textCriterion = 12;
-      PvNameCriterion pvNameCriterion = 13;
+      IdCriterion idCriterion = 10; // Query by DataSet id.
+      OwnerCriterion ownerCriterion = 11; // Query by owner.
+      TextCriterion textCriterion = 12; // Full text query over name and description fields.
+      PvNameCriterion pvNameCriterion = 13; // Query by PV name.
     }
 
     /*
@@ -228,9 +226,25 @@ message QueryDataSetsResponse {
 
 
 //
-// ------------------- Annotation Model ---------------------------
+// ------------------- Calculations Model ---------------------------
 //
 
+/*
+ * Calculations.
+ *
+ * Defines the data structure used for representing Calculations in both creating and querying Annotations.
+ * To the extent possible, it parallels the data structures used in the ingestion of regular time-series data in order
+ * that user-defined Calculations can be treated in a similar fashion for the purposes of querying and exporting data
+ * that includes both PV data and user-defined Calculations.
+ *
+ * The Calculations object includes a list of CalculationsDataFrames.  Each CalculationsDataFrame includes
+ * 1) a DataTimestamps object, and 2) a list of DataColumns, each of which contains a vector of data values for a
+ * single Calculation and specifies a DataValue for each timestamp specified by the corresponding DataTimestamps object.
+ *
+ * It might be helpful to use the analogy of an Excel workbook.  The Calculations object is the workbook, and each
+ * CalculationDataFrame is a worksheet in that workbook that contains a column of timestamps and columns of calculated
+ * data with a value for each timestamp.
+ */
 message Calculations {
 
   string id = 1;
@@ -247,20 +261,38 @@ message Calculations {
 //
 
 /*
- * Create Annotation Request.
+ * CreateAnnotationRequest.
  *
- * TODO
+ * A CreateAnnotationRequest message includes three required fields: ownerId (unique id of owner), dataSetIds (list of
+ * unique ids of associated DataSets), and name (brief annotation name).  It includes several optional fields used
+ * for linking to associated Annotations, adding descriptive information, associating with an event / experiment, and
+ * attaching user-defined Calculations.
+ *
+ * The lists of associated DataSet ids and Annotation ids are an initial attempt to meet the requirement for tracking
+ * data provenance.  To add Calculations that are derived from (or related to) regular PV time-series data in the
+ * archive, the following steps are taken:
+ *
+ * - Create a DataSet that contains one or more Data Blocks that reference the PVs and time range(s) from the
+ *   archive used in the calculation.
+ * - Create an Annotation containing the unique id of that DataSet in the list of dataSetIds, and includes the desired
+ *   Calculations.
+ *
+ * To add Calculations that are derived from other user-defined Calculations (that are part of another Annotation like
+ * the one crated above), the following step is taken:
+ *
+ * - Create an Annotation containing the unique id of the Annotation that contains the original Calculations in the
+ *   list of associated annotationIds, and includes the new Calculations derived from the original.
  */
 message CreateAnnotationRequest {
   string ownerId = 1; // required annotation owner
   repeated string dataSetIds = 2; // required list of associated datasets, might contain a single dataset
-  string name = 3; // required name / description
+  string name = 3; // required brief name
   repeated string annotationIds = 4; // optional list of associated annotations, for provenance / linking of calculations
   string	comment = 5; // optional free-form comment text
-  repeated string tags = 6; // optional list of keywords / tags
-  repeated Attribute attributes = 7; // optional list of key/value attributes
-  EventMetadata eventMetadata = 8; // optional event metadata to associate data with an experiment / event
-  Calculations calculations = 9; // optional list of frames containing calculations
+  repeated string tags = 6; // optional list of keywords / tags for cataloging Annotation
+  repeated Attribute attributes = 7; // optional list of key/value attribute pairs for cataloging Annotation
+  EventMetadata eventMetadata = 8; // used to associate annotation with an experiment / event
+  Calculations calculations = 9; // optional user-defined calculations
 }
 
 /*
@@ -300,8 +332,8 @@ message CreateAnnotationResponse {
  * Annotations Query Request.
  *
  * Contains a list of QueryAnnotationsCriterion for querying annotations. List can include a single criterion,
- * or multiple criteria for a compound query. E.g., a query request might use an OwnerCriterion and CommentCriterion
- * to find annotations for the specified owner matching the comment filter.
+ * or multiple criteria for a compound query. E.g., a query request might use an OwnerCriterion and TextCriterion
+ * to find annotations for the specified owner matching the text filter.
  */
 message QueryAnnotationsRequest {
 
@@ -310,13 +342,13 @@ message QueryAnnotationsRequest {
   message QueryAnnotationsCriterion {
 
     oneof criterion {
-      IdCriterion idCriterion = 10;
-      OwnerCriterion ownerCriterion = 11;
-      DataSetsCriterion dataSetsCriterion = 12;
-      AnnotationsCriterion annotationsCriterion = 13;
-      TextCriterion textCriterion = 14;
-      TagsCriterion tagsCriterion = 15;
-      AttributesCriterion attributesCriterion = 16;
+      IdCriterion idCriterion = 10;  // Query by Annotation unique id.
+      OwnerCriterion ownerCriterion = 11;  // Query by owner.
+      DataSetsCriterion dataSetsCriterion = 12; // Query by unique id of associated DataSet.
+      AnnotationsCriterion annotationsCriterion = 13; // Query by unique id of associated Annotation.
+      TextCriterion textCriterion = 14; // Full text query over name, comment, and event description fields.
+      TagsCriterion tagsCriterion = 15; // Query by tag / keyword value.
+      AttributesCriterion attributesCriterion = 16; // Query attribute pairs by key and value.
     }
 
     /*
@@ -372,11 +404,11 @@ message QueryAnnotationsRequest {
 }
 
 /*
- * Annotations Query Response.
+ * QueryAnnotationsResponse.
  *
  * Contains results from queryAnnotations() API request.  Message payload is either ExceptionalResult indicating
  * rejection, an error handling the request, or an empty query result, otherwise contains an AnnotationsResult with
- * the query results.
+ * an entry for each Annotation matching the query criteria.
  */
 message QueryAnnotationsResponse {
 
@@ -392,24 +424,24 @@ message QueryAnnotationsResponse {
   /*
    * Annotations Query Result Content.
    *
-   * Result contains a list of Annotation messages, one for each annotation matching the query parameters.
+   * Result contains a list of Annotation messages, one for each annotation matching the query criteria.
    */
   message AnnotationsResult {
 
     repeated Annotation annotations = 1;
 
     message Annotation {
-      string id = 1; // required annotation id
-      string ownerId = 2; // required annotation owner
-      repeated string dataSetIds = 3; // required list of associated datasets, might contain a single dataset
-      repeated DataSet dataSets = 4; // content for list of associated datasets
-      string name = 5; // required name / description
-      repeated string annotationIds = 6; // optional list of associated annotations, for provenance / linking of calculations
-      string	comment = 7; // optional free-form comment text
-      repeated string tags = 8; // optional list of keywords / tags
-      repeated Attribute attributes = 9; // optional list of key/value attributes
-      EventMetadata eventMetadata = 10; // optional event metadata to associate data with an experiment / event
-      Calculations calculations = 11; // optional list of frames containing calculations
+      string id = 1; // unique id
+      string ownerId = 2; // owner unique id
+      repeated string dataSetIds = 3; // list of unique ids of associated DataSets, might contain a single DataSet
+      repeated DataSet dataSets = 4; // content for list of associated DataSets
+      string name = 5; // brief name / description
+      repeated string annotationIds = 6; // list of unique ids for associated Annotations
+      string	comment = 7; // free-form comment text
+      repeated string tags = 8; // list of keywords / tags
+      repeated Attribute attributes = 9; // list of key/value attribute pairs
+      EventMetadata eventMetadata = 10; // event metadata to associate Annotation with an experiment / event
+      Calculations calculations = 11; // user-defined calculations
     }
   }
 }
