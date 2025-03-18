@@ -82,6 +82,61 @@ message QueryDataResponse {
 }
 ```
 
+## Example Java gRPC API Code
+
+Support is provided for compiling gRPC API code in a variety of [programming languages](https://grpc.io/docs/languages/).  The "protoc" compiler builds a framework of "stubs" in the target programming language for utilizing the API defined in the "proto" files.  Here is a simple example of calling the registerProvider() API from Java, after running protoc to build Java stubs.
+
+First the code to build a RegisterProviderRequest object from a "params" object containing the parameters for the request:
+
+```
+    public static RegisterProviderRequest buildRegisterProviderRequest(RegisterProviderRequestParams params) {
+
+        RegisterProviderRequest.Builder builder = RegisterProviderRequest.newBuilder();
+
+        if (params.name != null) {
+            builder.setProviderName(params.name);
+        }
+
+        if (params.description != null) {
+            builder.setDescription(params.description);
+        }
+
+        if (params.tags != null) {
+            builder.addAllTags(params.tags);
+        }
+
+        if (params.attributes != null) {
+            builder.addAllAttributes(AttributesUtility.attributeListFromMap(params.attributes));
+        }
+
+        return builder.build();
+    }
+```
+
+And the code to invoke the API using the request object:
+
+```
+    protected static RegisterProviderResponse sendRegsiterProvider(
+            RegisterProviderRequest request
+    ) {
+        final DpIngestionServiceGrpc.DpIngestionServiceStub asyncStub =
+                DpIngestionServiceGrpc.newStub(ingestionChannel);
+
+        final RegisterProviderUtility.RegisterProviderResponseObserver responseObserver =
+                new RegisterProviderUtility.RegisterProviderResponseObserver();
+
+        asyncStub.registerProvider(request, responseObserver);
+
+        responseObserver.await();
+
+        if (responseObserver.isError()) {
+            fail("responseObserver error: " + responseObserver.getErrorMessage());
+        }
+
+        return responseObserver.getResponseList().get(0);
+    }
+```
+
 
 
 # Entity API Summary
