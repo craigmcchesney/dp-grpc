@@ -1,3 +1,5 @@
+# dp-grpc repo
+
 This repo contains the API definition for the Data Platform.  The [data-platform repo](https://github.com/osprey-dcs/data-platform) is the project home page and a good place to learn about the bigger picture.
 
 Keep reading for additional background about the gRPC framework used to implement the Data Platform API, and details about packaging and conventions used in the API, or skip ahead for API details with an [overview of the API entities and their corresponding methods](#entity-api-summary).
