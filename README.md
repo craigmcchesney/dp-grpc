@@ -1,10 +1,26 @@
 # dp-grpc repo
 
-This repo contains the API definition for the Data Platform.  The [data-platform repo](https://github.com/osprey-dcs/data-platform) is the project home page and a good place to learn about the bigger picture.
+This repo contains the gRPC API definition for the Data Platform Ingestion, Query, and Annotation Services.  The [data-platform repo](https://github.com/osprey-dcs/data-platform) is the project home page and a good place to learn about the bigger picture.
 
-Keep reading for additional background about the gRPC framework used to implement the Data Platform API, and details about packaging and conventions used in the API, or skip ahead for API details with an [overview of the API entities and their corresponding methods](#entity-api-summary).
+This document includes the following information:
 
-## gRPC Background
+- [gRPC communication framework overview](#grpc-overview)
+- [Data Platform gRPC API proto files](#data-platform-grpc-api-proto-files)
+- [Data Platform proto file conventions](#data-platform-proto-file-conventions)
+- [Example Java code for calling the API](#example-java-grpc-api-code)
+- [Service-centric API summary](#service-api-summary)
+- [Entity-centric API summary](#entity-api-summary)
+- [API use cases and patterns](#api-use-cases-and-patterns)
+- [Entity API details](#entity-api-details)
+  - [Provider API](#provider-api)
+  - [PV Time-Series Data API](#pv-time-series-data-api)
+  - [Ingestion Request Status API](#ingestion-request-status-api)
+  - [Data Set API](#data-set-api)
+  - [Annotation API](#annotation-api)
+
+
+---
+## gRPC Overview
 
 The Data Platform API is built using the gRPC high-performance communication framework.
 
@@ -14,12 +30,23 @@ Underlying the gRPC framework is another Google-developed technology, [Protocol 
 
 The gRPC API is defined using "proto" files (a text file with a ".proto" extension).  Proto files contain definitions for services, service methods, and the data types used by those methods.  Data types are called "messages", and each message specifies a series of name-value pairs called "fields".  The definition of one message can be nested within another, limiting the scope of the nested data type to the message it is nested within.
 
+Support is provided for compiling gRPC API code in a variety of [programming languages](https://grpc.io/docs/languages/).  The "protoc" compiler builds a framework of "stubs" in the target programming language for utilizing the API defined in the "proto" files.
+
 See the links above for some simple examples of services, methods, and messages.
 
+
+---
 ## Data Platform gRPC API Proto Files
 
-Currently, the Data Platform API defines three application services: Ingestion, Query, and Annotation.  The methods and data types (messages) for each service are contained in individual "proto" files (e.g., [___ingestion.proto___](https://github.com/osprey-dcs/dp-grpc/blob/main/src/main/proto/ingestion.proto), [___query.proto___](https://github.com/osprey-dcs/dp-grpc/blob/main/src/main/proto/query.proto), and [___annotation.proto___](https://github.com/osprey-dcs/dp-grpc/blob/main/src/main/proto/annotation.proto), with some shared data types in [___common.proto___](https://github.com/osprey-dcs/dp-grpc/blob/main/src/main/proto/common.proto) that are included in the relevant service files via "import" statements.
+The Data Platform API is defined in the following _proto_ files, located in this repo's ___src/main/proto___ directory:
 
+- [___ingestion.proto___](https://github.com/osprey-dcs/dp-grpc/blob/main/src/main/proto/ingestion.proto) - Ingestion Service API
+- [___query.proto___](https://github.com/osprey-dcs/dp-grpc/blob/main/src/main/proto/query.proto) - Query Service API
+- [___annotation.proto___](https://github.com/osprey-dcs/dp-grpc/blob/main/src/main/proto/annotationproto) - Annotation Service API
+- [___common.proto___](https://github.com/osprey-dcs/dp-grpc/blob/main/src/main/proto/common.proto) - Common data structures shared by  the Service APIs 
+
+
+---
 ## Data Platform Proto File Conventions
 
 ### ordering of elements
@@ -82,9 +109,11 @@ message QueryDataResponse {
 }
 ```
 
+
+---
 ## Example Java gRPC API Code
 
-Support is provided for compiling gRPC API code in a variety of [programming languages](https://grpc.io/docs/languages/).  The "protoc" compiler builds a framework of "stubs" in the target programming language for utilizing the API defined in the "proto" files.  Here is a simple example of calling the registerProvider() API from Java, after running protoc to build Java stubs.
+Here is a simple example of calling the registerProvider() API from Java, after running protoc to build Java stubs.
 
 First the code to build a RegisterProviderRequest object from a "params" object containing the parameters for the request:
 
@@ -139,10 +168,29 @@ And the code to invoke the API using the request object:
 
 
 
+---
+# Service API Summary
+The table below gives an overview of the Data Platform API organized by service.  Links to additional details are provided for each method category.
+
+| Service    | API Methods |
+|------------| ----------- |
+| Ingestion  | [Provider&nbsp;registration](#provider-registration-methods)<br>[PV&nbsp;data&nbsp;ingestion](#pv-data-ingestion-methods)<br>[PV&nbsp;data&nbsp;subscription](#pv-data-subscription-methods)<br>[Request&nbsp;Status&nbsp;query](#request-status-query-methods)<br> |
+| Query      | [PV&nbsp;data&nbsp;query](#pv-data-query-methods)<br>[PV&nbsp;metadata&nbsp;query](#pv-metadata-query-methods)<br>[Provider&nbsp;query](#provider-query-methods)<br>[Provider&nbsp;metadata&nbsp;query](#provider-metadata-query-methods)<br> |
+| Annotation | [Data&nbsp;Set&nbsp;creation](#data-set-creation-methods)<br>[Data&nbsp;Set&nbsp;query](#data-set-query-methods)<br>[Data&nbsp;Set&nbsp;export](#data-set-export-methods)<br>[Annotation&nbsp;creation](#annotation-creation-methods)<br>[Annotation&nbsp;query](#annotation-query-methods)<br> |
+
+
+---
 # Entity API Summary
 
 The table below gives an overview of the Data Platform API organized by entity.  A brief description of each entity is provided with links to additional details about API support for that entity.
 
+| Entity   | Description | API Methods                                                                                                                                                                                                                                        |
+|----------|-------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Provider | An infrastructure component that sends correlated PV time-series data to the archive.  Might be associated with an EPICS IOC. | [Provider&nbsp;registration](#provider-registration-methods)<br>[Provider&nbsp;query](#provider-query-methods)<br>[Provider&nbsp;metadata&nbsp;query](#provider-metadata-query-methods)<br>                                                        |
+| PV Time-Series Data | The core of the MLDP archive is correlated PV time-series data captured from devices in an accelerator facility. | [PV&nbsp;data&nbsp;ingestion](#pv-data-ingestion-methods)<br>[PV&nbsp;data&nbsp;query](#pv-data-query-methods)<br>[PV&nbsp;data&nbsp;subscription](#pv-data-subscription-methods)<br>[PV&nbsp;metadata&nbsp;query](#pv-metadata-query-methods)<br> |
+| Ingestion Request Status | Data ingestion requests are handled asynchronously to maximize performance, so the disposition of individual requests is recorded in a Request Status record. | [Request&nbsp;Status&nbsp;query](#request-status-query-methods)<br>                                                                                                                                                                                |
+| Data Set | A Data Set identifies PV data of interest in the archive through the use of Data Blocks, each one identifying a list of PVs and range of time. | [Data&nbsp;Set&nbsp;creation](#data-set-creation-methods)<br>[Data&nbsp;Set&nbsp;query](#data-set-query-methods)<br>[Data&nbsp;Set&nbsp;export](#data-set-export-methods)<br>                                                                      |
+| Annotation | Annotations are used to annotate Data Sets in the archive with descriptive information, data associations, Calculations, and provenance tracking information. | [Annotation&nbsp;creation](#annotation-creation-methods)<br>[Annotation&nbsp;query](#annotation-query-methods)<br>                                                                                                                                 |
 
 
 
@@ -158,16 +206,8 @@ The Data Platform API is intended to support the following use cases and pattern
 - Export Data Sets.
 
 
+
 # Entity API Details
-
-| Entity   | Description | API Methods                                                                                                                                                                                                                                        |
-|----------|-------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Provider | An infrastructure component that sends correlated PV time-series data to the archive.  Might be associated with an EPICS IOC. | [Provider&nbsp;registration](#provider-registration-methods)<br>[Provider&nbsp;query](#provider-query-methods)<br>[Provider&nbsp;metadata&nbsp;query](#provider-metadata-query-methods)<br>                                                        |
-| PV Time-Series Data | The core of the MLDP archive is correlated PV time-series data captured from devices in an accelerator facility. | [PV&nbsp;data&nbsp;ingestion](#pv-data-ingestion-methods)<br>[PV&nbsp;data&nbsp;query](#pv-data-query-methods)<br>[PV&nbsp;data&nbsp;subscription](#pv-data-subscription-methods)<br>[PV&nbsp;metadata&nbsp;query](#pv-metadata-query-methods)<br> |
-| Ingestion Request Status | Data ingestion requests are handled asynchronously to maximize performance, so the disposition of individual requests is recorded in a Request Status record. | [Request&nbsp;Status&nbsp;query](#request-status-query-methods)<br>                                                                                                                                                                                |
-| Data Set | A Data Set identifies PV data of interest in the archive through the use of Data Blocks, each one identifying a list of PVs and range of time. | [Data&nbsp;Set&nbsp;creation](#data-set-creation-methods)<br>[Data&nbsp;Set&nbsp;query](#data-set-query-methods)<br>[Data&nbsp;Set&nbsp;export](#data-set-export-methods)<br>                                                                      |
-| Annotation | Annotations are used to annotate Data Sets in the archive with descriptive information, data associations, Calculations, and provenance tracking information. | [Annotation&nbsp;creation](#annotation-creation-methods)<br>[Annotation&nbsp;query](#annotation-query-methods)<br>                                                                                                                                 |
-
 
 ## Provider API
 
