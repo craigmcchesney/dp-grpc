@@ -169,7 +169,7 @@ And the code to invoke the API using the request object:
 
 
 ---
-# Service API Summary
+## Service API Summary
 The table below gives an overview of the Data Platform API organized by service.  Links to additional details are provided for each method category.
 
 | Service    | API Methods |
@@ -180,7 +180,7 @@ The table below gives an overview of the Data Platform API organized by service.
 
 
 ---
-# Entity API Summary
+## Entity API Summary
 
 The table below gives an overview of the Data Platform API organized by entity.  A brief description of each entity is provided with links to additional details about API support for that entity.
 
@@ -194,7 +194,8 @@ The table below gives an overview of the Data Platform API organized by entity. 
 
 
 
-# API Use Cases and Patterns
+---
+## API Use Cases and Patterns
 The Data Platform API is intended to support the following use cases and patterns:
 - Register ingestion data Providers, query Provider details and metadata.
 - Ingest PV time-series data, either in continuous or batch mode.
@@ -207,6 +208,7 @@ The Data Platform API is intended to support the following use cases and pattern
 
 
 
+---
 # Entity API Details
 
 ## Provider API
