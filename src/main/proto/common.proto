@@ -106,8 +106,7 @@ message ExceptionalResult {
   enum ExceptionalResultStatus {
     RESULT_STATUS_REJECT = 0; // Indicates request was rejected during validation.
     RESULT_STATUS_ERROR = 1; // Indicates an error was encountered in handling the request.
-    RESULT_STATUS_EMPTY = 2; // Indicates the query returned no data.
-    RESULT_STATUS_NOT_READY = 3; // Indicates an invalid bidirectional stream query cursor operation request.
+    RESULT_STATUS_NOT_READY = 2; // Indicates an invalid bidirectional stream query cursor operation request.
   }
 }
 
