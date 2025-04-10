@@ -251,8 +251,9 @@ message Calculations {
   repeated CalculationsDataFrame calculationDataFrames = 2;
 
   message CalculationsDataFrame {
-    DataTimestamps dataTimestamps = 1; // Required, specifies timestamps for data values.
-    repeated DataColumn dataColumns = 2; // Required list of columns, each containing a data value for each timestamp.
+    string name = 1; // Required, name of data frame.
+    DataTimestamps dataTimestamps = 2; // Required, specifies timestamps for data values.
+    repeated DataColumn dataColumns = 3; // Required list of columns, each containing a data value for each timestamp.
   }
 }
 
@@ -454,13 +455,14 @@ message QueryAnnotationsResponse {
 /*
  * ExportDataSetRequest
  *
- * Used as parameter to the exportDataSet() method.  Includes fields for specifying the id of the DataSet to be
- * exported, and an enum for specifying output format.
+ * Used as parameter to the exportDataSet() method.  Includes fields for specifying the id of the DataSet or
+ * Calculations object to be exported - one or the other must be specified, and an enum for specifying output format.
  */
 message ExportDataSetRequest {
 
-  string dataSetId = 1;  // Required, specifies id of DataSet to be exported.
-  ExportOutputFormat outputFormat = 2;  // Required, specifies export output file format.
+  string dataSetId = 1;  // Optional, specifies id of DataSet to be exported.
+  repeated CalculationsSpec calculationsSpecs = 2; // Optional, specifies Calculations to include in export.
+  ExportOutputFormat outputFormat = 3;  // Required, specifies export output file format.
 
   enum ExportOutputFormat {
     EXPORT_FORMAT_UNSPECIFIED = 0; // Indicates no enum value has been specified, and the request will be rejected.

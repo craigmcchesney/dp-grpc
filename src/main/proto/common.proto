@@ -276,3 +276,29 @@ message Image {
     PDF = 8;
   }
 }
+
+
+// ------------------- Common support for using calculations ---------------------------
+//
+
+/*
+ * CalculationsSpec
+ *
+ * Provides a mechanism for using Annotation Calculations in APIs for export and query etc.
+ */
+message CalculationsSpec {
+
+  repeated string calculationsId = 1; // Required, specifies unique id of Calculations object to include in the result.
+
+  // dataFrameColumns: Optional, map of CalculationsDataFrame name to the columns in that frame to include in the result.
+  map<string, ColumnNameList> dataFrameColumns = 2;
+
+  message ColumnNameList {
+    /*
+     * Defining list of strings as a data type that can be used as the value in a map, since we can't use
+     * "repeated string" directly.
+     */
+    repeated string columnNames = 1;
+  }
+}
+
