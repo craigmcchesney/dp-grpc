@@ -456,12 +456,12 @@ message QueryAnnotationsResponse {
  * ExportDataSetRequest
  *
  * Used as parameter to the exportDataSet() method.  Includes fields for specifying the id of the DataSet or
- * Calculations object to be exported - one or the other must be specified, and an enum for specifying output format.
+ * Calculations object to be exported, and an enum for specifying output format.
  */
 message ExportDataSetRequest {
 
-  string dataSetId = 1;  // Optional, specifies id of DataSet to be exported.
-  repeated CalculationsSpec calculationsSpecs = 2; // Optional, specifies Calculations to include in export.
+  string dataSetId = 1;  // Required, specifies id of DataSet to be exported.
+  CalculationsSpec calculationsSpec = 2; // Optional, specifies details of Calculations to include in export.
   ExportOutputFormat outputFormat = 3;  // Required, specifies export output file format.
 
   enum ExportOutputFormat {

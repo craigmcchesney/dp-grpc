@@ -288,7 +288,7 @@ message Image {
  */
 message CalculationsSpec {
 
-  repeated string calculationsId = 1; // Required, specifies unique id of Calculations object to include in the result.
+  string calculationsId = 1; // Required, specifies unique id of Calculations object to include in the result.
 
   // dataFrameColumns: Optional, map of CalculationsDataFrame name to the columns in that frame to include in the result.
   map<string, ColumnNameList> dataFrameColumns = 2;
