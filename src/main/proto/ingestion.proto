@@ -241,8 +241,26 @@ message IngestDataRequest {
  * requests with inconsistent dimensions are rejected.
  */
   message IngestionDataFrame {
+
     DataTimestamps dataTimestamps = 1; // Required, specifies timestamps for data values.
-    repeated DataColumn dataColumns = 2; // Required list of columns, each containing a data value for each timestamp.
+
+    oneof frameData {
+      DataColumnList dataColumnList = 10;
+      SerializedDataColumnList serializedDataColumnList = 11;
+    }
+
+    message DataColumnList {
+      repeated DataColumn dataColumns = 1; // Required list of columns, each containing a data value for each timestamp.
+    }
+
+    message SerializedDataColumnList {
+      repeated SerializedDataColumn serializedColumns = 1;
+    }
+
+    message SerializedDataColumn {
+      string name = 1;
+      bytes dataColumnBytes = 2;
+    }
   }
 }
 
