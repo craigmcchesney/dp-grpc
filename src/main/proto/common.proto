@@ -125,6 +125,19 @@ message DataColumn {
   repeated DataValue dataValues = 2; // List of heterogeneous column data values.
 }
 
+message DataColumnList {
+  repeated DataColumn dataColumns = 1; // Required list of columns, each containing a data value for each timestamp.
+}
+
+message SerializedDataColumn {
+  string name = 1;
+  bytes dataColumnBytes = 2;
+}
+
+message SerializedDataColumnList {
+  repeated SerializedDataColumn serializedDataColumns = 1;
+}
+
 
 /*
  * Unit of Heterogeneous Data

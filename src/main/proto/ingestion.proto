@@ -245,21 +245,8 @@ message IngestDataRequest {
     DataTimestamps dataTimestamps = 1; // Required, specifies timestamps for data values.
 
     oneof frameData {
-      DataColumnList dataColumnList = 10;
-      SerializedDataColumnList serializedDataColumnList = 11;
-    }
-
-    message DataColumnList {
-      repeated DataColumn dataColumns = 1; // Required list of columns, each containing a data value for each timestamp.
-    }
-
-    message SerializedDataColumnList {
-      repeated SerializedDataColumn serializedColumns = 1;
-    }
-
-    message SerializedDataColumn {
-      string name = 1;
-      bytes dataColumnBytes = 2;
+      DataColumnList dataColumns = 10;
+      SerializedDataColumnList serializedDataColumns = 11;
     }
   }
 }
