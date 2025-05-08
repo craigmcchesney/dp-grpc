@@ -145,6 +145,7 @@ message QueryDataRequest {
     Timestamp beginTime = 1; // Required, specifies query start time.
     Timestamp endTime = 2; // Required, specifies query end time.
     repeated string pvNames = 3; // Required, contains list of PV names to query for specified time range.
+    bool useSerializedDataColumns = 4; // Required, specifies if the result should use SerializedDataColumns for maximum performance.
   }
 
   /*
@@ -200,7 +201,10 @@ message QueryDataResponse {
       repeated string tags = 2; // Specifies list of tags for bucket, if any.
       repeated Attribute attributes = 3; // Specifies list of key/value attributes for bucket, if any.
       EventMetadata eventMetadata = 4; // Specifies event metadata for bucket, if any.
-      DataColumn dataColumn = 5; // Vector of data values corresponding to data timestamps.
+      oneof data {
+        DataColumn dataColumn = 10; // Vector of data values corresponding to data timestamps.
+        SerializedDataColumn serializedDataColumn = 11; // Serialized DataColumn byte data to avoid redundant serialization ops.
+      }
     }
   }
 }
