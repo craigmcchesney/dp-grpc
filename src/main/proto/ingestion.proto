@@ -237,17 +237,17 @@ message IngestDataRequest {
  * Each DataColumn is a vector of data values for a particular PV, with a single data value for each
  * data timestamp.  Each DataColumn includes the name of the corresponding PV, and a list of DataValues.
  *
+ * For maximum performance, the client can provide a list of SerializedDataColumn objects, each of which contains
+ * the bytes for a serialized DataColumn object.  This avoids redundant deserialization / re-serialization ops in the
+ * Ingestion Service.
+ *
  * Each data column must be the same size, with a value for each timestamp specified in dataTimestamps. Ingestion
  * requests with inconsistent dimensions are rejected.
  */
   message IngestionDataFrame {
-
     DataTimestamps dataTimestamps = 1; // Required, specifies timestamps for data values.
-
-    oneof frameData {
-      DataColumnList dataColumns = 10;
-      SerializedDataColumnList serializedDataColumns = 11;
-    }
+    repeated DataColumn dataColumns = 2; // Optional list of columns, each containing a data value for each timestamp.
+    repeated SerializedDataColumn serializedDataColumns = 3;  // Optional list of serialized DataColumn objects for maximum performance.
   }
 }
 
