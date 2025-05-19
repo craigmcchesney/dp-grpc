@@ -191,6 +191,12 @@ message QueryDataResponse {
    * for the data vector values using either a SamplingClock (with start time, sample period, and number of samples or
    * an explicit list of timestamps) or a TimestampsList (with an explicit list of timestamps). The DataBucket also
    * includes key/value Attributes and/or EventMetadata if defined for the data in ingestion.
+   *
+   * By default, each DataBucket contains a regular DataColumn object with the vector of data for the bucket.
+   * if the useSerializedDataColumns flag is set in the QueryDataRequest's QuerySpec, each DataBucket in the result
+   * contains a SerializedDataColumn that contains a byte data representation of the corresponding DataColumn object.
+   * Clients seeking maximum query performance should use SerializedDataColumns in the query result in order to avoid
+   * extra serialization operations performed by the gRPC communication framework.
    */
   message QueryData {
 

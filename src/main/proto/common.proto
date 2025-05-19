@@ -129,7 +129,29 @@ message DataColumn {
  * SerializedDataColumn
  *
  * Contains the bytes for a serialized protobuf DataColumn object, used to avoid redundant serialization operations
- * for maximum API performance.
+ * for maximum API performance.  Use of SerializedDataColumns instead of regular DataColumns is supported in the
+ * APIs for ingestion, query, and subscription.
+ *
+ * To create a SerializedDataColumn (e.g., for use in the ingestion API methods), the user should first create
+ a regular DataColumn and then manually serialize it to the dataColumnBytes field of a SerializedDataColumn object.
+ * Example Java code to create a SerializedDataColumn from a regular DataColumn is shown below:
+ *
+ *            SerializedDataColumn.newBuilder()
+ *                  .setName(dataColumn.getName())
+ *                  .setDataColumnBytes(dataColumn.toByteString())
+ *                  .build();
+ *
+ * To create a regular DataColumn from a SerializedDataColumn (e.g., for clients of the query or subscription APIs),
+ * the user should create a DataColumn by parsing (deserializing) the content of the SerializedDataColumn's
+ * dataColumnBytes field.  Example Java code is shown below:
+ *
+ *  DataColumn responseDataColumn = null;
+ *  try {
+ *      responseDataColumn = DataColumn.parseFrom(responseBucket.getSerializedDataColumn().getDataColumnBytes());
+ *  } catch (InvalidProtocolBufferException e) {
+ *      fail("exception parsing DataColumn from SerializedDataColumn: " + e.getMessage());
+ *  }
+ *
  */
 message SerializedDataColumn {
   string name = 1;

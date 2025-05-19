@@ -235,11 +235,12 @@ message IngestDataRequest {
  * and sample count, or using a TimestampsList with an explicit list of timestamps for the data values.
  *
  * Each DataColumn is a vector of data values for a particular PV, with a single data value for each
- * data timestamp.  Each DataColumn includes the name of the corresponding PV, and a list of DataValues.
+ * data timestamp.
  *
- * For maximum performance, the client can provide a list of SerializedDataColumn objects, each of which contains
- * the bytes for a serialized DataColumn object.  This avoids redundant deserialization / re-serialization ops in the
- * Ingestion Service.
+ * For maximum performance, the client can optionally provide a list of SerializedDataColumn objects instead of
+ * regular DataColumn objects.  Each SerializedDataColumn which contains the bytes for a serialized DataColumn object.
+ * This avoids extra deserialization / re-serialization operations performed by the gRPC communication framework
+ * in the client and Ingestion Service.
  *
  * Each data column must be the same size, with a value for each timestamp specified in dataTimestamps. Ingestion
  * requests with inconsistent dimensions are rejected. Can contain regular DataColumns and/or SerializedDataColumns,
