@@ -6,7 +6,7 @@ This document includes the following information:
 
 - [gRPC communication framework overview](#grpc-overview)
 - [Data Platform gRPC API proto files](#data-platform-grpc-api-proto-files)
-- [Data Platform proto file conventions](#data-platform-proto-file-conventions)
+- [Data Platform API conventions](#data-platform-API-conventions)
 - [Example Java code for calling the API](#example-java-grpc-api-code)
 - [Service-centric API summary](#service-api-summary)
 - [Entity-centric API summary](#entity-api-summary)
@@ -47,7 +47,7 @@ The Data Platform API is defined in the following _proto_ files, located in this
 
 
 ---
-## Data Platform Proto File Conventions
+## Data Platform API Conventions
 
 ### ordering of elements
 
@@ -109,6 +109,9 @@ message QueryDataResponse {
 }
 ```
 
+### empty query results
+
+Another common pattern across Data Platform API query methods is in reporting empty query results.  When a query matches no data, the list of results in the query response message is empty.  For example, when a time-series data query method returns no data, the QueryDataResponse message (show above) contains an empty dataBuckets list.
 
 ---
 ## Example Java gRPC API Code
@@ -176,7 +179,7 @@ The table below gives an overview of the Data Platform API organized by service.
 |------------| ----------- |
 | Ingestion  | [Provider&nbsp;registration](#provider-registration-methods)<br>[PV&nbsp;data&nbsp;ingestion](#pv-data-ingestion-methods)<br>[PV&nbsp;data&nbsp;subscription](#pv-data-subscription-methods)<br>[Request&nbsp;Status&nbsp;query](#request-status-query-methods)<br> |
 | Query      | [PV&nbsp;data&nbsp;query](#pv-data-query-methods)<br>[PV&nbsp;metadata&nbsp;query](#pv-metadata-query-methods)<br>[Provider&nbsp;query](#provider-query-methods)<br>[Provider&nbsp;metadata&nbsp;query](#provider-metadata-query-methods)<br> |
-| Annotation | [Data&nbsp;Set&nbsp;creation](#data-set-creation-methods)<br>[Data&nbsp;Set&nbsp;query](#data-set-query-methods)<br>[Data&nbsp;Set&nbsp;export](#data-set-export-methods)<br>[Annotation&nbsp;creation](#annotation-creation-methods)<br>[Annotation&nbsp;query](#annotation-query-methods)<br> |
+| Annotation | [Data&nbsp;Set&nbsp;creation](#data-set-creation-methods)<br>[Data&nbsp;Set&nbsp;query](#data-set-query-methods)<br>[Data&nbsp;export](#data-export-methods)<br>[Annotation&nbsp;creation](#annotation-creation-methods)<br>[Annotation&nbsp;query](#annotation-query-methods)<br> |
 
 
 ---
@@ -204,7 +207,7 @@ The Data Platform API is intended to support the following use cases and pattern
 - Create Data Sets identifying archive data blocks of interest by PVs and time range.
 - Annotate Data Sets by adding descriptive information, linking to associated other Data Sets and Annotations, adding user-defined Calculations, and tracking data provenance.
 - Query Annotations and identify Data Sets of interest.
-- Export Data Sets.
+- Export Data including both Data Sets and Calculations.
 
 
 
@@ -311,11 +314,11 @@ It is assumed that each PV for a particular facility is uniquely named.  E.g., "
 
 #### data vectors
 
-The Ingestion and Query Service APIs for handling data work with vectors of PV measurements.  In ___common.proto___, this is reflected in the message data type DataColumn, which includes a PV name and vector of measurements.
+The Ingestion and Query Service APIs for handling data work with vectors of PV measurements.  In ___common.proto___, this is reflected in the message data type DataColumn, which includes a PV name and vector of measurements each of which is a DataValue message.
 
 #### handling heterogeneous data
 
-One requirement for the Data Platform API is to provide a general mechanism for handling heterogeneous data types for PV measurements including simple scalar values, as well as multi-dimensional arrays, structures, and images.   This is accomplished by the DataValue message data type in ___common.proto___,  which uses the Protobuf "oneof" mechanism to support a number of different data types for the values in a data vector (DataColumn).
+One requirement for the Data Platform API is to provide a general mechanism for handling heterogeneous data types for PV measurements including simple scalar values, as well as multi-dimensional arrays, structures, and images.   This is accomplished by the DataValue message data type in _common.proto__,  which uses the Protobuf "oneof" mechanism to support a number of different data types for the values in a data vector (DataColumn).
 
 #### timestamps
 
@@ -369,8 +372,15 @@ With bucketing, we save the overhead of the sensor_id and timestamp in each reco
     measurements: [ 40, 40, 41 ]
 }
 ```
+Bucketing is used in the API for ingesting time-series data.  The message "IngestDataRequest" contains an "IngestionDataFrame" that contains the data for the request.  It includes a "DataTimestamps" object that describes the timestamps for the frame's data values, either using a "SamplingClock" that specifies the start time and sample period for the values, or with an explicit list of timestamps.  It also includes a list of "DataColumns", each of which is a bucket of data values (e.g., vector) for a particular PV, with a value for each of the frame's timestamps.
 
-Bucketing is used to send the results of time-series data queries.  The message "QueryDataResponse" in "query.proto" contains the query result in "QueryData", which contains a list of "DataBucket" messages.  Each "DataBucket" contains a vector of data in a "DataColumn" message for a single PV, along with time expressed using "DataTimestamps" (described above), with either an explicit list of timestamps for the bucket data values, or a SamplingClock with start time and sample period.
+Bucketing is also used to send the results of time-series data queries.  The message "QueryDataResponse" in "query.proto" contains the query result in "QueryData", which contains a list of "DataBucket" messages.  Each "DataBucket" contains a vector of data in a "DataColumn" message for a single PV, along with time expressed using "DataTimestamps" (described above), with either an explicit list of timestamps for the bucket data values, or a SamplingClock with start time and sample period.
+
+#### enhanced performance using serialized data columns
+
+As mentioned above, the core ingestion and query APIs use the DataColumn message to contain a vector of measurements (DataValues) for a particular PV.  The APIs for data ingestion, query, and subscription now include an option for sending SerializedDataColumns instead of regular DataColumns.  Using this mechanism improves performance significantly by avoiding redundant serialization and deserialization operations performed by the gRPC communication framework.  
+
+Sending regular DataColumns in ingestion requests requires 3 serialization operations.  The client performs serialization when sending the request; the server performs deserialization when receiving the request, and then the data are re-serialized for compact storage in MongoDB.  Sending SerializedDataColumns in ingestion requests requires a single serialization operation in the client with no deserialization or re-serialization required in the server before storage in MongoDB.  Similar improvements are made in the query and subscription APIs.
 
 ### PV Data Ingestion Methods
 <table>
@@ -391,6 +401,36 @@ The API provides three methods for data ingestion, including a simple unary sing
 ----
 
 All data ingestion methods share the same request message, IngestDataRequest.  An IngestDataRequest contains the data to be ingested to the archive along with some required identifying information and optional descriptive fields.  The unit of ingestion is the IngestionDataFrame.  Analogous to a worksheet in an Excel workbook, IngestionDataFrame contains 1) a DataTimestamps object specifying the timestamp rows for the worksheet and 2) a list of DataColumns each of which is a column vector of data values, one for each row in the worksheet.
+
+As mentioned above, for improved performance, the ingestion API method variants ingestData(), ingestDataStream(), and ingestDataBidiStream() now include a new optional list of SerializedDataColumns in the request's IngestionDataFrame object.  The API client can send either a list of regular DataColumns, SerializedDataColumns, or both.  Clients seeking maximum performance should send SerializedDataColumns, by manually serializing each DataColumn to its ByteString representation for use in the API request.
+
+Below is a Java code snippet showing how to convert a list of regular DataColumns to a list of SerializedDataColumns for use in an IngestDataRequest's IngestionDataFrame.
+```
+// build a list of DataColumns
+final List<DataColumn> frameColumns = new ArrayList<>();
+
+// create a DataColumn object
+DataColumn.Builder dataColumnBuilder = DataColumn.newBuilder();
+dataColumnBuilder.setName("S01-GCC01");
+
+// add a DataValue to the column
+DataValue.Builder dataValueBuilder = DataValue.newBuilder().setDoubleValue(12.34);
+dataColumnBuilder.addDataValues(dataValueBuilder.build());
+
+// add DataColumn to list
+frameColumns.add(dataColumnBuilder.build());
+
+// generate a list of SerializedDataColumn objects from list of DataColumn objects, and add them to IngesitonDataFrame
+IngestDataRequest.IngestionDataFrame.Builder dataFrameBuilder
+        = IngestDataRequest.IngestionDataFrame.newBuilder();
+for (DataColumn dataColumn : frameColumns) {
+    final SerializedDataColumn serializedDataColumn =
+            SerializedDataColumn.newBuilder()
+                    .setName(dataColumn.getName())
+                    .setDataColumnBytes(dataColumn.toByteString())
+                    .build();
+    dataFrameBuilder.addSerializedDataColumns(serializedDataColumn);
+```
 
 ----
 
@@ -433,6 +473,22 @@ A "QuerySpec" message payload specifies the parameters for a time-series data qu
 A CursorOperation payload is a special case and applies only to the queryDataBidiStream() method.  It contains an enum value from CursorOperationType specifying the type of cursor operation to be executed.  Currently, the enum contains a single option CURSOR_OP_NEXT which requests the next message in the response stream.  We may add additional operations, e.g, "fetch the next N buckets".
 
 For queryDataBidiStream(), the client sends a single QueryDataRequest message, receiving a single QueryDataResponse with bucketed time-series data.  The client then requests the next response in the stream by sending a QueryDataRequest containing a CursorOperation method with type set to CURSOR_OP_NEXT until the result is exhausted and the stream is closed by the service.
+
+----
+
+As mentioned above, the query API method variants queryData(), queryDataStream(), and queryDataBidiStream() now include a mechanism for using SerializedDataColumns in the query result for improved performance.  The request's QuerySpec now includes a flag "useSerializedDataColumns" that is set to indicate that the client wishes to receive SerializedDataColumns in the query result instead of regular ones.  When the flag is set, the response's DataBuckets contain a SerializedDataColumn instead of a regular one.  Clients seeking maximum performance should set the flag in the query request, and must manually deserialize each DataBucket's serializedDataColumn by parsing a DataColumn from the SerializedDataColumn's "dataColumnBytes" byte representation of the column.
+
+Below is a Java code snippet showing how to convert a SerializedDataColumn in the query result DataBucket to a regular DataColumn for accessing its name and data values.
+```
+if (responseBucket.hasSerializedDataColumn()) {
+    DataColumn responseDataColumn = null;
+    try {
+        responseDataColumn = DataColumn.parseFrom(responseBucket.getSerializedDataColumn().getDataColumnBytes());
+    } catch (InvalidProtocolBufferException e) {
+        fail("exception parsing DataColumn from SerializedDataColumn: " + e.getMessage());
+    }
+}
+```
 
 ----
 
@@ -495,6 +551,14 @@ The CancelSubscription message is an empty message that simply indicates the cli
 The service sends SubscribeDataResponse messages in the response stream for the subscribeData() method.  Each response contains one of three payload messages.  1) An ExceptionalResult payload is sent if the service rejects the subscription request or an error occurs while processing the subscription. 2) An AckResult payload is sent when the service accepts a subscription request.  3) A SubscribeDataResult is sent when the service publishes new data for any of the PVs registered for the subscription.
 
 Each SubscribeDataResult message payload contains a DataTimestamps message, specifying the timestamps for the included data values (either using a SamplingClock or explicit list of timestamps), and a list of DataColumn messages, each a column data vector for one of the PVs registered for the subscription.
+
+----
+
+As mentioned above, when ingestion requests utilize SerializedDataColumns for improved performance, SubscribeDataResponse messages sent by the subscribeData() API for subscribed PVs will automatically contain SerializedDataColumns instead of regular DataColumns for maximum performance in subscription communication.
+
+See the documentation above for [PV Data Query Methods](https://github.com/osprey-dcs/dp-grpc?tab=readme-ov-file#pv-data-subscription-methods) for a Java code snippet for converting SerializedDataColumns to regular DataColumns.
+
+----
 
 </td>
 </tr>
@@ -652,11 +716,11 @@ A DataSet message includes the following properties for the dataset: unique id, 
 </tr>
 </table>
 
-### Data Set Export Methods
+### Data Export Methods
 <table>
 <tr>
 <td><pre>
-rpc exportDataSet(ExportDataSetRequest) returns (ExportDataSetResponse);
+rpc exportData(ExportDataRequest) returns (ExportDataResponse);
 </pre></td>
 </tr>
 <tr>
@@ -665,17 +729,34 @@ rpc exportDataSet(ExportDataSetRequest) returns (ExportDataSetResponse);
 <tr>
 <td>
 
-The method exportDataSet() exports data for the specified dataset to common file formats.  It is a unary single request / response method that accepts an ExportDataSetRequest message and returns an ExportDataSetResponse message.
+The method exportData() exports data for DataSets and Calculations to common file formats.  It is a unary single request / response method that accepts an ExportDataRequest message and returns an ExportDataResponse message.
 
 ----
 
-Parameters to the exportDataSet() method are contained in an ExportDataSetRequest message that includes fields for specifying the id of the DataSet to be exported and an enum for specifying the desired output file format.
+Parameters to the exportData() method are contained in an ExportDataRequest message that includes fields for specifying the id of the DataSet, a CalculationsSpec identifying a Calculations object with an optional column filter, and an enum for specifying the desired output file format.
 
 ----
 
-The exportDataSet() method returns an ExportDataSetResponse, whose payload includes either an ExceptionalResult indicating a problem in handling the export request, or an ExportDataSetResult for a successful request.
+The Annotation Service handling for the exportData() API method supports exporting either a DataSet object, a Calculations object, or both to tabular (CSV, XLSX) and bucketed (HDF5) export output file formats.  A filtering mechanism is provided for selecting Calculations columns to include in the export using the columns specified in the CalculationsSpec message's optional "dataFrameColumns" map.  The method request parameters must include either a dataSetId or calculationsSpec, and can include both of them.
 
-ExportDataSetResult includes fields specifying the full path for the export output file and (optionally if configured) the URL for accessing the file via a web server.
+----
+
+For tabular export output file formats, when the export request includes only a DataSet object, the output file contains data for each data block in the DataSet, with a column for each PV over the data block's time range. When the export includes only a Calculations object, the  output file includes data for the filtered columns from the Calculations.  When both a dataset and Calculations object are included in the export request, the output file will contain first the columns for the Dataset, followed by the filtered Calculations columns.  Only Calculations values that fall within the time range of the dataset are included.
+
+----
+
+The bucketed export output file format (HDF5) uses the following directory (HDF5 group) structure for navigating the data within the file:
+
+* _dataset_ - Facilitates navigation by the DataSet object's data blocks.  Index paths to a data block follow the pattern "/dataset/datablocks/dataBlockIndex/", where the directory (group) for a data block includes fields for its list of PVs, begin timestamp, and end timestamp.
+* _pvs_ - Facilitates navigation by PV name and bucket timestamp.  Paths to bucket data follow the pattern "/pvs/pvName/times/bucketFirstTimestampSeconds/bucketFirstTimestampNanos/".  The directory (group) for a data bucket includes fields for first and last timestamp, sample count, sampling period, a byte array representation of the serialized protobuf DataColumn object containing the bucket's data vector, a byte array representation of the serialized protobuf DataTimestamps object for the bucket, tags, attributes, event metadata, and provider.
+* _times_ - Facilitates navigation by timestamp and PV.  Paths to bucket data follow the pattern "/times/bucketFirstTimestampSeconds/bucketFirstTimestampNanos/pvs/pvName/".  Fields for each data bucket are listed above for navigation by PV.
+* _calculations_ - Facilitates navigation by the Calculations object's frames and columns. Index paths follow the pattern "/calculations/calculationId/frames/frameIndex/columns/columnIndex/".
+
+----
+
+The exportData() method returns an ExportDataResponse, whose payload includes either an ExceptionalResult indicating a problem in handling the export request, or an ExportDataResult for a successful request.
+
+ExportDataResult includes fields specifying the full path for the export output file and (optionally if configured) the URL for accessing the file via a web server.
 
 </td>
 </tr>
@@ -715,7 +796,7 @@ The Calculations object defines the data structure used for representing Calcula
 
 To the extent possible, it parallels the data structures used in the ingestion of regular time-series data in order that user-defined Calculations can be treated in a similar fashion for the purposes of querying and exporting data that includes both PV data and user-defined Calculations.
 
-The Calculations object includes a list of CalculationsDataFrames.  Each CalculationsDataFrame includes 1) a DataTimestamps object, and 2) a list of DataColumns, each of which contains a vector of data values for a single Calculation and specifies a DataValue for each timestamp specified by the corresponding DataTimestamps object.
+The Calculations object includes a list of CalculationsDataFrames.  Each CalculationsDataFrame includes a name, a DataTimestamps object, and a list of DataColumns, each of which contains a vector of data values for a single Calculation and specifies a DataValue for each timestamp specified by the corresponding DataTimestamps object.
 
 It might be helpful to use the analogy of an Excel workbook.  The Calculations object is the workbook, and each CalculationDataFrame is a worksheet in that workbook that contains a column of timestamps and columns of calculated data with a value for each timestamp.
 
