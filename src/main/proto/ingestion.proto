@@ -235,14 +235,21 @@ message IngestDataRequest {
  * and sample count, or using a TimestampsList with an explicit list of timestamps for the data values.
  *
  * Each DataColumn is a vector of data values for a particular PV, with a single data value for each
- * data timestamp.  Each DataColumn includes the name of the corresponding PV, and a list of DataValues.
+ * data timestamp.
+ *
+ * For maximum performance, the client can optionally provide a list of SerializedDataColumn objects instead of
+ * regular DataColumn objects.  Each SerializedDataColumn which contains the bytes for a serialized DataColumn object.
+ * This avoids extra deserialization / re-serialization operations performed by the gRPC communication framework
+ * in the client and Ingestion Service.
  *
  * Each data column must be the same size, with a value for each timestamp specified in dataTimestamps. Ingestion
- * requests with inconsistent dimensions are rejected.
+ * requests with inconsistent dimensions are rejected. Can contain regular DataColumns and/or SerializedDataColumns,
+ * and must contain at least one or the other.
  */
   message IngestionDataFrame {
     DataTimestamps dataTimestamps = 1; // Required, specifies timestamps for data values.
-    repeated DataColumn dataColumns = 2; // Required list of columns, each containing a data value for each timestamp.
+    repeated DataColumn dataColumns = 2; // Optional list of columns, each containing a data value for each timestamp.
+    repeated SerializedDataColumn serializedDataColumns = 3; // Optional list of serialized DataColumn objects for maximum performance.
   }
 }
 
@@ -451,7 +458,7 @@ message SubscribeDataRequest {
   }
 
   message CancelSubscription {
-    // emtpy message sent to cancel subscription
+    // empty message sent to cancel subscription
   }
 }
 
@@ -465,8 +472,10 @@ message SubscribeDataRequest {
  * new data for any of the PVs registered for the subscription.
  *
  * Each SubscribeDataResult message payload contains a DataTimestamps message, specifying the timestamps for the
- * included data values (either using a SamplingClock or explicit list of timestamps), and a list of DataColumn
- * messages, each a column data vector for one of the PVs registered for the subscription.
+ * included data values (either using a SamplingClock or explicit list of timestamps), and lists of either regular
+ * DataColumns or SerializedDataColumns (or both), determined by the contents of the ingestion request being published,
+ * e.g., if the IngestDataRequest message contains SerializedDataColumns, so will SubscribeDataResponse messages.
+ * For maximum performance, it is advised to use SerializedDataColumns for ingestion and query API methods.
  */
 message SubscribeDataResponse {
 
@@ -485,6 +494,7 @@ message SubscribeDataResponse {
   message SubscribeDataResult {
     DataTimestamps dataTimestamps = 1; // Specifies timestamps for DataColumn values.
     repeated DataColumn dataColumns = 2; // List of PV column vectors, each containing a data value for each timestamp.
+    repeated SerializedDataColumn serializedDataColumns = 3; // List of serialized DataColumn objects for maximum performance.
   }
 
 }

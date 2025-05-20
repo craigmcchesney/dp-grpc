@@ -62,14 +62,14 @@ service DpAnnotationService {
   rpc queryAnnotations(QueryAnnotationsRequest) returns (QueryAnnotationsResponse);
 
   /*
-   * exportDataSet(): Export a DataSet.
+   * exportData(): Export data to common file formats.
    *
-   * This RPC is used by clients to export a DataSet to file.  Client sends a single ExportDataSetRequest specifying
-   * the id of the DataSet to be exported and the desired output file format, and receives a single response.  The
-   * response may indicate a problem handling the request, or otherwise contains details about the exported file
-   * including the path and optional (if configured) URL for accessing the file.
+   * This RPC is used by clients to export data (both DataSets and Calculations) to file.  Client sends a single
+   * ExportDataRequest specifying the details of the data to be exported and the desired output file format,
+   * and receives a single response.  The response may indicate a problem handling the request, or otherwise contains
+   * details about the exported file including the path and optional (if configured) URL for accessing the file.
    */
-  rpc exportDataSet(ExportDataSetRequest) returns (ExportDataSetResponse);
+  rpc exportData(ExportDataRequest) returns (ExportDataResponse);
 }
 
 
@@ -238,7 +238,7 @@ message QueryDataSetsResponse {
  * that includes both PV data and user-defined Calculations.
  *
  * The Calculations object includes a list of CalculationsDataFrames.  Each CalculationsDataFrame includes
- * 1) a DataTimestamps object, and 2) a list of DataColumns, each of which contains a vector of data values for a
+ * a name, a DataTimestamps object, and a list of DataColumns, each of which contains a vector of data values for a
  * single Calculation and specifies a DataValue for each timestamp specified by the corresponding DataTimestamps object.
  *
  * It might be helpful to use the analogy of an Excel workbook.  The Calculations object is the workbook, and each
@@ -251,8 +251,9 @@ message Calculations {
   repeated CalculationsDataFrame calculationDataFrames = 2;
 
   message CalculationsDataFrame {
-    DataTimestamps dataTimestamps = 1; // Required, specifies timestamps for data values.
-    repeated DataColumn dataColumns = 2; // Required list of columns, each containing a data value for each timestamp.
+    string name = 1; // Required, name of data frame.
+    DataTimestamps dataTimestamps = 2; // Required, specifies timestamps for data values.
+    repeated DataColumn dataColumns = 3; // Required list of columns, each containing a data value for each timestamp.
   }
 }
 
@@ -452,15 +453,17 @@ message QueryAnnotationsResponse {
 //
 
 /*
- * ExportDataSetRequest
+ * ExportDataRequest
  *
- * Used as parameter to the exportDataSet() method.  Includes fields for specifying the id of the DataSet to be
- * exported, and an enum for specifying output format.
+ * Used as parameter to the exportData() method.  Includes fields for specifying the id of the DataSet or
+ * Calculations object to be exported, and an enum for specifying output format.  Both datasetId and calculationsSpec
+ * are optional, but one or the other must be specified.
  */
-message ExportDataSetRequest {
+message ExportDataRequest {
 
   string dataSetId = 1;  // Required, specifies id of DataSet to be exported.
-  ExportOutputFormat outputFormat = 2;  // Required, specifies export output file format.
+  CalculationsSpec calculationsSpec = 2; // Optional, specifies details of Calculations to include in export.
+  ExportOutputFormat outputFormat = 3;  // Optional, specifies export output file format.
 
   enum ExportOutputFormat {
     EXPORT_FORMAT_UNSPECIFIED = 0; // Indicates no enum value has been specified, and the request will be rejected.
@@ -471,24 +474,24 @@ message ExportDataSetRequest {
 }
 
 /*
- * ExportDataSetResponse
+ * ExportDataResponse
  *
- * Used as response from the exportDataSet() method.  Payload includes either an ExceptionalResult indicating a problem
- * in handling the export request, or an ExportDataSetResult for a successful request.
+ * Used as response from the exportData() method.  Payload includes either an ExceptionalResult indicating a problem
+ * in handling the export request, or an ExportDataResult for a successful request.
  *
- * ExportDataSetResult includes fields specifying the full path for the export output file and
+ * ExportDataResult includes fields specifying the full path for the export output file and
  * (optionally if configured) the URL for accessing the file via a web server.
  */
-message ExportDataSetResponse {
+message ExportDataResponse {
 
   Timestamp responseTime = 1; // Indicates time response was generated.
 
   oneof result {
     ExceptionalResult exceptionalResult = 10; // Indicates a problem was encountered in handling the request.
-    ExportDataSetResult exportDataSetResult = 11; // Indicates the request was handled successfully.
+    ExportDataResult exportDataResult = 11; // Indicates the request was handled successfully.
   }
 
-  message ExportDataSetResult {
+  message ExportDataResult {
     string filePath = 1; // Specifies full path to export output file.
     string fileUrl = 2; // (If configured to generate URLs) Specifies URL for accessing file via web server.
   }

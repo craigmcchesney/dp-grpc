@@ -106,8 +106,7 @@ message ExceptionalResult {
   enum ExceptionalResultStatus {
     RESULT_STATUS_REJECT = 0; // Indicates request was rejected during validation.
     RESULT_STATUS_ERROR = 1; // Indicates an error was encountered in handling the request.
-    RESULT_STATUS_EMPTY = 2; // Indicates the query returned no data.
-    RESULT_STATUS_NOT_READY = 3; // Indicates an invalid bidirectional stream query cursor operation request.
+    RESULT_STATUS_NOT_READY = 2; // Indicates an invalid bidirectional stream query cursor operation request.
   }
 }
 
@@ -126,6 +125,38 @@ message DataColumn {
   repeated DataValue dataValues = 2; // List of heterogeneous column data values.
 }
 
+/*
+ * SerializedDataColumn
+ *
+ * Contains the bytes for a serialized protobuf DataColumn object, used to avoid redundant serialization operations
+ * for maximum API performance.  Use of SerializedDataColumns instead of regular DataColumns is supported in the
+ * APIs for ingestion, query, and subscription.
+ *
+ * To create a SerializedDataColumn (e.g., for use in the ingestion API methods), the user should first create
+ a regular DataColumn and then manually serialize it to the dataColumnBytes field of a SerializedDataColumn object.
+ * Example Java code to create a SerializedDataColumn from a regular DataColumn is shown below:
+ *
+ *            SerializedDataColumn.newBuilder()
+ *                  .setName(dataColumn.getName())
+ *                  .setDataColumnBytes(dataColumn.toByteString())
+ *                  .build();
+ *
+ * To create a regular DataColumn from a SerializedDataColumn (e.g., for clients of the query or subscription APIs),
+ * the user should create a DataColumn by parsing (deserializing) the content of the SerializedDataColumn's
+ * dataColumnBytes field.  Example Java code is shown below:
+ *
+ *  DataColumn responseDataColumn = null;
+ *  try {
+ *      responseDataColumn = DataColumn.parseFrom(responseBucket.getSerializedDataColumn().getDataColumnBytes());
+ *  } catch (InvalidProtocolBufferException e) {
+ *      fail("exception parsing DataColumn from SerializedDataColumn: " + e.getMessage());
+ *  }
+ *
+ */
+message SerializedDataColumn {
+  string name = 1;
+  bytes dataColumnBytes = 2;
+}
 
 /*
  * Unit of Heterogeneous Data
@@ -277,3 +308,29 @@ message Image {
     PDF = 8;
   }
 }
+
+
+// ------------------- Common support for using calculations ---------------------------
+//
+
+/*
+ * CalculationsSpec
+ *
+ * Provides a mechanism for using Annotation Calculations in APIs for export and query etc.
+ */
+message CalculationsSpec {
+
+  string calculationsId = 1; // Required, specifies unique id of Calculations object to include in the result.
+
+  // dataFrameColumns: Optional, map of CalculationsDataFrame name to the columns in that frame to include in the result.
+  map<string, ColumnNameList> dataFrameColumns = 2;
+
+  message ColumnNameList {
+    /*
+     * Defining list of strings as a data type that can be used as the value in a map, since we can't use
+     * "repeated string" directly.
+     */
+    repeated string columnNames = 1;
+  }
+}
+
