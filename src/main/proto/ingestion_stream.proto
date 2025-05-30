@@ -148,10 +148,14 @@ message SubscribeDataEventResponse {
   oneof result {
     ExceptionalResult exceptionalResult = 10;
     AckResult ackResult = 11;
-    BucketedData subscribeDataEventResult = 12;
+    EventData eventData = 12;
   }
 
   message AckResult {
     // empty message sent to confirm subscription
+  }
+
+  message EventData {
+    repeated DataBucket dataBuckets = 1;
   }
 }

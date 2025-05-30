@@ -180,7 +180,26 @@ message QueryDataResponse {
   // or QueryData with query result.
   oneof result {
     ExceptionalResult exceptionalResult = 10;
-    BucketedData queryData = 11;
+    QueryData queryData = 11;
+  }
+
+  /*
+   * QueryData
+   *
+   * Contains the data for a time series data query result, as a list of DataBucket objects. Each DataBucket minimally
+   * includes a vector of PV data values (in a DataColumn) and a DataTimestamps object specifying the timestamps
+   * for the data vector values using either a SamplingClock (with start time, sample period, and number of samples or
+   * an explicit list of timestamps) or a TimestampsList (with an explicit list of timestamps). The DataBucket also
+   * includes key/value Attributes and/or EventMetadata if defined for the data in ingestion.
+   *
+   * By default, each DataBucket contains a regular DataColumn object with the vector of data for the bucket.
+   * if the useSerializedDataColumns flag is set in the QueryDataRequest's QuerySpec, each DataBucket in the result
+   * contains a SerializedDataColumn that contains a byte data representation of the corresponding DataColumn object.
+   * Clients seeking maximum query performance should use SerializedDataColumns in the query result in order to avoid
+   * extra serialization operations performed by the gRPC communication framework.
+   */
+  message QueryData {
+    repeated DataBucket dataBuckets = 1;
   }
 }
 
