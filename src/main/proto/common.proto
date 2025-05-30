@@ -310,7 +310,42 @@ message Image {
 }
 
 
-// ------------------- Common support for using calculations ---------------------------
+// ------------------- Common support for streaming data -------------------
+
+/*
+ * BucketedData
+ *
+ * Contains PV data as a list of DataBucket objects. Each DataBucket minimally
+ * includes a vector of PV data values and a DataTimestamps object specifying the timestamps
+ * for the data vector values using either a SamplingClock (with start time, sample period, and number of samples or
+ * an explicit list of timestamps) or a TimestampsList (with an explicit list of timestamps). The DataBucket also
+ * includes optional key/value Attributes, tags, and/or EventMetadata if provided for the data in ingestion.
+ *
+ * By default, each DataBucket contains a regular DataColumn object with the vector of data for the bucket.
+ * if the useSerializedDataColumns flag is set in the request, each DataBucket
+ * contains a SerializedDataColumn with a byte data representation of the corresponding DataColumn object.
+ * Clients seeking maximum query performance should use SerializedDataColumns in order to avoid
+ * extra serialization operations performed by the gRPC communication framework.
+ */
+message BucketedData {
+
+  repeated DataBucket dataBuckets = 1;
+
+  message DataBucket {
+    DataTimestamps dataTimestamps = 1; // Specifies timestamps for bucket, using SamplingClock or explicit Timestamp list.
+    repeated string tags = 2; // Specifies list of tags for bucket, if any.
+    repeated Attribute attributes = 3; // Specifies list of key/value attributes for bucket, if any.
+    EventMetadata eventMetadata = 4; // Specifies event metadata for bucket, if any.
+    oneof data {
+      DataColumn dataColumn = 10; // Vector of data values corresponding to data timestamps.
+      SerializedDataColumn serializedDataColumn = 11; // Serialized DataColumn byte data to avoid redundant serialization ops.
+    }
+  }
+}
+
+
+
+// ------------------- Common support for using calculations -------------------
 //
 
 /*

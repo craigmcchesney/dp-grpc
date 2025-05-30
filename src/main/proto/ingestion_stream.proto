@@ -74,24 +74,51 @@ service DpIngestionStreamService {
  */
 message SubscribeDataEventRequest {
 
-  repeated string pvNames = 1;
+  repeated PvConditionTrigger triggers = 1;
+  DataEventOperation operation = 2;
 
-  oneof dataEventDef {
-    ConditionEventDef conditionEventDef = 10;
+  message PvConditionTrigger {
+
+    string pvName = 1;
+    PvCondition condition= 2;
+    DataValue value = 3;
+
+    enum PvCondition {
+      PV_CONDITION_UNSPECIFIED = 0;
+      PV_CONDITION_EQUAL_TO = 1;
+      PV_CONDITION_GREATER = 2;
+      PV_CONDITION_GREATER_EQ = 3;
+      PV_CONDITION_LESS = 4;
+      PV_CONDITION_LESS_EQ = 5;
+      PV_CONDITION_BEFORE = 6;
+      PV_CONDITION_AFTER = 7;
+      PV_CONDITION_EQUIVALENT = 8;
+    }
   }
+  
+  message DataEventOperation {
 
-  message ConditionEventDef {
+    DataEventWindow window = 1;
+    repeated string targetPvs = 2;
 
-    ConditionOperator operator= 1;
-    DataValue operandValue = 2;
+    // Process operation = 3;  // The idea eventually is to add a field specifying additional processing to perform,
+                               // beyond just returning data for the specified PVs
 
-    enum ConditionOperator {
-      CONDITION_OPERATOR_UNSPECIFIED = 0;
-      CONDITION_OPERATOR_LESS = 1;
-      CONDITION_OPERATOR_LESSOREQUAL = 2;
-      CONDITION_OPERATOR_EQUAL = 3;
-      CONDITION_OPERATOR_GREATEROREQUAL = 4;
-      CONDITION_OPERATOR_GREATER = 5;
+    message DataEventWindow {
+
+      oneof type {
+        TimeInterval timeInterval = 10;
+        SampleCount sampleCount = 11;
+      }
+
+      message TimeInterval {
+        uint64 offset = 1;
+        uint64 duration = 2;
+      }
+
+      message SampleCount {
+        uint32 size = 1;
+      }
     }
   }
 }
@@ -121,23 +148,10 @@ message SubscribeDataEventResponse {
   oneof result {
     ExceptionalResult exceptionalResult = 10;
     AckResult ackResult = 11;
-    SubscribeDataEventResult subscribeDataEventResult = 12;
+    BucketedData subscribeDataEventResult = 12;
   }
 
   message AckResult {
     // empty message sent to confirm subscription
-  }
-
-  message SubscribeDataEventResult {
-
-    oneof dataEvent {
-      ConditionEvent conditionEvent = 10;
-    }
-
-    message ConditionEvent {
-      string pvName = 1;
-      Timestamp timestamp = 2;
-      DataValue dataValue = 3;
-    }
   }
 }
