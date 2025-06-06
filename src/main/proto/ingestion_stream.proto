@@ -65,34 +65,13 @@ service DpIngestionStreamService {
  * SubscribeDataEventRequest
  *
  * The client sends a single SubscribeDataEventRequest message when invoking the subscribeData() API method.
- * Each request contains a list of PVs and a payload message defining the type of data event to be monitored
- * for the subscription.
- *
- * The prototype supports only a single type of data event definition, ConditionEventDef, which is used to create a
- * simple data condition event monitor specifying a list of PVs, an operator (like <, ==, >) and an operand.
- * A response message is sent by the service each time the condition is satisfied.
+ * TODO
  */
 message SubscribeDataEventRequest {
 
   repeated PvConditionTrigger triggers = 1;
   DataEventOperation operation = 2;
 
-  message PvConditionTrigger {
-
-    string pvName = 1;
-    PvCondition condition= 2;
-    DataValue value = 3;
-
-    enum PvCondition {
-      PV_CONDITION_UNSPECIFIED = 0;
-      PV_CONDITION_EQUAL_TO = 1;
-      PV_CONDITION_GREATER = 2;
-      PV_CONDITION_GREATER_EQ = 3;
-      PV_CONDITION_LESS = 4;
-      PV_CONDITION_LESS_EQ = 5;
-    }
-  }
-  
   message DataEventOperation {
 
     DataEventWindow window = 1;
@@ -105,7 +84,7 @@ message SubscribeDataEventRequest {
 
       oneof type {
         TimeInterval timeInterval = 10;
-        SampleCount sampleCount = 11;
+//        SampleCount sampleCount = 11;
       }
 
       message TimeInterval {
@@ -113,10 +92,12 @@ message SubscribeDataEventRequest {
         uint64 duration = 2; // number of nanoseconds of data to capture from trigger time modified by offset
       }
 
-      message SampleCount {
-        int64 offset = 1; // offset from trigger time in nanoseconds (negative value means before trigger time)
-        uint32 size = 2; // number of data values to capture from trigger time modified by offset
-      }
+// SampleCount is not supported yet since it's not clear how it should work when there are multiple PVs with
+// different timescales.
+//      message SampleCount {
+//        int64 offset = 1; // offset from trigger time in nanoseconds (negative value means before trigger time)
+//        uint32 size = 2; // number of data values to capture from trigger time modified by offset
+//      }
     }
   }
 }
@@ -145,15 +126,44 @@ message SubscribeDataEventResponse {
 
   oneof result {
     ExceptionalResult exceptionalResult = 10;
-    AckResult ackResult = 11;
-    EventData eventData = 12;
+    AckResult ack = 11;
+    Event event = 12;
+    EventData eventData = 13;
   }
 
   message AckResult {
     // empty message sent to confirm subscription
   }
 
+  message Event {
+    Timestamp eventTime = 1;
+    PvConditionTrigger trigger = 2;
+    DataValue dataValue = 3;
+  }
+
   message EventData {
-    repeated DataBucket dataBuckets = 1;
+    Event event = 1;
+    repeated DataBucket dataBuckets = 2;
+  }
+}
+
+/*
+ * PvConditionTrigger
+ *
+ * TODO
+ */
+message PvConditionTrigger {
+
+  string pvName = 1;
+  PvCondition condition= 2;
+  DataValue value = 3;
+
+  enum PvCondition {
+    PV_CONDITION_UNSPECIFIED = 0;
+    PV_CONDITION_EQUAL_TO = 1;
+    PV_CONDITION_GREATER = 2;
+    PV_CONDITION_GREATER_EQ = 3;
+    PV_CONDITION_LESS = 4;
+    PV_CONDITION_LESS_EQ = 5;
   }
 }
