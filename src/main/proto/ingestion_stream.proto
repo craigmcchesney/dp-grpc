@@ -90,9 +90,6 @@ message SubscribeDataEventRequest {
       PV_CONDITION_GREATER_EQ = 3;
       PV_CONDITION_LESS = 4;
       PV_CONDITION_LESS_EQ = 5;
-      PV_CONDITION_BEFORE = 6;
-      PV_CONDITION_AFTER = 7;
-      PV_CONDITION_EQUIVALENT = 8;
     }
   }
   
