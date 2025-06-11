@@ -52,7 +52,7 @@ service DpIngestionStreamService {
     * occurs while handling the subscription.  In either case, after sending the ExceptionalResult message the service
     * closes the API method response stream.
     */
-  rpc subscribeDataEvent(SubscribeDataEventRequest) returns (stream SubscribeDataEventResponse);
+  rpc subscribeDataEvent(stream SubscribeDataEventRequest) returns (stream SubscribeDataEventResponse);
 
 }
 
@@ -69,36 +69,18 @@ service DpIngestionStreamService {
  */
 message SubscribeDataEventRequest {
 
-  repeated PvConditionTrigger triggers = 1;
-  DataEventOperation operation = 2;
+  oneof request {
+    NewSubscription newSubscription = 10;
+    CancelSubscription cancelSubscription = 11;
+  }
 
-  message DataEventOperation {
+  message NewSubscription {
+    repeated PvConditionTrigger triggers = 1;
+    DataEventOperation operation = 2;
+  }
 
-    DataEventWindow window = 1;
-    repeated string targetPvs = 2;
-
-    // Process operation = 3;  // The idea eventually is to add a field specifying additional processing to perform,
-                               // beyond just returning data for the specified PVs
-
-    message DataEventWindow {
-
-      oneof type {
-        TimeInterval timeInterval = 10;
-//        SampleCount sampleCount = 11;
-      }
-
-      message TimeInterval {
-        int64 offset = 1;  // offset from trigger time in nanoseconds (negative value means before trigger time)
-        uint64 duration = 2; // number of nanoseconds of data to capture from trigger time modified by offset
-      }
-
-// SampleCount is not supported yet since it's not clear how it should work when there are multiple PVs with
-// different timescales.
-//      message SampleCount {
-//        int64 offset = 1; // offset from trigger time in nanoseconds (negative value means before trigger time)
-//        uint32 size = 2; // number of data values to capture from trigger time modified by offset
-//      }
-    }
+  message CancelSubscription {
+    // empty message sent to cancel subscription
   }
 }
 
@@ -167,3 +149,33 @@ message PvConditionTrigger {
     PV_CONDITION_LESS_EQ = 5;
   }
 }
+
+message DataEventOperation {
+
+  DataEventWindow window = 1;
+  repeated string targetPvs = 2;
+
+  // Process operation = 3;  // The idea eventually is to add a field specifying additional processing to perform,
+  // beyond just returning data for the specified PVs
+
+  message DataEventWindow {
+
+    oneof type {
+      TimeInterval timeInterval = 10;
+      //        SampleCount sampleCount = 11;
+    }
+
+    message TimeInterval {
+      int64 offset = 1;  // offset from trigger time in nanoseconds (negative value means before trigger time)
+      uint64 duration = 2; // number of nanoseconds of data to capture from trigger time modified by offset
+    }
+
+    // SampleCount is not supported yet since it's not clear how it should work when there are multiple PVs with
+    // different timescales.
+    //      message SampleCount {
+    //        int64 offset = 1; // offset from trigger time in nanoseconds (negative value means before trigger time)
+    //        uint32 size = 2; // number of data values to capture from trigger time modified by offset
+    //      }
+  }
+}
+
