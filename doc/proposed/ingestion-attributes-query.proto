@@ -1,0 +1,122 @@
+// EXISTING INGESTION REQUEST
+message IngestDataRequest {
+  string providerId = 1; // Required providerId must match id returned via registerProvider() API method.
+  string clientRequestId = 2; // Required clientRequestId uniquely identifies an ingestion request for a provider.
+  repeated string tags = 3; // Optional, list of keywords / tags.
+  repeated Attribute attributes = 4; // Optional, list of key/value attributes describing the request data.
+  EventMetadata eventMetadata = 5; // Optional, metadata describing event that request data are associated with.
+  IngestionDataFrame ingestionDataFrame = 6; // Required, contains the data for the ingestion request.
+
+  message IngestionDataFrame {
+    DataTimestamps dataTimestamps = 1; // Required, specifies timestamps for data values.
+    repeated DataColumn dataColumns = 2; // Optional list of columns, each containing a data value for each timestamp.
+    repeated SerializedDataColumn serializedDataColumns = 3; // Optional list of serialized DataColumn objects for maximum performance.
+  }
+}
+
+===> Each DataColumn in request becomes a BucketDocument in MongoDB with fields for tags, attributes, eventMetadata.
+
+// EXISTING DATA QUERY REQUEST
+message QueryDataRequest {
+  message QuerySpec {
+    Timestamp beginTime = 1; // Required, specifies query start time.
+    Timestamp endTime = 2; // Required, specifies query end time.
+    repeated string pvNames = 3; // Required, contains list of PV names to query for specified time range.
+    bool useSerializedDataColumns = 4; // Required, specifies if the result should use SerializedDataColumns for maximum performance.
+  }
+}
+
+===> The domain of a data query is the MongoDB BucketDocuments collection.
+
+
+
+================================================================================
+
+    ===> The problem is there is no way to search using the descriptive fields attached to Mongo Buckets.
+    ===> The only way to search for data is to know the time range for the PVs you care about.
+
+    ===> It seems like there are 2 desired uses for the descriptive fields (tags, attributes, event meta):
+    ===> 1) query data using descriptive field values
+    ===> 2) explore the values that are in use for the ingested data
+
+    ===> What about the overlap of desicriptive fields between ingestion (stored in bucket documents) and
+    ===> the same fields stored in annotations (which also define time ranges via datasets / datablocks).
+
+================================================================================
+
+
+
+// IDEA: 1) query data using descriptive field values
+message QueryDataRequest {
+
+  repeated QueryDataCriterion criteria = 1;
+  bool useSerializedDataColumns = 2;
+
+  message QueryDataCriterion {
+    oneof criterion {
+      PvCriterion pvCriterion = 10;
+      TimeRangeCriterion timeRangeCriterion = 11;
+      TagsCriterion tagsCriterion = 12;
+      AttributesCriterion attributesCriterion = 13;
+      EventCriterion eventCriterion = 14;
+    }
+  }
+
+  message PvCriterion {
+    repeated string pvNames = 1;
+  }
+
+  message TimeRangeCriterion {
+    Timestamp beginTime = 1;
+    Timestamp endTime = 2;
+  }
+
+  message TagsCriterion {
+    string tag = 1;
+  }
+
+  message AttributesCriterion {
+    string attributeKey = 1;
+    string attributeValue = 2;
+  }
+
+  message EventCriterion {
+    string eventName = 1;
+    string description = 2;
+    Timestamp timestamp = 3;
+  }
+}
+
+===> This is pretty natural, since the domain of queryData() is MongoDB bucket documents,
+===> and each bucket contains tags, attributes, and event metadata.
+
+================================================================================
+
+// IDEA: 2) explore the values that are in use for the ingested data
+
+message PvDescriptionQueryRequest {
+  string pvName;
+  Timestamp beginTime;
+  Timestamp endTime;
+}
+
+===> returns a structure with details about tags, attributes, eventMeta in use for that PV over time range
+
+message PvDescriptionQueryResult {
+
+  repeated PvDescription;
+
+  message PvDescription {
+
+    oneof description {
+      PvTag pvTag;
+      PvAttribute pvAttribute;
+      PvEventMetadata pvEventMetadata;
+    }
+
+    repeated TimeRange bucketTimeRangesWithValue;
+  }
+}
+
+===> PS, this makes for a messy MongoDB query.
+===> This is also messy to turn into a data query by PV and time range.
