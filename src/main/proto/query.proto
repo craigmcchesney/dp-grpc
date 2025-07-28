@@ -199,19 +199,7 @@ message QueryDataResponse {
    * extra serialization operations performed by the gRPC communication framework.
    */
   message QueryData {
-
     repeated DataBucket dataBuckets = 1;
-
-    message DataBucket {
-      DataTimestamps dataTimestamps = 1; // Specifies timestamps for bucket, using SamplingClock or explicit Timestamp list.
-      repeated string tags = 2; // Specifies list of tags for bucket, if any.
-      repeated Attribute attributes = 3; // Specifies list of key/value attributes for bucket, if any.
-      EventMetadata eventMetadata = 4; // Specifies event metadata for bucket, if any.
-      oneof data {
-        DataColumn dataColumn = 10; // Vector of data values corresponding to data timestamps.
-        SerializedDataColumn serializedDataColumn = 11; // Serialized DataColumn byte data to avoid redundant serialization ops.
-      }
-    }
   }
 }
 
