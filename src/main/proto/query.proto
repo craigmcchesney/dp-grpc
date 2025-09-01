@@ -449,6 +449,7 @@ message QueryProvidersResponse {
       string	description = 3; // Provider description.
       repeated string tags = 4; // List of tags.
       repeated Attribute attributes = 5; // List of key/value attributes.
+      ProviderMetadata providerMetadata = 6; // Ingestion stats for this provider.
     }
   }
 }
@@ -491,17 +492,21 @@ message QueryProviderMetadataResponse {
    * Contains a list of ProviderInfo metadata objects, one for each provider matching the query specification.
    */
   message MetadataResult {
-
     repeated ProviderMetadata providerMetadatas = 1; // List of metadata objects matching query specificiation.
-
-    message ProviderMetadata {
-      string id = 1; // Provider id.
-      repeated string pvNames = 2; // List of PV names with buckets using provider.
-      Timestamp firstBucketTime = 3; // Timstamp of first bucket using provider.
-      Timestamp lastBucketTime = 4; // Timestamp of most recent bucket using provider.
-      int32 numBuckets = 5; // Number of buckets using provider.
-    }
   }
+}
+
+/*
+ * ProviderMetadata
+ *
+ * Contains metadata for a registered provider with data ingestion stats for data buckets associated with the provider.
+ */
+message ProviderMetadata {
+  string id = 1; // Provider id.
+  repeated string pvNames = 2; // List of PV names with buckets using provider.
+  Timestamp firstBucketTime = 3; // Timstamp of first bucket using provider.
+  Timestamp lastBucketTime = 4; // Timestamp of most recent bucket using provider.
+  int32 numBuckets = 5; // Number of buckets using provider.
 }
 
 
