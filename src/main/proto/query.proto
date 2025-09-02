@@ -348,6 +348,8 @@ message QueryPvMetadataResponse {
       Timestamp firstDataTimestamp = 10; // Timestamp of first data value for PV.
       Timestamp lastDataTimestamp = 11; // Timestamp of most recent data value for PV.
       int32 numBuckets = 12; // Number of buckets for this PV.
+      string lastProviderId = 13; // unique id of provider from most recent ingestion request.
+      string lastProviderName = 14; // name of provider from most recent ingestion request.
     }
   }
 }
