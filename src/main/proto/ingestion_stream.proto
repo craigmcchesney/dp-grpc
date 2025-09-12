@@ -26,27 +26,26 @@ import "common.proto";
 service DpIngestionStreamService {
 
   /*
-    * subscribeDataEvent(): Register a subscription for data events triggered by new data in the ingestion stream.
+    * subscribeDataEvent()
     *
     * This method allows the client to register a subscription for a data event, and receive notification when new data
-    * is received by the Ingestion Service that triggers the specified event.  The method uses server-side streaming,
-    * where the client sends a single SubscribeDataEventRequest message and receives a stream of
+    * is received by the Ingestion Service that triggers the specified event.  The method uses bidirectional streaming,
+    * where the client sends a stream of SubscribeDataEventRequest messages and receives a stream of
     * SubscribeDataEventResponse messages in the response stream.
     *
-    * To initiate a new subscription, the client sends a SubscribeDataEventRequest message whose payload message
-    * specifies the details for the data event to be monitored.
+    * To initiate a new subscription, the client sends a SubscribeDataEventRequest message with a NewSubscription
+    * payload specifying the details for the data event to be monitored.
     *
     * The service responds with a single SubscribeDataEventResponse message, containing either an ExceptionalResult
     * message payload if the request is rejected by the service or an AckResult message if the service accepts the
     * request and registers the subscription.
     *
-    * The service then sends a stream of SubscribeDataEventResponse messages, each containing a SubscribeDataEventResult
-    * payload containing details of a data event triggered by the monitor.
+    * The service then sends a stream of SubscribeDataEventResponse messages, each containing either Event or EventData
+    * message payloads.
     *
-    * There is not an explicit cancel mechanism, so the subscription lives until the client application closes.
-    * An explicit cancel mechanism, following the pattern of the Ingestion Service's subscribeData() API method,
-    * will be added when we revisit the Ingestion Stream Service and associated plugin application framework in an
-    * upcoming release.
+    * There are two mechanisms for canceling a data event subscription. To explicitly cancel a subscription, the client
+    * sends a SubscribeDataEventRequest message containing a CancelSubscription message payload.  The client can also
+    * implicitly cancel a subscription by simply closing the API method request stream.
     *
     * The service sends a response with an ExceptionalResult payload if it rejects the subscription request or an error
     * occurs while handling the subscription.  In either case, after sending the ExceptionalResult message the service
@@ -64,8 +63,25 @@ service DpIngestionStreamService {
 /*
  * SubscribeDataEventRequest
  *
- * The client sends a single SubscribeDataEventRequest message when invoking the subscribeData() API method.
- * TODO
+ * The client sends SubscribeDataEventRequest messages in the request stream for the subscribeDataEvent() API method.
+ * Each message can contain one of two message payloads, either a NewSubscription message or a CancelSubscription message.
+ *
+ * The NewSubscription message contains a list of PVConditionTrigger messages (triggers) and a
+ * DataEventOperation (operation) message.
+ *
+ * Each PvConditionTrigger specifies a PV name, a condition (e.g., equal to, greater than, less than, etc.),
+ * and a trigger data value.  When the condition is triggered by data in the ingestion stream for the specified PV,
+ * the client receives an Event notification that specifies the event time, condition that was triggered,
+ * and the data value that triggered the event.
+ *
+ * The DataEventOperation parameter is used to optionally register to receive EventData for a list of PVs
+ * when an Event is triggered for a window of time offset from the event trigger time.  This message includes
+ * a list of target PVs (targetPVs) and a DataEventWindow message that specifies the window of time
+ * (as a time interval offset from the triggered event time).  When an event is triggered for
+ * one of the subscription's PvConditionTriggers, EventData messages are sent in the response stream
+ * containing DataBuckets for the list of PVs and time interval specified in the DataEventOperation.
+ *
+ * The CancelSubscription message is an empty message that simply indicates the client wishes to end the subscription.
  */
 message SubscribeDataEventRequest {
 
@@ -90,17 +106,22 @@ message SubscribeDataEventRequest {
  * The service sends SubscribeDataEventResponse messages in the response stream for the subscribeDataEvent() method.
  * Each response contains one of three payload messages.  1) An ExceptionalResult payload is sent if the service
  * rejects the subscription request or an error occurs while processing the subscription. 2) An AckResult payload
- * is sent when the service accepts a subscription request.  3) A SubscribeDataEventResult is sent when new data
- * are received by the Ingestion Service that triggers the data event monitor for the subscription.
+ * is sent when the service accepts a subscription request. 3) A Event payload is sent each time the condition is met
+ * for one of the subscription's PvConditionTriggers. 4) When an Event is triggered for a subscription, messages with
+ * EventData payloads are sent for the specified list of PV names and time interval in the subscription's
+ * DataEventOperation parameter.
  *
- * Each SubscribeDataEventResult message contains a payload determined by the type data event definition specified for
- * the subscription's request.
+ * When one of the conditions for a subscription is triggered by data in the ingestion stream for the specified PV,
+ * the client receives an Event notification that specifies the event time, condition that was triggered,
+ * and the data value that triggered the event.
  *
- * For this prototype implementation, there is a single result payload message ConditionEvent that corresponds
- * to the request data event definition type ConditionEventDef.  A ConditionEvent contains the name of the PV,
- * timestamp, and data value for a data value satisfying the condition event definition specified in the corresponding
- * request.  A separate ConditionEvent message is sent each time the monitor is satisfied during the life
- * of the subscription.
+ * When an event is triggered for one of the subscription's PvConditionTriggers, EventData messages are sent
+ * in the response stream containing DataBuckets for the list of PVs and time interval specified in the
+ * DataEventOperation.
+ *
+ * When ingestion requests utilize SerializedDataColumns for improved performance, SubscribeDataEventResponse messages
+ * sent in the subscribeDataEvent() API method's response stream will automatically contain DataBuckets with
+ * SerializedDataColumns instead of regular DataColumns for maximum performance in subscription communication.
  */
 message SubscribeDataEventResponse {
 
@@ -132,7 +153,10 @@ message SubscribeDataEventResponse {
 /*
  * PvConditionTrigger
  *
- * TODO
+ * Each PvConditionTrigger specifies a PV name, a condition (e.g., equal to, greater than, less than, etc.),
+ * and a trigger data value.  When the condition is triggered by data in the ingestion stream for the specified PV,
+ * the client receives an Event notification that specifies the event time, condition that was triggered, and the
+ * data value that triggered the event.
  */
 message PvConditionTrigger {
 
@@ -150,14 +174,27 @@ message PvConditionTrigger {
   }
 }
 
+/*
+ * The DataEventOperation parameter is used to optionally register to receive EventData for a list of PVs
+ * when an Event is triggered for a window of time offset from the event trigger time.  This message includes
+ * a list of target PVs (targetPVs) and a DataEventWindow message that specifies the window of time
+ * (as a time interval offset from the triggered event time).  When an event is triggered for one of
+ * the subscription's PvConditionTriggers, EventData messages are sent in the response stream containing DataBuckets
+ * for the list of PVs and time interval specified in the DataEventOperation.
+ */
 message DataEventOperation {
 
   DataEventWindow window = 1;
   repeated string targetPvs = 2;
 
-  // Process operation = 3;  // The idea eventually is to add a field specifying additional processing to perform,
-  // beyond just returning data for the specified PVs
+  // Process operation = 3;  // Support may be added for a field specifying additional processing to perform,
+  // beyond just returning data for the specified PVs.
 
+  /*
+   * Currently only type TimeInterval is supported by DataEventWindow. Support for a 'SampleCount' type may be added
+   * where we specify the number of values to send for a PV starting from a time specified as an offset from the
+   * triggered event time.
+   */
   message DataEventWindow {
 
     oneof type {
