@@ -42,7 +42,8 @@ The Data Platform API is defined in the following _proto_ files, located in this
 
 - [___ingestion.proto___](https://github.com/osprey-dcs/dp-grpc/blob/main/src/main/proto/ingestion.proto) - Ingestion Service API
 - [___query.proto___](https://github.com/osprey-dcs/dp-grpc/blob/main/src/main/proto/query.proto) - Query Service API
-- [___annotation.proto___](https://github.com/osprey-dcs/dp-grpc/blob/main/src/main/proto/annotationproto) - Annotation Service API
+- [___annotation.proto___](https://github.com/osprey-dcs/dp-grpc/blob/main/src/main/proto/annotation.proto) - Annotation Service API
+- [___ingestion_stream.proto___](https://github.com/osprey-dcs/dp-grpc/blob/main/src/main/proto/ingestion_stream.proto) - Ingestion Stream Service API
 - [___common.proto___](https://github.com/osprey-dcs/dp-grpc/blob/main/src/main/proto/common.proto) - Common data structures shared by  the Service APIs 
 
 
@@ -175,25 +176,25 @@ And the code to invoke the API using the request object:
 ## Service API Summary
 The table below gives an overview of the Data Platform API organized by service.  Links to additional details are provided for each method category.
 
-| Service    | API Methods |
-|------------| ----------- |
-| Ingestion  | [Provider&nbsp;registration](#provider-registration-methods)<br>[PV&nbsp;data&nbsp;ingestion](#pv-data-ingestion-methods)<br>[PV&nbsp;data&nbsp;subscription](#pv-data-subscription-methods)<br>[Request&nbsp;Status&nbsp;query](#request-status-query-methods)<br> |
-| Query      | [PV&nbsp;data&nbsp;query](#pv-data-query-methods)<br>[PV&nbsp;metadata&nbsp;query](#pv-metadata-query-methods)<br>[Provider&nbsp;query](#provider-query-methods)<br>[Provider&nbsp;metadata&nbsp;query](#provider-metadata-query-methods)<br> |
-| Annotation | [Data&nbsp;Set&nbsp;creation](#data-set-creation-methods)<br>[Data&nbsp;Set&nbsp;query](#data-set-query-methods)<br>[Data&nbsp;export](#data-export-methods)<br>[Annotation&nbsp;creation](#annotation-creation-methods)<br>[Annotation&nbsp;query](#annotation-query-methods)<br> |
-
+| Service          | API Methods                                                                                                                                                                                                                                                                        |
+|------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Ingestion        | [Provider&nbsp;registration](#provider-registration-methods)<br>[PV&nbsp;data&nbsp;ingestion](#pv-data-ingestion-methods)<br>[PV&nbsp;data&nbsp;subscription](#pv-data-subscription-methods)<br>[Request&nbsp;Status&nbsp;query](#request-status-query-methods)<br>                |
+| Query            | [PV&nbsp;data&nbsp;query](#pv-data-query-methods)<br>[PV&nbsp;metadata&nbsp;query](#pv-metadata-query-methods)<br>[Provider&nbsp;query](#provider-query-methods)<br>[Provider&nbsp;metadata&nbsp;query](#provider-metadata-query-methods)<br>                                      |
+| Annotation       | [Data&nbsp;Set&nbsp;creation](#data-set-creation-methods)<br>[Data&nbsp;Set&nbsp;query](#data-set-query-methods)<br>[Data&nbsp;export](#data-export-methods)<br>[Annotation&nbsp;creation](#annotation-creation-methods)<br>[Annotation&nbsp;query](#annotation-query-methods)<br> |
+| Ingestion Stream | [Data&nbsp;Event&nbsp;subscription](#pv-data-event-subscription-methods)<br>                                                                                                                                                                                                       |
 
 ---
 ## Entity API Summary
 
 The table below gives an overview of the Data Platform API organized by entity.  A brief description of each entity is provided with links to additional details about API support for that entity.
 
-| Entity   | Description | API Methods                                                                                                                                                                                                                                        |
-|----------|-------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Provider | An infrastructure component that sends correlated PV time-series data to the archive.  Might be associated with an EPICS IOC. | [Provider&nbsp;registration](#provider-registration-methods)<br>[Provider&nbsp;query](#provider-query-methods)<br>[Provider&nbsp;metadata&nbsp;query](#provider-metadata-query-methods)<br>                                                        |
-| PV Time-Series Data | The core of the MLDP archive is correlated PV time-series data captured from devices in an accelerator facility. | [PV&nbsp;data&nbsp;ingestion](#pv-data-ingestion-methods)<br>[PV&nbsp;data&nbsp;query](#pv-data-query-methods)<br>[PV&nbsp;data&nbsp;subscription](#pv-data-subscription-methods)<br>[PV&nbsp;metadata&nbsp;query](#pv-metadata-query-methods)<br> |
-| Ingestion Request Status | Data ingestion requests are handled asynchronously to maximize performance, so the disposition of individual requests is recorded in a Request Status record. | [Request&nbsp;Status&nbsp;query](#request-status-query-methods)<br>                                                                                                                                                                                |
-| Data Set | A Data Set identifies PV data of interest in the archive through the use of Data Blocks, each one identifying a list of PVs and range of time. | [Data&nbsp;Set&nbsp;creation](#data-set-creation-methods)<br>[Data&nbsp;Set&nbsp;query](#data-set-query-methods)<br>[Data&nbsp;Set&nbsp;export](#data-set-export-methods)<br>                                                                      |
-| Annotation | Annotations are used to annotate Data Sets in the archive with descriptive information, data associations, Calculations, and provenance tracking information. | [Annotation&nbsp;creation](#annotation-creation-methods)<br>[Annotation&nbsp;query](#annotation-query-methods)<br>                                                                                                                                 |
+| Entity   | Description | API Methods                                                                                                                                                                                                                                                                                                                    |
+|----------|-------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Provider | An infrastructure component that sends correlated PV time-series data to the archive.  Might be associated with an EPICS IOC. | [Provider&nbsp;registration](#provider-registration-methods)<br>[Provider&nbsp;query](#provider-query-methods)<br>[Provider&nbsp;metadata&nbsp;query](#provider-metadata-query-methods)<br>                                                                                                                                    |
+| PV Time-Series Data | The core of the MLDP archive is correlated PV time-series data captured from devices in an accelerator facility. | [PV&nbsp;data&nbsp;ingestion](#pv-data-ingestion-methods)<br>[PV&nbsp;data&nbsp;query](#pv-data-query-methods)<br>[PV&nbsp;data&nbsp;subscription](#pv-data-subscription-methods)<br>[Data&nbsp;Event&nbsp;subscription](#pv-data-event-subscription-methods)<br>[PV&nbsp;metadata&nbsp;query](#pv-metadata-query-methods)<br> |
+| Ingestion Request Status | Data ingestion requests are handled asynchronously to maximize performance, so the disposition of individual requests is recorded in a Request Status record. | [Request&nbsp;Status&nbsp;query](#request-status-query-methods)<br>                                                                                                                                                                                                                                                            |
+| Data Set | A Data Set identifies PV data of interest in the archive through the use of Data Blocks, each one identifying a list of PVs and range of time. | [Data&nbsp;Set&nbsp;creation](#data-set-creation-methods)<br>[Data&nbsp;Set&nbsp;query](#data-set-query-methods)<br>[Data&nbsp;Set&nbsp;export](#data-set-export-methods)<br>                                                                                                                                                  |
+| Annotation | Annotations are used to annotate Data Sets in the archive with descriptive information, data associations, Calculations, and provenance tracking information. | [Annotation&nbsp;creation](#annotation-creation-methods)<br>[Annotation&nbsp;query](#annotation-query-methods)<br>                                                                                                                                                                                                             |
 
 
 
@@ -202,6 +203,7 @@ The table below gives an overview of the Data Platform API organized by entity. 
 The Data Platform API is intended to support the following use cases and patterns:
 - Register ingestion data Providers, query Provider details and metadata.
 - Ingest PV time-series data, either in continuous or batch mode.
+- Subscribe to PV data and data events from the ingestion stream.
 - Monitor ingestion Request Status records for errors and other problems.
 - Query PV time-series data and metadata.
 - Create Data Sets identifying archive data blocks of interest by PVs and time range.
@@ -555,6 +557,65 @@ Each SubscribeDataResult message payload contains a DataTimestamps message, spec
 ----
 
 As mentioned above, when ingestion requests utilize SerializedDataColumns for improved performance, SubscribeDataResponse messages sent by the subscribeData() API for subscribed PVs will automatically contain SerializedDataColumns instead of regular DataColumns for maximum performance in subscription communication.
+
+See the documentation above for [PV Data Query Methods](https://github.com/osprey-dcs/dp-grpc?tab=readme-ov-file#pv-data-subscription-methods) for a Java code snippet for converting SerializedDataColumns to regular DataColumns.
+
+----
+
+</td>
+</tr>
+</table>
+
+### PV Data Event Subscription Methods
+<table>
+<tr>
+<td><pre>
+rpc subscribeDataEvent(stream SubscribeDataEventRequest) returns (stream SubscribeDataEventResponse);
+</pre></td>
+</tr>
+<tr>
+<td>defined in: <a href="https://github.com/osprey-dcs/dp-grpc/blob/main/src/main/proto/ingestion_stream.proto">ingestion_stream.proto</a></td>
+</tr>
+<tr>
+<td>
+
+Using the subscribeDataEvent() API method, a client registers one or more triggers each specifying a PV name, a condition (e.g., equal to, greater than, less than, etc.), and a trigger data value.  When the condition is triggered by data in the ingestion stream for the specified PV, the client receives an Event notification that specifies the event time, condition that was triggered, and the data value that triggered the event.  The client can optionally register to receive EventData for a list of PVs when an Event is triggered for a window of time offset from the event trigger time.  This is useful for monitoring data conditions in "real-time", and building models and applications that respond to conditions in the data ingestion stream.
+
+This method uses the Ingestion Service data subscription mechanism.  As the Ingestion Service receives new data for subscribed PVs, it publishes that data to subscribers while also persisting it to the archive.
+
+The method uses bidirectional streaming.  The client sends SubscribeDataEventRequest messages in the method's request stream, and receives SubscribeDataEventResponse messages in the response stream.
+
+----
+
+To initiate a new subscription, the client sends a single SubscribeDataEventRequest message (containing a NewSubscription message payload) to register the new subscription.
+
+The service responds with a single SubscribeDataEventResponse message, containing either an ExceptionalResult message payload if the request is rejected by the service or an AckResult message if the service accepts the request and registers the subscription.
+
+The service then sends a stream of SubscribeDataEventResponse messages containing either Event or EventData payloads, until the client cancels the subscription, either by sending a SubscribeDataEventRequest containing a CancelSubscription payload or by closing the API method's request stream.
+
+The service sends a response with an ExceptionalResult payload if it rejects the subscription request or an error occurs while handling the subscription.  In either case, after sending the ExceptionalResult message the service closes the API method response stream.
+
+If the client sends subsequent NewSubscription messages after registering the initial subscription, the service responds with a reject message and closes the response stream.
+
+----
+
+The client sends SubscribeDataEventRequest messages in the request stream for the subscribeDataEvent() API method.  Each message can contain one of two message payloads, either a NewSubscription message or a CancelSubscription message.
+
+The NewSubscription message contains a list of PVConditionTrigger messages (triggers) and a DataEventOperation (operation) message.
+
+Each PvConditionTrigger specifies a PV name, a condition (e.g., equal to, greater than, less than, etc.), and a trigger data value.  When the condition is triggered by data in the ingestion stream for the specified PV, the client receives an Event notification that specifies the event time, condition that was triggered, and the data value that triggered the event.  
+
+The DataEventOperation parameter is used to optionally register to receive EventData for a list of PVs when an Event is triggered for a window of time offset from the event trigger time.  This message includes a list of target PVs (targetPVs) and a DataEventWindow message that specifies the window of time (as a time interval offset from the triggered event time).  When an event is triggered for one of the subscription's PvConditionTriggers, EventData messages are sent in the response stream containing DataBuckets for the list of PVs and time interval specified in the DataEventOperation.
+
+The CancelSubscription message is an empty message that simply indicates the client wishes to end the subscription.
+
+----
+
+The service sends SubscribeDataEventResponse messages in the response stream for the subscribeDataEvent() method.  Each response contains one of four payload messages.  1) An ExceptionalResult payload is sent if the service rejects the subscription request or an error occurs while processing the subscription. 2) An AckResult payload is sent when the service accepts a subscription request. 3) A Event payload is sent each time the condition is met for one of the subscription's PvConditionTriggers. 4) When an Event is triggered for a subscription, messages with EventData payloads are sent for the specified list of PV names and time interval in the subscription's DataEventOperation parameter.
+
+----
+
+As mentioned above, when ingestion requests utilize SerializedDataColumns for improved performance, SubscribeDataEventResponse messages sent in the subscribeDataEvent() API method's response stream will automatically contain DataBuckets with SerializedDataColumns instead of regular DataColumns for maximum performance in subscription communication.
 
 See the documentation above for [PV Data Query Methods](https://github.com/osprey-dcs/dp-grpc?tab=readme-ov-file#pv-data-subscription-methods) for a Java code snippet for converting SerializedDataColumns to regular DataColumns.
 
