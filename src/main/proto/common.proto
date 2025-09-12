@@ -315,13 +315,17 @@ message Image {
 /*
  * DataBucket
  *
- * TODO
+ * Contains bucketed time-series data for a PV over a time period as specified in the dataTimestamps.
  */
 message DataBucket {
+
   DataTimestamps dataTimestamps = 1; // Specifies timestamps for bucket, using SamplingClock or explicit Timestamp list.
   repeated string tags = 2; // Specifies list of tags for bucket, if any.
   repeated Attribute attributes = 3; // Specifies list of key/value attributes for bucket, if any.
   EventMetadata eventMetadata = 4; // Specifies event metadata for bucket, if any.
+  string providerId = 5; // unique id of provider from most recent ingestion request.
+  string providerName = 6; // name of provider from most recent ingestion request.
+
   oneof data {
     DataColumn dataColumn = 10; // Vector of data values corresponding to data timestamps.
     SerializedDataColumn serializedDataColumn = 11; // Serialized DataColumn byte data to avoid redundant serialization ops.
