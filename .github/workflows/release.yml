@@ -1,0 +1,43 @@
+name: Release dp-grpc
+
+on:
+  push:
+    tags:
+      - 'rel-*'
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: maven
+
+      - name: Build
+        run: mvn -B package
+
+      - name: Extract version
+        run: echo "VERSION=${GITHUB_REF_NAME#rel-}" >> $GITHUB_ENV
+
+      - name: Prepare artifacts
+        run: |
+          set -e
+          mkdir -p release
+          cp -r src/main/proto release/proto
+
+          JAR=$(ls target/*.jar | head -n 1)
+          cp "$JAR" release/dp-grpc-${VERSION}.jar
+
+      - name: Publish release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            release/proto/**
+            release/dp-grpc-${VERSION}.jar
