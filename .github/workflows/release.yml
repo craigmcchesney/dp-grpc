@@ -35,9 +35,15 @@ jobs:
           JAR=$(ls target/*.jar | head -n 1)
           cp "$JAR" release/dp-grpc-${VERSION}.jar
 
+      - name: Package proto files
+        run: |
+          cd release
+          tar czf dp-grpc-proto-${VERSION}.tar.gz proto
+
+
       - name: Publish release
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            release/proto/**
+            release/dp-grpc-proto-${VERSION}.tar.gz
             release/dp-grpc-${VERSION}.jar
