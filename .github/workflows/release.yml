@@ -38,8 +38,12 @@ jobs:
       - name: Package proto files
         run: |
           cd release
-          tar czf dp-grpc-proto-${VERSION}.tar.gz proto
+          tar czf dp-grpc-${VERSION}.tar.gz proto
 
+      - name: Verify release artifacts exist
+        run: |
+          test -f release/dp-grpc-${VERSION}.tar.gz
+          test -f release/dp-grpc-${VERSION}.jar
 
       - name: Publish release
         uses: softprops/action-gh-release@v2
