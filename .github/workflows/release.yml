@@ -49,5 +49,5 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            release/dp-grpc-proto-${VERSION}.tar.gz
-            release/dp-grpc-${VERSION}.jar
+            release/dp-grpc-${{ env.VERSION }}.tar.gz
+            release/dp-grpc-${{ env.VERSION }}.jar
