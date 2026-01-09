@@ -56,10 +56,10 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            release/dp-grpc-${VERSION}.jar
-            release/dp-grpc-${VERSION}.jar.sha256
-            release/dp-grpc-${VERSION}.tar.gz
-            release/dp-grpc-${VERSION}.tar.gz.sha256
+            release/dp-grpc-${{ env.VERSION }}.jar
+            release/dp-grpc-${{ env.VERSION }}.jar.sha256
+            release/dp-grpc-${{ env.VERSION }}.tar.gz
+            release/dp-grpc-${{ env.VERSION }}.tar.gz.sha256
           overwrite_files: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
