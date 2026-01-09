@@ -45,9 +45,21 @@ jobs:
           test -f release/dp-grpc-${VERSION}.tar.gz
           test -f release/dp-grpc-${VERSION}.jar
 
-      - name: Publish release
+      - name: Generate checksums
+        run: |
+          sha256sum release/dp-grpc-${VERSION}.jar \
+            > release/dp-grpc-${VERSION}.jar.sha256
+          sha256sum release/dp-grpc-${VERSION}.tar.gz \
+            > release/dp-grpc-${VERSION}.tar.gz.sha256
+
+      - name: Publish GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            release/dp-grpc-${{ env.VERSION }}.tar.gz
-            release/dp-grpc-${{ env.VERSION }}.jar
+            release/dp-grpc-${VERSION}.jar
+            release/dp-grpc-${VERSION}.jar.sha256
+            release/dp-grpc-${VERSION}.tar.gz
+            release/dp-grpc-${VERSION}.tar.gz.sha256
+          overwrite_files: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
