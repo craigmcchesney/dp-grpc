@@ -194,7 +194,7 @@ message BoolArrayColumn {
 
 message ImageColumn {
   string name = 1;
-  ImageDescriptor descriptor = 2;
+  ImageDescriptor imageDescriptor = 2;
   // One image per sample
   repeated bytes images = 3;
 }
