@@ -114,6 +114,121 @@ message ExceptionalResult {
 // ------------------- Data Definitions (Ingestion and Query)  ---------------------------
 //
 
+// TODO: inline docs for new message types
+message DoubleColumn {
+  string name = 1; // PV name
+  repeated double values = 2 [packed = true];
+}
+
+message FloatColumn {
+  string name = 1; // PV name
+  repeated float values = 2 [packed = true];
+}
+
+message Int64Column {
+  string name = 1; // PV name
+  repeated sint64 values = 2 [packed = true];
+}
+
+message Int32Column {
+  string name = 1; // PV name
+  repeated sint32 values = 2 [packed = true];
+}
+
+message BoolColumn {
+  string name = 1; // PV name
+  repeated bool values = 2 [packed = true];
+}
+
+message StringColumn {
+  string name = 1; // PV name
+  repeated string values = 2;
+}
+
+message EnumColumn {
+  string name = 1; // PV name
+  repeated int32 values = 2 [packed = true];
+
+  // Optional enum metadata
+  EnumDescriptor enum_descriptor = 3;
+}
+
+message EnumDescriptor {
+  map<int32, string> labels = 1;
+}
+
+message ArrayDimensions {
+  repeated uint32 dims = 1; // e.g. [1024] or [64, 64] or [32, 32, 16]
+}
+
+message DoubleArrayColumn {
+  string name = 1; // PV name
+  ArrayDimensions dimensions = 2;
+  // Flattened: sample_count × product(dims)
+  repeated double values = 3 [packed = true];
+}
+
+message FloatArrayColumn {
+  string name = 1;
+  ArrayDimensions dimensions = 2;
+  repeated float values = 3 [packed = true];
+}
+
+message Int32ArrayColumn {
+  string name = 1;
+  ArrayDimensions dimensions = 2;
+  repeated sint32 values = 3 [packed = true];
+}
+
+message Int64ArrayColumn {
+  string name = 1;
+  ArrayDimensions dimensions = 2;
+  repeated sint64 values = 3 [packed = true];
+}
+
+message BoolArrayColumn {
+  string name = 1;
+  ArrayDimensions dimensions = 2;
+  repeated bool values = 3 [packed = true];
+}
+
+message ImageColumn {
+  string name = 1;
+  ImageDescriptor descriptor = 2;
+  // One image per sample
+  repeated bytes images = 3;
+}
+
+message ImageDescriptor {
+  uint32 width = 1;
+  uint32 height = 2;
+  uint32 channels = 3; // e.g. 1 (mono), 3 (RGB)
+  string encoding = 4; // e.g. "raw", "png", "jpeg"
+}
+
+message StructColumn {
+  string name = 1;
+  string schema_id = 2; // e.g. "beam_position:v3"
+  // One struct per sample
+  repeated bytes values = 3;
+}
+
+message SerializedDataColumn {
+  string name = 1;
+  // e.g. "proto:Image:v1", "proto:CustomStruct:v2"
+  string encoding = 2;
+  oneof storage {
+    bytes inline_payload = 10;
+    GridFsRef gridfs_ref = 11;
+  }
+}
+
+message GridFsRef {
+  string file_id = 1;
+  int64 size_bytes = 2;
+  string checksum = 3;
+}
+
 /*
  * Data Column
  *
@@ -123,39 +238,6 @@ message ExceptionalResult {
 message DataColumn {
   string name = 1; // Name of PV.
   repeated DataValue dataValues = 2; // List of heterogeneous column data values.
-}
-
-/*
- * SerializedDataColumn
- *
- * Contains the bytes for a serialized protobuf DataColumn object, used to avoid redundant serialization operations
- * for maximum API performance.  Use of SerializedDataColumns instead of regular DataColumns is supported in the
- * APIs for ingestion, query, and subscription.
- *
- * To create a SerializedDataColumn (e.g., for use in the ingestion API methods), the user should first create
- a regular DataColumn and then manually serialize it to the dataColumnBytes field of a SerializedDataColumn object.
- * Example Java code to create a SerializedDataColumn from a regular DataColumn is shown below:
- *
- *            SerializedDataColumn.newBuilder()
- *                  .setName(dataColumn.getName())
- *                  .setDataColumnBytes(dataColumn.toByteString())
- *                  .build();
- *
- * To create a regular DataColumn from a SerializedDataColumn (e.g., for clients of the query or subscription APIs),
- * the user should create a DataColumn by parsing (deserializing) the content of the SerializedDataColumn's
- * dataColumnBytes field.  Example Java code is shown below:
- *
- *  DataColumn responseDataColumn = null;
- *  try {
- *      responseDataColumn = DataColumn.parseFrom(responseBucket.getSerializedDataColumn().getDataColumnBytes());
- *  } catch (InvalidProtocolBufferException e) {
- *      fail("exception parsing DataColumn from SerializedDataColumn: " + e.getMessage());
- *  }
- *
- */
-message SerializedDataColumn {
-  string name = 1;
-  bytes dataColumnBytes = 2;
 }
 
 /*
