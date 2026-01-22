@@ -215,12 +215,8 @@ message StructColumn {
 
 message SerializedDataColumn {
   string name = 1;
-  // e.g. "proto:Image:v1", "proto:CustomStruct:v2"
   string encoding = 2;
-  oneof storage {
-    bytes inline_payload = 10;
-    GridFsRef gridfs_ref = 11;
-  }
+  bytes payload = 3;
 }
 
 message GridFsRef {
