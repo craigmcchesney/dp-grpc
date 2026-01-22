@@ -408,9 +408,29 @@ message DataBucket {
   string providerId = 5; // unique id of provider from most recent ingestion request.
   string providerName = 6; // name of provider from most recent ingestion request.
 
+  // Result columns depend on the type of column used at ingestion.  Each column vector contains a PV sample value for each
+  // timestamp specified in the dataTimestamps.
   oneof data {
-    DataColumn dataColumn = 10; // Vector of data values corresponding to data timestamps.
-    SerializedDataColumn serializedDataColumn = 11; // Serialized DataColumn byte data to avoid redundant serialization ops.
+    
+    DataColumn dataColumn = 10; // Deprecated legacy API data structure, will be removed in MLDP v2.
+    
+    SerializedDataColumn serializedDataColumn = 11;
+
+    DoubleColumn doubleColumns = 12;
+    FloatColumn  floatColumns  = 13;
+    Int64Column  int64Columns  = 14;
+    Int32Column  int32Columns  = 15;
+    BoolColumn   boolColumns   = 16;
+    StringColumn stringColumns = 17;
+    EnumColumn   enumColumns   = 18;
+    ImageColumn  imageColumns  = 19;
+    StructColumn structColumns = 20;
+
+    DoubleArrayColumn doubleArrayColumns = 30;
+    FloatArrayColumn floatArrayColumns = 31;
+    Int32ArrayColumn int32ArrayColumns = 32;
+    Int64ArrayColumn int64ArrayColumns = 33;
+    BoolArrayColumn boolArrayColumns = 34;
   }
 }
 

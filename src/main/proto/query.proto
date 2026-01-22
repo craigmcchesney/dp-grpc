@@ -145,7 +145,6 @@ message QueryDataRequest {
     Timestamp beginTime = 1; // Required, specifies query start time.
     Timestamp endTime = 2; // Required, specifies query end time.
     repeated string pvNames = 3; // Required, contains list of PV names to query for specified time range.
-    bool useSerializedDataColumns = 4; // Required, specifies if the result should use SerializedDataColumns for maximum performance.
   }
 
   /*

@@ -119,9 +119,8 @@ message SubscribeDataEventRequest {
  * in the response stream containing DataBuckets for the list of PVs and time interval specified in the
  * DataEventOperation.
  *
- * When ingestion requests utilize SerializedDataColumns for improved performance, SubscribeDataEventResponse messages
- * sent in the subscribeDataEvent() API method's response stream will automatically contain DataBuckets with
- * SerializedDataColumns instead of regular DataColumns for maximum performance in subscription communication.
+ * Each DataBucket includes a column vector of data for a PV matching the subscription in the column format used in
+ * ingestion for that PV.
  */
 message SubscribeDataEventResponse {
 
