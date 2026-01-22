@@ -219,12 +219,6 @@ message SerializedDataColumn {
   bytes payload = 3;
 }
 
-message GridFsRef {
-  string file_id = 1;
-  int64 size_bytes = 2;
-  string checksum = 3;
-}
-
 /*
  * Data Column
  *
