@@ -123,6 +123,12 @@ jobs:
       # -----------------------------
       # Commit + push
       # -----------------------------
+
+      - name: Configure git identity
+        run: |
+          git config --global user.name "dp-grpc bot"
+          git config --global user.email "dp-grpc-bot@users.noreply.github.com"
+
       - name: Commit changes
         run: |
           cd dp-python-lib
