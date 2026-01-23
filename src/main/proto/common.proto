@@ -5,10 +5,10 @@
 
 syntax = "proto3";
 
+package dp.service.common;
+
 option java_multiple_files = true;
 option java_package = "com.ospreydcs.dp.grpc.v1.common";
-
-option python_package = "dp_python_lib.grpc.v1";
 
 
 //

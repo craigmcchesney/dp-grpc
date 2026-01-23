@@ -10,8 +10,6 @@ package dp.service.ingestionstream;
 option java_multiple_files = true;
 option java_package = "com.ospreydcs.dp.grpc.v1.ingestionstream";
 
-option python_package = "dp_python_lib.grpc.v1";
-
 import "common.proto";
 
 
@@ -126,10 +124,10 @@ message SubscribeDataEventRequest {
  */
 message SubscribeDataEventResponse {
 
-  Timestamp responseTime = 1; // Indicates time response is generated.
+  dp.service.common.Timestamp responseTime = 1; // Indicates time response is generated.
 
   oneof result {
-    ExceptionalResult exceptionalResult = 10;
+    dp.service.common.ExceptionalResult exceptionalResult = 10;
     AckResult ack = 11;
     Event event = 12;
     EventData eventData = 13;
@@ -140,14 +138,14 @@ message SubscribeDataEventResponse {
   }
 
   message Event {
-    Timestamp eventTime = 1;
+    dp.service.common.Timestamp eventTime = 1;
     PvConditionTrigger trigger = 2;
-    DataValue dataValue = 3;
+    dp.service.common.DataValue dataValue = 3;
   }
 
   message EventData {
     Event event = 1;
-    repeated DataBucket dataBuckets = 2;
+    repeated dp.service.common.DataBucket dataBuckets = 2;
   }
 }
 
@@ -163,7 +161,7 @@ message PvConditionTrigger {
 
   string pvName = 1;
   PvCondition condition= 2;
-  DataValue value = 3;
+  dp.service.common.DataValue value = 3;
 
   enum PvCondition {
     PV_CONDITION_UNSPECIFIED = 0;
