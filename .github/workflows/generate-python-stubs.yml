@@ -51,10 +51,10 @@ jobs:
           rm -rf out
           mkdir -p out/python
           python -m grpc_tools.protoc \
-            -I proto \
+            -I src/main/proto \
             --python_out=out/python \
             --grpc_python_out=out/python \
-            proto/*.proto
+            src/main/proto/*.proto
 
       # -----------------------------
       # Determine release vs dev mode
