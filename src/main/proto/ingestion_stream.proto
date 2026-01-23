@@ -10,6 +10,8 @@ package dp.service.ingestionstream;
 option java_multiple_files = true;
 option java_package = "com.ospreydcs.dp.grpc.v1.ingestionstream";
 
+option python_package = "dp_python_lib.grpc.v1";
+
 import "common.proto";
 
 
