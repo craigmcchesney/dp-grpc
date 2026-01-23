@@ -56,6 +56,12 @@ jobs:
             --grpc_python_out=out/python \
             src/main/proto/*.proto
 
+      - name: Debug generated Python output
+        run: |
+          echo "=== Generated files ==="
+          ls -l out/python || true
+          find out/python -type f || true
+
       # -----------------------------
       # Determine release vs dev mode
       # -----------------------------
