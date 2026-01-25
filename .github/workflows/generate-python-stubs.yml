@@ -57,8 +57,8 @@ jobs:
             --grpc_python_out=out/python \
             src/main/proto/*.proto
       
-          # Fix absolute imports in gRPC service stubs
-          find out/python -name "*_pb2_grpc.py" -exec \
+          # Fix absolute imports in all generated Python files
+          find out/python -name "*_pb2*.py" -exec \
             sed -i 's/^import \(.*_pb2\) as/from . import \1 as/' {} \;
 
       - name: Debug generated Python output
