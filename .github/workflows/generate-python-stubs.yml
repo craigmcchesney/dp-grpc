@@ -54,6 +54,15 @@ jobs:
       # -----------------------------
       # Generate Python stubs
       # -----------------------------
+
+      - name: Expose grpc_python plugin
+        run: |
+          echo "$(python - <<'EOF'
+          import sysconfig
+          print(sysconfig.get_path("scripts"))
+          EOF
+          )" >> $GITHUB_PATH
+
       - name: Generate Python gRPC stubs
         run: |
           rm -rf out
