@@ -38,18 +38,10 @@ jobs:
         with:
           python-version: "3.11"
 
-      - name: Install protoc and Python gRPC plugins
+      - name: Install Python dependencies
         run: |
           python -m pip install --upgrade pip
-          python -m pip install \
-            protobuf \
-            grpcio \
-            grpcio-tools
-      
-          PROTOC_VERSION=25.3
-          curl -LO https://github.com/protocolbuffers/protobuf/releases/download/v${PROTOC_VERSION}/protoc-${PROTOC_VERSION}-linux-x86_64.zip
-          unzip protoc-${PROTOC_VERSION}-linux-x86_64.zip -d protoc
-          echo "$PWD/protoc/bin" >> $GITHUB_PATH
+          python -m pip install grpcio grpcio-tools protobuf
 
       # -----------------------------
       # Generate Python stubs
@@ -58,13 +50,16 @@ jobs:
         run: |
           rm -rf out
           mkdir -p out/python
-          
-          protoc \
+      
+          python -m grpc_tools.protoc \
             -I src/main/proto \
             --python_out=out/python \
             --grpc_python_out=out/python \
-            --plugin=protoc-gen-grpc_python=$(python -m grpc_tools.protoc --plugin) \
             src/main/proto/*.proto
+      
+          # Fix absolute imports in gRPC service stubs
+          find out/python -name "*_pb2_grpc.py" -exec \
+            sed -i 's/^import \(.*_pb2\) as/from . import \1 as/' {} \;
 
       - name: Debug generated Python output
         run: |
