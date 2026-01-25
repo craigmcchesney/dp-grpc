@@ -55,7 +55,7 @@ jobs:
           mkdir -p out/python
           python -m grpc_tools.protoc \
             -I src/main/proto \
-            --python_out=relative_imports:out/python \
+            --python_out=out/python \
             --grpc_python_out=relative_imports:out/python \
             src/main/proto/*.proto
 
