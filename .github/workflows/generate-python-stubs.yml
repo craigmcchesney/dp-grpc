@@ -38,13 +38,18 @@ jobs:
         with:
           python-version: "3.11"
 
-      - name: Install gRPC tools
+      - name: Install protoc and Python gRPC plugins
         run: |
           python -m pip install --upgrade pip
           python -m pip install \
-            "protobuf>=4.25.0" \
-            "grpcio>=1.62.0" \
-            "grpcio-tools>=1.62.0"
+            protobuf \
+            grpcio \
+            grpcio-tools
+      
+          PROTOC_VERSION=25.3
+          curl -LO https://github.com/protocolbuffers/protobuf/releases/download/v${PROTOC_VERSION}/protoc-${PROTOC_VERSION}-linux-x86_64.zip
+          unzip protoc-${PROTOC_VERSION}-linux-x86_64.zip -d protoc
+          echo "$PWD/protoc/bin" >> $GITHUB_PATH
 
       # -----------------------------
       # Generate Python stubs
@@ -53,11 +58,11 @@ jobs:
         run: |
           rm -rf out
           mkdir -p out/python
-          python -m grpc_tools.protoc \
+          
+          protoc \
             -I src/main/proto \
             --python_out=out/python \
             --grpc_python_out=out/python \
-            --grpc_python_opt=relative_imports \
             src/main/proto/*.proto
 
       - name: Debug generated Python output
