@@ -208,9 +208,6 @@ message RegisterProviderResponse {
  * performance and simplicity, the service does not check uniqueness of incoming clientRequestId values, it is up to
  * the client to enforce uniqueness.
  *
- * The tags, attributes and eventMetadata fields are optional are optional and  used to further describe the ingested data or
- * associate it with an experiment, event, subsystem, etc.
- *
  * The required ingestionDataFrame field contains the column data vectors to be ingested.
  *
  * For maximum performance, data ingestion is an asynchronous operation.  The response for a request only indicates
