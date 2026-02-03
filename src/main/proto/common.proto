@@ -151,12 +151,8 @@ message EnumColumn {
   string name = 1; // PV name
   repeated int32 values = 2 [packed = true];
 
-  // Optional enum metadata
-  EnumDescriptor enum_descriptor = 3;
-}
-
-message EnumDescriptor {
-  map<int32, string> labels = 1;
+  // Stable identifier for enum semantics
+  string enumId = 3; // e.g. "epics:alarm_status:v2"
 }
 
 message ArrayDimensions {
@@ -210,7 +206,7 @@ message ImageDescriptor {
 
 message StructColumn {
   string name = 1;
-  string schema_id = 2; // e.g. "beam_position:v3"
+  string schemaId = 2; // e.g. "beam_position:v3"
   // One struct per sample
   repeated bytes values = 3;
 }
