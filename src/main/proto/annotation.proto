@@ -96,8 +96,8 @@ message DataSet {
 }
 
 message DataBlock {
-  Timestamp beginTime = 1; // Required, specifies beginning of time range for basis set.
-  Timestamp endTime = 2; // Required, specifies end of time range for basis set.
+  dp.service.common.Timestamp beginTime = 1; // Required, specifies beginning of time range for basis set.
+  dp.service.common.Timestamp endTime = 2; // Required, specifies end of time range for basis set.
   repeated string pvNames = 3; // Required, contains list of data source names for basis set.
 }
 
@@ -125,11 +125,11 @@ message SaveDataSetRequest {
  */
 message SaveDataSetResponse {
 
-  Timestamp responseTime = 1; // Indicates time response was generated.
+  dp.service.common.Timestamp responseTime = 1; // Indicates time response was generated.
 
   // result: Contains query result payload with either ExceptionalResult or SuccessfulResult as described above.
   oneof result {
-    ExceptionalResult exceptionalResult = 10;
+    dp.service.common.ExceptionalResult exceptionalResult = 10;
     SaveDataSetResult saveDataSetResult = 11;
   }
 
@@ -209,12 +209,12 @@ message QueryDataSetsRequest {
  */
 message QueryDataSetsResponse {
 
-  Timestamp responseTime = 1; // Indicates time response was generated.
+  dp.service.common.Timestamp responseTime = 1; // Indicates time response was generated.
 
   // result: Response contains either an ExceptionalResult indicating a problem handling the request,
   // or DataSetsResult with query result.
   oneof result {
-    ExceptionalResult exceptionalResult = 10;
+    dp.service.common.ExceptionalResult exceptionalResult = 10;
     DataSetsResult dataSetsResult = 11;
   }
 
@@ -242,8 +242,8 @@ message QueryDataSetsResponse {
  * that includes both PV data and user-defined Calculations.
  *
  * The Calculations object includes a list of CalculationsDataFrames.  Each CalculationsDataFrame includes
- * a name, a DataTimestamps object, and a list of DataColumns, each of which contains a vector of data values for a
- * single Calculation and specifies a DataValue for each timestamp specified by the corresponding DataTimestamps object.
+ * a name, a DataTimestamps object, and lists of column data values, each of which contains a vector
+ * of data values for a single Calculation and specifies a value for each timestamp specified by dataTimestamps.
  *
  * It might be helpful to use the analogy of an Excel workbook.  The Calculations object is the workbook, and each
  * CalculationDataFrame is a worksheet in that workbook that contains a column of timestamps and columns of calculated
@@ -255,9 +255,32 @@ message Calculations {
   repeated CalculationsDataFrame calculationDataFrames = 2;
 
   message CalculationsDataFrame {
+
     string name = 1; // Required, name of data frame.
-    DataTimestamps dataTimestamps = 2; // Required, specifies timestamps for data values.
-    repeated DataColumn dataColumns = 3; // Required list of columns, each containing a data value for each timestamp.
+    dp.service.common.DataTimestamps dataTimestamps = 2; // Required, specifies timestamps for data values.
+
+    // Data frame may include lists of different types of columns, of the same types used in the data ingestion API.
+
+    repeated dp.service.common.DataColumn dataColumns = 3; // Deprecated legacy data column format, to be removed in MLDP v2. List of columns, each containing a data value for each timestamp.
+
+    repeated dp.service.common.SerializedDataColumn serializedDataColumns = 4;
+
+    repeated dp.service.common.DoubleColumn doubleColumns = 10;
+    repeated dp.service.common.FloatColumn  floatColumns  = 11;
+    repeated dp.service.common.Int64Column  int64Columns  = 12;
+    repeated dp.service.common.Int32Column  int32Columns  = 13;
+    repeated dp.service.common.BoolColumn   boolColumns   = 14;
+    repeated dp.service.common.StringColumn stringColumns = 15;
+    repeated dp.service.common.EnumColumn   enumColumns   = 16;
+    repeated dp.service.common.ImageColumn  imageColumns  = 17;
+    repeated dp.service.common.StructColumn structColumns = 18;
+
+    repeated dp.service.common.DoubleArrayColumn doubleArrayColumns = 20;
+    repeated dp.service.common.FloatArrayColumn floatArrayColumns = 21;
+    repeated dp.service.common.Int32ArrayColumn int32ArrayColumns = 22;
+    repeated dp.service.common.Int64ArrayColumn int64ArrayColumns = 23;
+    repeated dp.service.common.BoolArrayColumn boolArrayColumns = 24;
+
   }
 }
 
@@ -297,8 +320,8 @@ message SaveAnnotationRequest {
   repeated string annotationIds = 5; // optional list of associated annotations, for provenance / linking of calculations
   string	comment = 6; // optional free-form comment text
   repeated string tags = 7; // optional list of keywords / tags for cataloging Annotation
-  repeated Attribute attributes = 8; // optional list of key/value attribute pairs for cataloging Annotation
-  EventMetadata eventMetadata = 9; // used to associate annotation with an experiment / event
+  repeated dp.service.common.Attribute attributes = 8; // optional list of key/value attribute pairs for cataloging Annotation
+  dp.service.common.EventMetadata eventMetadata = 9; // used to associate annotation with an experiment / event
   Calculations calculations = 10; // optional user-defined calculations
 }
 
@@ -311,11 +334,11 @@ message SaveAnnotationRequest {
  */
 message SaveAnnotationResponse {
 
-  Timestamp responseTime = 1; // Indicates time response was generated.
+  dp.service.common.Timestamp responseTime = 1; // Indicates time response was generated.
 
   // result: Contains query result payload with either ExceptionalResult or SuccessfulResult as described above.
   oneof result {
-    ExceptionalResult exceptionalResult = 10;
+    dp.service.common.ExceptionalResult exceptionalResult = 10;
     SaveAnnotationResult saveAnnotationResult = 11;
   }
 
@@ -419,12 +442,12 @@ message QueryAnnotationsRequest {
  */
 message QueryAnnotationsResponse {
 
-  Timestamp responseTime = 1; // Indicates time response was generated.
+  dp.service.common.Timestamp responseTime = 1; // Indicates time response was generated.
 
   // result: Response contains either an ExceptionalResult indicating a problem handling the request,
   // or AnnotationsResult with query result.
   oneof result {
-    ExceptionalResult exceptionalResult = 10;
+    dp.service.common.ExceptionalResult exceptionalResult = 10;
     AnnotationsResult annotationsResult = 11;
   }
 
@@ -446,8 +469,8 @@ message QueryAnnotationsResponse {
       repeated string annotationIds = 6; // list of unique ids for associated Annotations
       string	comment = 7; // free-form comment text
       repeated string tags = 8; // list of keywords / tags
-      repeated Attribute attributes = 9; // list of key/value attribute pairs
-      EventMetadata eventMetadata = 10; // event metadata to associate Annotation with an experiment / event
+      repeated dp.service.common.Attribute attributes = 9; // list of key/value attribute pairs
+      dp.service.common.EventMetadata eventMetadata = 10; // event metadata to associate Annotation with an experiment / event
       Calculations calculations = 11; // user-defined calculations
     }
   }
@@ -468,7 +491,7 @@ message QueryAnnotationsResponse {
 message ExportDataRequest {
 
   string dataSetId = 1;  // Required, specifies id of DataSet to be exported.
-  CalculationsSpec calculationsSpec = 2; // Optional, specifies details of Calculations to include in export.
+  dp.service.common.CalculationsSpec calculationsSpec = 2; // Optional, specifies details of Calculations to include in export.
   ExportOutputFormat outputFormat = 3;  // Optional, specifies export output file format.
 
   enum ExportOutputFormat {
@@ -490,10 +513,10 @@ message ExportDataRequest {
  */
 message ExportDataResponse {
 
-  Timestamp responseTime = 1; // Indicates time response was generated.
+  dp.service.common.Timestamp responseTime = 1; // Indicates time response was generated.
 
   oneof result {
-    ExceptionalResult exceptionalResult = 10; // Indicates a problem was encountered in handling the request.
+    dp.service.common.ExceptionalResult exceptionalResult = 10; // Indicates a problem was encountered in handling the request.
     ExportDataResult exportDataResult = 11; // Indicates the request was handled successfully.
   }
 

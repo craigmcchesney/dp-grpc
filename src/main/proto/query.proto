@@ -142,10 +142,9 @@ message QueryDataRequest {
    * Payload used to specify query parameters for all time series data query RPC methods.
    */
   message QuerySpec {
-    Timestamp beginTime = 1; // Required, specifies query start time.
-    Timestamp endTime = 2; // Required, specifies query end time.
+    dp.service.common.Timestamp beginTime = 1; // Required, specifies query start time.
+    dp.service.common.Timestamp endTime = 2; // Required, specifies query end time.
     repeated string pvNames = 3; // Required, contains list of PV names to query for specified time range.
-    bool useSerializedDataColumns = 4; // Required, specifies if the result should use SerializedDataColumns for maximum performance.
   }
 
   /*
@@ -174,12 +173,12 @@ message QueryDataRequest {
  */
 message QueryDataResponse {
 
-  Timestamp responseTime = 1; // Indicates time response was generated.
+  dp.service.common.Timestamp responseTime = 1; // Indicates time response was generated.
 
   // result: Response contains either an ExceptionalResult indicating a problem handling the request,
   // or QueryData with query result.
   oneof result {
-    ExceptionalResult exceptionalResult = 10;
+    dp.service.common.ExceptionalResult exceptionalResult = 10;
     QueryData queryData = 11;
   }
 
@@ -199,7 +198,7 @@ message QueryDataResponse {
    * extra serialization operations performed by the gRPC communication framework.
    */
   message QueryData {
-    repeated DataBucket dataBuckets = 1;
+    repeated dp.service.common.DataBucket dataBuckets = 1;
   }
 }
 
@@ -214,8 +213,8 @@ message QueryDataResponse {
 message QueryTableRequest {
 
   TableResultFormat format = 1; // Required, specifies table result format.
-  Timestamp beginTime = 2; // Required, specifies query start time.
-  Timestamp endTime = 3; // Required, specifies query end time.
+  dp.service.common.Timestamp beginTime = 2; // Required, specifies query start time.
+  dp.service.common.Timestamp endTime = 3; // Required, specifies query end time.
 
   // pvNameSpec: Required, contains either a list of column/PV names (PvNameList),
   // or a single regex pattern string (PvNamePattern).
@@ -245,12 +244,12 @@ message QueryTableRequest {
  */
 message QueryTableResponse {
 
-  Timestamp responseTime = 1; // Indicates time response was generated.
+  dp.service.common.Timestamp responseTime = 1; // Indicates time response was generated.
 
   // result: Response contains either an ExceptionalResult indicating a problem handling the request,
   // or TableResult with query result.
   oneof result {
-    ExceptionalResult exceptionalResult = 10;
+    dp.service.common.ExceptionalResult exceptionalResult = 10;
     TableResult tableResult = 11;
   }
 
@@ -270,8 +269,8 @@ message QueryTableResponse {
    * Column-oriented table result with list of columns.
    */
   message ColumnTable {
-    DataTimestamps dataTimestamps = 1; // Specifies the timestamps for the table, using an explicit list of times.
-    repeated DataColumn dataColumns = 2; // Contains a list of columns, each with a name and vector of values one for each timestamp.
+    dp.service.common.DataTimestamps dataTimestamps = 1; // Specifies the timestamps for the table, using an explicit list of times.
+    repeated dp.service.common.DataColumn dataColumns = 2; // Contains a list of columns, each with a name and vector of values one for each timestamp.
   }
 
   /*
@@ -282,7 +281,7 @@ message QueryTableResponse {
     repeated string columnNames = 1;
     repeated DataRow rows = 2;
     message DataRow {
-      map<string, DataValue> columnValues = 1;
+      map<string, dp.service.common.DataValue> columnValues = 1;
     }
   }
 }
@@ -318,12 +317,12 @@ message QueryPvMetadataRequest {
  */
 message QueryPvMetadataResponse {
 
-  Timestamp responseTime = 1; // Indicates time response was generated.
+  dp.service.common.Timestamp responseTime = 1; // Indicates time response was generated.
 
   // result: Response contains either an ExceptionalResult indicating a problem handling the request,
   // or MetadataResult with query result.
   oneof result {
-    ExceptionalResult exceptionalResult = 10;
+    dp.service.common.ExceptionalResult exceptionalResult = 10;
     MetadataResult metadataResult = 11;
   }
 
@@ -345,8 +344,8 @@ message QueryPvMetadataResponse {
       string lastBucketDataTimestampsType = 6; // DataTimestamps name for PV's most recent bucket.
       uint32 lastBucketSampleCount = 8; // Number of samples in PV's most recent bucket.
       uint64 lastBucketSamplePeriod = 9; // Sample period in nanos for PV's most recent bucket (zero if DataTimestamps is TimestampList).
-      Timestamp firstDataTimestamp = 10; // Timestamp of first data value for PV.
-      Timestamp lastDataTimestamp = 11; // Timestamp of most recent data value for PV.
+      dp.service.common.Timestamp firstDataTimestamp = 10; // Timestamp of first data value for PV.
+      dp.service.common.Timestamp lastDataTimestamp = 11; // Timestamp of most recent data value for PV.
       int32 numBuckets = 12; // Number of buckets for this PV.
       string lastProviderId = 13; // unique id of provider from most recent ingestion request.
       string lastProviderName = 14; // name of provider from most recent ingestion request.
@@ -427,12 +426,12 @@ message QueryProvidersRequest {
  */
 message QueryProvidersResponse {
 
-  Timestamp responseTime = 1; // Indicates time response was generated.
+  dp.service.common.Timestamp responseTime = 1; // Indicates time response was generated.
 
   // result: Response contains either an ExceptionalResult indicating a problem handling the request,
   // or ProvidersResult with query result.
   oneof result {
-    ExceptionalResult exceptionalResult = 10;
+    dp.service.common.ExceptionalResult exceptionalResult = 10;
     ProvidersResult providersResult = 11;
   }
 
@@ -450,7 +449,7 @@ message QueryProvidersResponse {
       string name = 2; // Provider name.
       string	description = 3; // Provider description.
       repeated string tags = 4; // List of tags.
-      repeated Attribute attributes = 5; // List of key/value attributes.
+      repeated dp.service.common.Attribute attributes = 5; // List of key/value attributes.
       ProviderMetadata providerMetadata = 6; // Ingestion stats for this provider.
     }
   }
@@ -479,12 +478,12 @@ message QueryProviderMetadataRequest {
  */
 message QueryProviderMetadataResponse {
 
-  Timestamp responseTime = 1; // Indicates time response was generated.
+  dp.service.common.Timestamp responseTime = 1; // Indicates time response was generated.
 
   // result: Response contains either an ExceptionalResult indicating a problem handling the request,
   // or MetadataResult with query result.
   oneof result {
-    ExceptionalResult exceptionalResult = 10;
+    dp.service.common.ExceptionalResult exceptionalResult = 10;
     MetadataResult metadataResult = 11;
   }
 
@@ -506,8 +505,8 @@ message QueryProviderMetadataResponse {
 message ProviderMetadata {
   string id = 1; // Provider id.
   repeated string pvNames = 2; // List of PV names with buckets using provider.
-  Timestamp firstBucketTime = 3; // Timstamp of first bucket using provider.
-  Timestamp lastBucketTime = 4; // Timestamp of most recent bucket using provider.
+  dp.service.common.Timestamp firstBucketTime = 3; // Timstamp of first bucket using provider.
+  dp.service.common.Timestamp lastBucketTime = 4; // Timestamp of most recent bucket using provider.
   int32 numBuckets = 5; // Number of buckets using provider.
 }
 

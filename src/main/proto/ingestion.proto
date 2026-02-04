@@ -159,7 +159,7 @@ message RegisterProviderRequest {
   string providerName = 1; // Required provider name uniquely identifies ingestion data provider.
   string	description = 2; // optional description
   repeated string tags = 3; // optional list of keywords / tags
-  repeated Attribute attributes = 4; // optional list of key/value attribute pairs
+  repeated dp.service.common.Attribute attributes = 4; // optional list of key/value attribute pairs
 }
 
 /*
@@ -175,10 +175,10 @@ message RegisterProviderRequest {
  */
 message RegisterProviderResponse {
 
-  Timestamp responseTime = 1; // Indicates time response is sent.
+  dp.service.common.Timestamp responseTime = 1; // Indicates time response is sent.
 
   oneof result {
-    ExceptionalResult exceptionalResult = 10; // Payload for an unsuccessful registerProvider() request.
+    dp.service.common.ExceptionalResult exceptionalResult = 10; // Payload for an unsuccessful registerProvider() request.
     RegistrationResult registrationResult = 11; // Payload for a successful registerProvider() request.
   }
 
@@ -208,9 +208,6 @@ message RegisterProviderResponse {
  * performance and simplicity, the service does not check uniqueness of incoming clientRequestId values, it is up to
  * the client to enforce uniqueness.
  *
- * The tags, attributes and eventMetadata fields are optional are optional and  used to further describe the ingested data or
- * associate it with an experiment, event, subsystem, etc.
- *
  * The required ingestionDataFrame field contains the column data vectors to be ingested.
  *
  * For maximum performance, data ingestion is an asynchronous operation.  The response for a request only indicates
@@ -220,10 +217,7 @@ message RegisterProviderResponse {
 message IngestDataRequest {
   string providerId = 1; // Required providerId must match id returned via registerProvider() API method.
   string clientRequestId = 2; // Required clientRequestId uniquely identifies an ingestion request for a provider.
-  repeated string tags = 3; // Optional, list of keywords / tags.
-  repeated Attribute attributes = 4; // Optional, list of key/value attributes describing the request data.
-  EventMetadata eventMetadata = 5; // Optional, metadata describing event that request data are associated with.
-  IngestionDataFrame ingestionDataFrame = 6; // Required, contains the data for the ingestion request.
+  IngestionDataFrame ingestionDataFrame = 3; // Required, contains the data for the ingestion request.
 
 /*
  * IngestionDataFrame
@@ -247,9 +241,30 @@ message IngestDataRequest {
  * and must contain at least one or the other.
  */
   message IngestionDataFrame {
-    DataTimestamps dataTimestamps = 1; // Required, specifies timestamps for data values.
-    repeated DataColumn dataColumns = 2; // Optional list of columns, each containing a data value for each timestamp.
-    repeated SerializedDataColumn serializedDataColumns = 3; // Optional list of serialized DataColumn objects for maximum performance.
+
+    dp.service.common.DataTimestamps dataTimestamps = 1; // Required, specifies timestamps for data values.
+
+    // Data frame may contain multiple different types of columns, with an optional list for each supported data type.
+
+    repeated dp.service.common.DataColumn dataColumns = 2; // Deprecated legacy column type, support will be removed in MLDP v2. Optional, list of columns, each containing a data value for each timestamp.
+
+    repeated dp.service.common.SerializedDataColumn serializedDataColumns = 3;
+
+    repeated dp.service.common.DoubleColumn doubleColumns = 10;
+    repeated dp.service.common.FloatColumn  floatColumns  = 11;
+    repeated dp.service.common.Int64Column  int64Columns  = 12;
+    repeated dp.service.common.Int32Column  int32Columns  = 13;
+    repeated dp.service.common.BoolColumn   boolColumns   = 14;
+    repeated dp.service.common.StringColumn stringColumns = 15;
+    repeated dp.service.common.EnumColumn   enumColumns   = 16;
+    repeated dp.service.common.ImageColumn  imageColumns  = 17;
+    repeated dp.service.common.StructColumn structColumns = 18;
+
+    repeated dp.service.common.DoubleArrayColumn doubleArrayColumns = 20;
+    repeated dp.service.common.FloatArrayColumn floatArrayColumns = 21;
+    repeated dp.service.common.Int32ArrayColumn int32ArrayColumns = 22;
+    repeated dp.service.common.Int64ArrayColumn int64ArrayColumns = 23;
+    repeated dp.service.common.BoolArrayColumn boolArrayColumns = 24;
   }
 }
 
@@ -277,10 +292,10 @@ message IngestDataResponse {
 
   string providerId = 1; // providerId echoed from the corresponding IngestDataRequest.
   string clientRequestId = 2; // clientRequestid echoed from the corresponding IngestDataRequest.
-  Timestamp responseTime = 3; // Indicates time response is generated.
+  dp.service.common.Timestamp responseTime = 3; // Indicates time response is generated.
 
   oneof result {
-    ExceptionalResult exceptionalResult = 10; // Payload for an invalid IngestDataRequest.
+    dp.service.common.ExceptionalResult exceptionalResult = 10; // Payload for an invalid IngestDataRequest.
     AckResult ackResult = 11; // Payload for a valid IngestDataRequest.
   }
 
@@ -308,12 +323,12 @@ message IngestDataResponse {
  */
 message IngestDataStreamResponse {
 
-  Timestamp responseTime = 1; // Indicates time response is generated.
+  dp.service.common.Timestamp responseTime = 1; // Indicates time response is generated.
   repeated string clientRequestIds = 2; // List of clientRequestIds received in the request stream.
   repeated string rejectedRequestIds = 3; // List of clientRequestIds received in the request stream rejected by service.
 
   oneof result {
-    ExceptionalResult exceptionalResult = 10; // Payload if any IngestDataRequest in request stream is rejected.
+    dp.service.common.ExceptionalResult exceptionalResult = 10; // Payload if any IngestDataRequest in request stream is rejected.
     IngestDataStreamResult ingestDataStreamResult = 11; // Payload if all IngestDataRequests in request stream are valid.
   }
 
@@ -380,8 +395,8 @@ message QueryRequestStatusRequest {
     }
 
     message TimeRangeCriterion {
-      Timestamp beginTime = 1;
-      Timestamp endTime = 2;
+      dp.service.common.Timestamp beginTime = 1;
+      dp.service.common.Timestamp endTime = 2;
     }
   }
 }
@@ -400,10 +415,10 @@ message QueryRequestStatusRequest {
  */
 message QueryRequestStatusResponse {
 
-  Timestamp responseTime = 1; // Indicates time response was generated.
+  dp.service.common.Timestamp responseTime = 1; // Indicates time response was generated.
 
   oneof result {
-    ExceptionalResult exceptionalResult = 10;
+    dp.service.common.ExceptionalResult exceptionalResult = 10;
     RequestStatusResult requestStatusResult = 11;
   }
 
@@ -419,7 +434,7 @@ message QueryRequestStatusResponse {
       IngestionRequestStatus ingestionRequestStatus = 5;
       string statusMessage = 6;
       repeated string idsCreated = 7;
-      Timestamp updateTime = 8;
+      dp.service.common.Timestamp updateTime = 8;
     }
   }
 }
@@ -479,10 +494,10 @@ message SubscribeDataRequest {
  */
 message SubscribeDataResponse {
 
-  Timestamp responseTime = 1; // Indicates time response is generated.
+  dp.service.common.Timestamp responseTime = 1; // Indicates time response is generated.
 
   oneof result {
-    ExceptionalResult exceptionalResult = 10;
+    dp.service.common.ExceptionalResult exceptionalResult = 10;
     AckResult ackResult = 11;
     SubscribeDataResult subscribeDataResult = 12;
   }
@@ -492,9 +507,29 @@ message SubscribeDataResponse {
   }
 
   message SubscribeDataResult {
-    DataTimestamps dataTimestamps = 1; // Specifies timestamps for DataColumn values.
-    repeated DataColumn dataColumns = 2; // List of PV column vectors, each containing a data value for each timestamp.
-    repeated SerializedDataColumn serializedDataColumns = 3; // List of serialized DataColumn objects for maximum performance.
+    dp.service.common.DataTimestamps dataTimestamps = 1; // Specifies timestamps for column vectors of data values.
+
+    // Result may contain lists of column vectors for supported ingestion column data types.
+
+    repeated dp.service.common.DataColumn dataColumns = 2; // Legacy column data type, will be removed in MLDP v2. List of PV column vectors, each containing a data value for each timestamp.
+
+    repeated dp.service.common.SerializedDataColumn serializedDataColumns = 3;
+
+    repeated dp.service.common.DoubleColumn doubleColumns = 10;
+    repeated dp.service.common.FloatColumn  floatColumns  = 11;
+    repeated dp.service.common.Int64Column  int64Columns  = 12;
+    repeated dp.service.common.Int32Column  int32Columns  = 13;
+    repeated dp.service.common.BoolColumn   boolColumns   = 14;
+    repeated dp.service.common.StringColumn stringColumns = 15;
+    repeated dp.service.common.EnumColumn   enumColumns   = 16;
+    repeated dp.service.common.ImageColumn  imageColumns  = 17;
+    repeated dp.service.common.StructColumn structColumns = 18;
+
+    repeated dp.service.common.DoubleArrayColumn doubleArrayColumns = 20;
+    repeated dp.service.common.FloatArrayColumn floatArrayColumns = 21;
+    repeated dp.service.common.Int32ArrayColumn int32ArrayColumns = 22;
+    repeated dp.service.common.Int64ArrayColumn int64ArrayColumns = 23;
+    repeated dp.service.common.BoolArrayColumn boolArrayColumns = 24;
   }
 
 }
