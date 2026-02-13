@@ -217,55 +217,7 @@ message RegisterProviderResponse {
 message IngestDataRequest {
   string providerId = 1; // Required providerId must match id returned via registerProvider() API method.
   string clientRequestId = 2; // Required clientRequestId uniquely identifies an ingestion request for a provider.
-  IngestionDataFrame ingestionDataFrame = 3; // Required, contains the data for the ingestion request.
-
-/*
- * IngestionDataFrame
- *
- * An IngestionDataFrame contains the data for an ingestion request.  It includes a set of vectors of data and a
- * a specification of the timestamps for the values in those vectors.
- *
- * DataTimestamps can be expressed using either a SamplingClock with start time, sample period,
- * and sample count, or using a TimestampsList with an explicit list of timestamps for the data values.
- *
- * Each DataColumn is a vector of data values for a particular PV, with a single data value for each
- * data timestamp.
- *
- * For maximum performance, the client can optionally provide a list of SerializedDataColumn objects instead of
- * regular DataColumn objects.  Each SerializedDataColumn which contains the bytes for a serialized DataColumn object.
- * This avoids extra deserialization / re-serialization operations performed by the gRPC communication framework
- * in the client and Ingestion Service.
- *
- * Each data column must be the same size, with a value for each timestamp specified in dataTimestamps. Ingestion
- * requests with inconsistent dimensions are rejected. Can contain regular DataColumns and/or SerializedDataColumns,
- * and must contain at least one or the other.
- */
-  message IngestionDataFrame {
-
-    dp.service.common.DataTimestamps dataTimestamps = 1; // Required, specifies timestamps for data values.
-
-    // Data frame may contain multiple different types of columns, with an optional list for each supported data type.
-
-    repeated dp.service.common.DataColumn dataColumns = 2; // Deprecated legacy column type, support will be removed in MLDP v2. Optional, list of columns, each containing a data value for each timestamp.
-
-    repeated dp.service.common.SerializedDataColumn serializedDataColumns = 3;
-
-    repeated dp.service.common.DoubleColumn doubleColumns = 10;
-    repeated dp.service.common.FloatColumn  floatColumns  = 11;
-    repeated dp.service.common.Int64Column  int64Columns  = 12;
-    repeated dp.service.common.Int32Column  int32Columns  = 13;
-    repeated dp.service.common.BoolColumn   boolColumns   = 14;
-    repeated dp.service.common.StringColumn stringColumns = 15;
-    repeated dp.service.common.EnumColumn   enumColumns   = 16;
-    repeated dp.service.common.ImageColumn  imageColumns  = 17;
-    repeated dp.service.common.StructColumn structColumns = 18;
-
-    repeated dp.service.common.DoubleArrayColumn doubleArrayColumns = 20;
-    repeated dp.service.common.FloatArrayColumn floatArrayColumns = 21;
-    repeated dp.service.common.Int32ArrayColumn int32ArrayColumns = 22;
-    repeated dp.service.common.Int64ArrayColumn int64ArrayColumns = 23;
-    repeated dp.service.common.BoolArrayColumn boolArrayColumns = 24;
-  }
+  dp.service.common.DataFrame ingestionDataFrame = 3; // Required, contains the data for the ingestion request.
 }
 
 /*
