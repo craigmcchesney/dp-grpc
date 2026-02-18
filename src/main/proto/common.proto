@@ -426,9 +426,10 @@ message DataFrame {
  */
 message DataBucket {
 
-  DataTimestamps dataTimestamps = 1; // Specifies timestamps for bucket, using SamplingClock or explicit Timestamp list.
-  string providerId = 5; // unique id of provider from most recent ingestion request.
-  string providerName = 6; // name of provider from most recent ingestion request.
+  string pvName = 1; // Name of PV for data column.
+  DataTimestamps dataTimestamps = 2; // Specifies timestamps for bucket, using SamplingClock or explicit Timestamp list.
+  string providerId = 3; // unique id of provider from most recent ingestion request.
+  string providerName = 4; // name of provider from most recent ingestion request.
 
   // Result columns depend on the type of column used at ingestion.  Each column vector contains a PV sample value for each
   // timestamp specified in the dataTimestamps.
