@@ -1,10 +1,11 @@
 # dp-grpc repo
 
-This repo contains the gRPC API definition for the Data Platform Ingestion, Query, and Annotation Services.  The [data-platform repo](https://github.com/osprey-dcs/data-platform) is the project home page and a good place to learn about the bigger picture.
+This repo contains the gRPC API definition for the Machine Learning Data Platform (MLDP) Ingestion, Query, Annotation, and Ingestion Stream Services.  The [data-platform repo](https://github.com/osprey-dcs/data-platform) is the project home page and a good place to learn about the bigger picture.
 
 This document includes the following information:
 
 - [gRPC communication framework overview](#grpc-overview)
+- [MLDP API overview](#mldp-api-overview)
 - [Data Platform gRPC API proto files](#data-platform-grpc-api-proto-files)
 - [Data Platform API conventions](#data-platform-API-conventions)
 - [Example Java code for calling the API](#example-java-grpc-api-code)
@@ -33,6 +34,23 @@ The gRPC API is defined using "proto" files (a text file with a ".proto" extensi
 Support is provided for compiling gRPC API code in a variety of [programming languages](https://grpc.io/docs/languages/).  The "protoc" compiler builds a framework of "stubs" in the target programming language for utilizing the API defined in the "proto" files.
 
 See the links above for some simple examples of services, methods, and messages.
+
+
+---
+## MLDP API Overview
+
+The MLDP gRPC API defines APIs for four individual services:
+
+- The Ingestion Service API focuses on high-performance ingestion of process variable (PV) time-series data in a large-scale research facility like a particle accelerator to an archive.
+- The Query Service API is used to retrieve PV time-series data from the archive.
+- The Annotation Service API provides mechanisms for use by researchers and automated data cleaning tools for managing a PV catalog, describing machine configuration at a given point in time, defining datasets, adding annotations, uploading calculations, marking individual data samples, and exporting data.
+- The Ingestion Stream Service provides downstream access to real-time PV time-series data from the PV ingestion stream.
+
+Each service API is described in more detail below.
+
+### Ingestion Service API
+
+The main objective of the Ingestion Service API is to provide a streamlined high-performance pipleline for capturing facility PV time-series data to the archive.  The API defines a set of methods for streaming "bucketed" data to the archive, where each bucket contains PV sample data for a specified time range.  The API offers a number of column-oriented message data structures optimized for handling heterogeneous sample data including scalars, arrays of scalars, strings, enums, stuctures, images, and arbitrary binary data.
 
 
 ---
