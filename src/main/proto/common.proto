@@ -425,18 +425,17 @@ message DataFrame {
  * Contains bucketed time-series data for a PV over a time period as specified in the dataTimestamps.
  */
 message DataBucket {
-
   string pvName = 1; // Name of PV for data column.
   DataTimestamps dataTimestamps = 2; // Specifies timestamps for bucket, using SamplingClock or explicit Timestamp list.
   string providerId = 3; // unique id of provider from most recent ingestion request.
   string providerName = 4; // name of provider from most recent ingestion request.
+  DataValues dataValues = 5;
+}
 
-  // Result columns depend on the type of column used at ingestion.  Each column vector contains a PV sample value for each
-  // timestamp specified in the dataTimestamps.
-  oneof data {
-    
-    DataColumn dataColumn = 10; // Deprecated legacy API data structure, will be removed in MLDP v2.
-    
+message DataValues {
+  oneof values {
+
+    DataColumn dataColumn = 10;
     SerializedDataColumn serializedDataColumn = 11;
 
     DoubleColumn doubleColumn = 12;
@@ -446,6 +445,7 @@ message DataBucket {
     BoolColumn   boolColumn   = 16;
     StringColumn stringColumn = 17;
     EnumColumn   enumColumn   = 18;
+
     ImageColumn  imageColumn  = 19;
     StructColumn structColumn = 20;
 
