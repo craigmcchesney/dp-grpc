@@ -321,7 +321,6 @@ message SaveAnnotationRequest {
   string	comment = 6; // optional free-form comment text
   repeated string tags = 7; // optional list of keywords / tags for cataloging Annotation
   repeated dp.service.common.Attribute attributes = 8; // optional list of key/value attribute pairs for cataloging Annotation
-  dp.service.common.EventMetadata eventMetadata = 9; // used to associate annotation with an experiment / event
   Calculations calculations = 10; // optional user-defined calculations
 }
 
@@ -376,7 +375,7 @@ message QueryAnnotationsRequest {
       OwnerCriterion ownerCriterion = 11;  // Query by owner.
       DataSetsCriterion dataSetsCriterion = 12; // Query by unique id of associated DataSet.
       AnnotationsCriterion annotationsCriterion = 13; // Query by unique id of associated Annotation.
-      TextCriterion textCriterion = 14; // Full text query over name, comment, and event description fields.
+      TextCriterion textCriterion = 14; // Full text query over name and comment fields.
       TagsCriterion tagsCriterion = 15; // Query by tag / keyword value.
       AttributesCriterion attributesCriterion = 16; // Query attribute pairs by key and value.
     }
@@ -470,7 +469,6 @@ message QueryAnnotationsResponse {
       string	comment = 7; // free-form comment text
       repeated string tags = 8; // list of keywords / tags
       repeated dp.service.common.Attribute attributes = 9; // list of key/value attribute pairs
-      dp.service.common.EventMetadata eventMetadata = 10; // event metadata to associate Annotation with an experiment / event
       Calculations calculations = 11; // user-defined calculations
     }
   }

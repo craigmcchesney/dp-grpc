@@ -23,16 +23,6 @@ message Attribute {
   string value = 2;
 }
 
-/*
- * Metadata associated with ingested data.
- */
-message EventMetadata {
-  string description = 1; // Description of the event.
-  Timestamp startTimestamp = 2; // Start time of event.
-  Timestamp stopTimestamp = 3; // End time of event.
-}
-
-
 //
 // ------------------- Time Definitions ---------------------------
 //
