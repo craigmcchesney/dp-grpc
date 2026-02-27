@@ -237,9 +237,9 @@ The message DataFrame, defined in common.proto___, is the primary unit of ingest
 
 DataTimestamps provides two mechanisms for specifying the timestamps for the data values.
 
-A TimestampList (described above) may be used to send an explicit list of Timestamp objects.  It is assumed that each PV data vector DataColumn is the same size as the list of timestamps, so that there is a data value specified for each corresponding time value.
+A TimestampList (described above) may be used to send an explicit list of Timestamp objects.  It is assumed that each PV data vector column message is the same size as the list of timestamps, so that there is a data value specified for each corresponding time value.
 
-A second alternative is to use the SamplingClock message, defined in ___common.proto___.  It uses three fields to specify the data timestamps, with a start time Timestamp, the sample period in nanoseconds, and an integer count of the number of samples.  The size of each data vector (DataColumn) in the IngestionDataFrame is expected to match the sample count.
+A second alternative is to use the SamplingClock message, defined in ___common.proto___.  It uses three fields to specify the data timestamps, with a start time Timestamp, the sample period in nanoseconds, and an integer count of the number of samples.  The size of each data vector (column message) in the DataFrame is expected to match the sample count.
 
 #### bucketed time-series data
 
