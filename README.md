@@ -85,7 +85,8 @@ The Data Platform API is defined in the following _proto_ files, located in this
 Within the Data Platform service proto files, elements are listed in the following order:
 
 1. service method definitions
-2. definition of request and response data types
+2. definition of request and response messages
+3. supporting data structures used in the request and response messages
 
 ### packaging of parameters for a method into a single "request" message
 
@@ -111,7 +112,7 @@ rpc ingestDataBidiStream (stream IngestDataRequest) returns (stream IngestDataRe
 
 ### nesting of messages
 
-Where possible, nesting is used to enclose simpler messages within the more complex messages that use them.  In cases where we want to share messages between multiple request or response messages, the definition of those messages appears after the request and response messages in the proto file.
+Where possible, nesting is used to enclose simpler messages within the more complex messages that use them.  In cases where we want to share messages between multiple request or response messages, the definition of those messages appears after the request and response messages in the proto file.  Messages whose scope is limited to a particular service are defined in the proto file for that service.  Messages whose scope is broader than a single service are defined in common.proto.
 
 ### determining successful method execution
 
@@ -143,6 +144,7 @@ message QueryDataResponse {
 ### empty query results
 
 Another common pattern across Data Platform API query methods is in reporting empty query results.  When a query matches no data, the list of results in the query response message is empty.  For example, when a time-series data query method returns no data, the QueryDataResponse message (show above) contains an empty dataBuckets list.
+
 
 ---
 ## Example Java gRPC API Code
