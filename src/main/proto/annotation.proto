@@ -242,8 +242,8 @@ message QueryDataSetsResponse {
  * that includes both PV data and user-defined Calculations.
  *
  * The Calculations object includes a list of CalculationsDataFrames.  Each CalculationsDataFrame includes
- * a name, a DataTimestamps object, and lists of column data values, each of which contains a vector
- * of data values for a single Calculation and specifies a value for each timestamp specified by dataTimestamps.
+ * a name, a DataTimestamps object, and a list of DataColumns, each of which contains a vector of data values for a
+ * single Calculation and specifies a DataValue for each timestamp specified by the corresponding DataTimestamps object.
  *
  * It might be helpful to use the analogy of an Excel workbook.  The Calculations object is the workbook, and each
  * CalculationDataFrame is a worksheet in that workbook that contains a column of timestamps and columns of calculated

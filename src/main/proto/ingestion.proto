@@ -438,12 +438,9 @@ message SubscribeDataRequest {
  * sent when the service accepts a subscription request.  3) A SubscribeDataResult is sent when the service publishes
  * new data for any of the PVs registered for the subscription.
  *
- * Each SubscribeDataResult message payload contains a DataFrame with a DataTimestamps object and lists of heterogeneous
- * data columns.  Each data column contains a data value for each timestamp.  At least one column in the dataFrame
- * matches a PV specified for the subscription.  For efficiency in the ingestion service and publishing mechanism,
- * the published dataFrame may include columns that aren't part of the subscription.  One design consideration for
- * MLDP data ingestion is to include data for a single PV in the ingestion request DataFrames, or bundle PVs that are
- * expected to be subscribed together.
+ * Each SubscribeDataResult message payload contains a list of DataBuckets matching the PV specified for the
+ * subscription, each with a DataTimestamps object and a heterogeneous column data message containing the vector of
+ * values.  Each data column contains a data value for each timestamp.
  */
 message SubscribeDataResponse {
 
@@ -460,7 +457,7 @@ message SubscribeDataResponse {
   }
 
   message SubscribeDataResult {
-    repeated dp.service.common.DataBucket dataBuckets = 1;
+    repeated dp.service.common.DataBucket dataBuckets = 1; // List of PV data buckets with timestamps and data vector.
   }
 
 }
