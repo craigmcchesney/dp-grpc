@@ -50,7 +50,19 @@ Each service API is described in more detail below.
 
 ### Ingestion Service API
 
-The main objective of the Ingestion Service API is to provide a streamlined high-performance pipleline for capturing facility PV time-series data to the archive.  The API defines a set of methods for streaming "bucketed" data to the archive, where each bucket contains PV sample data for a specified time range.  The API offers a number of column-oriented message data structures optimized for handling heterogeneous sample data including scalars, arrays of scalars, strings, enums, stuctures, images, and arbitrary binary data.
+The main objective of the Ingestion Service API is to provide a streamlined high-performance pipleline for capturing facility PV time-series data to the archive.  The API defines a set of methods for streaming "bucketed" data to the archive, where each bucket contains PV sample data for a specified time range.  The API offers a number of column-oriented message data structures optimized for handling heterogeneous sample data including scalars, arrays of scalars, strings, enums, stuctures, images, and arbitrary binary data.  A mechanism for subscribing to PV data from the ingestion stream is also provided.
+
+### Query Service API
+
+The core feature of the Query Service API is retrieval of PV time-series data over a range of time.  There are both unary and streaming query methods, with results that contain either bucketed or tabular data.  Methods are also provided for querying ingestion metadata for PVs and data providers.
+
+### Annotation Service API
+
+The Annotation Service API provides tools for augmenting the PV time-series data archive with facility-specific information.  The core feature is identifying datasets, each containing blocks of data defined by a list of PVs and a range of time, and adding annotations to those datasets.  An annotation includes descriptive elements like freeform text comment, keywords, and key-value attributes, and may also include user-defined calculations that use links for tracking data provenance.  The API also includes tools for exporting datasets and calculations to common file formats including HDF5, CSV, and XLSX.  Features under development include a PV catalog, machine configuration at a point in time, and marking the disposition of individual PV samples.
+
+### Ingestion Stream Service API
+
+The Ingestion Stream Service layers tools on top of the PV data subscription mechanism provided by the Ingestion Service.  The initial implementation includes a method for subscribing to PV data events, to receive an event notification when a trigger condition is satisfied optionally to include data for a set of target PVs for a specified time window around the event time.  Under investigation is a means for executing user-defined code as a plugin to the service. 
 
 
 ---
