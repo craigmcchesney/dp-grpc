@@ -338,17 +338,16 @@ message QueryPvMetadataResponse {
     message PvInfo {
       string pvName = 1; // Name of PV.
       string lastBucketId = 2; // Database identifier for PV's most recent bucket.
-      int32 lastBucketDataTypeCase = 3; // Data type case (DataValue.ValueCase) for PV's most recent bucket.
-      string lastBucketDataType = 4; // Data type name of PV's most recent bucket.
-      int32 lastBucketDataTimestampsCase = 5; // DataTimestamps case for PV's most recent bucket.
-      string lastBucketDataTimestampsType = 6; // DataTimestamps name for PV's most recent bucket.
-      uint32 lastBucketSampleCount = 8; // Number of samples in PV's most recent bucket.
-      uint64 lastBucketSamplePeriod = 9; // Sample period in nanos for PV's most recent bucket (zero if DataTimestamps is TimestampList).
-      dp.service.common.Timestamp firstDataTimestamp = 10; // Timestamp of first data value for PV.
-      dp.service.common.Timestamp lastDataTimestamp = 11; // Timestamp of most recent data value for PV.
-      int32 numBuckets = 12; // Number of buckets for this PV.
-      string lastProviderId = 13; // unique id of provider from most recent ingestion request.
-      string lastProviderName = 14; // name of provider from most recent ingestion request.
+      string lastBucketDataType = 3; // Data type name of PV's most recent bucket.
+      int32 lastBucketDataTimestampsCase = 4; // DataTimestamps case for PV's most recent bucket.
+      string lastBucketDataTimestampsType = 5; // DataTimestamps name for PV's most recent bucket.
+      uint32 lastBucketSampleCount = 6; // Number of samples in PV's most recent bucket.
+      uint64 lastBucketSamplePeriod = 7; // Sample period in nanos for PV's most recent bucket (zero if DataTimestamps is TimestampList).
+      dp.service.common.Timestamp firstDataTimestamp = 8; // Timestamp of first data value for PV.
+      dp.service.common.Timestamp lastDataTimestamp = 9; // Timestamp of most recent data value for PV.
+      int32 numBuckets = 10; // Number of buckets for this PV.
+      string lastProviderId = 11; // unique id of provider from most recent ingestion request.
+      string lastProviderName = 12; // name of provider from most recent ingestion request.
     }
   }
 }
