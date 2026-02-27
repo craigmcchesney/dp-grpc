@@ -50,7 +50,7 @@ Each service API is described in more detail below.
 
 ### Ingestion Service API
 
-The main objective of the Ingestion Service API is to provide a streamlined high-performance pipleline for capturing facility PV time-series data to the archive.  The API defines a set of methods for streaming "bucketed" data to the archive, where each bucket contains PV sample data for a specified time range.  The API offers a number of column-oriented message data structures optimized for handling heterogeneous sample data including scalars, arrays of scalars, strings, enums, stuctures, images, and arbitrary binary data.  A mechanism for subscribing to PV data from the ingestion stream is also provided.
+The main objective of the Ingestion Service API is to provide a streamlined high-performance pipleline for capturing facility PV time-series data to the archive.  The API defines a set of methods for streaming "bucketed" data to the archive, where each bucket contains PV sample data for a specified time range.  The API offers a number of column-oriented message data structures optimized for handling heterogeneous sample data including scalars, arrays of scalars, strings, enums, stuctures, images, and arbitrary binary data.  Because ingestion requests are processed asynchronously for maximum performance, a query method is provided for determining the status of ingestion requests.  A mechanism for subscribing to PV data from the ingestion stream is also provided.
 
 ### Query Service API
 
