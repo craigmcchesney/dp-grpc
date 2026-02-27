@@ -806,7 +806,6 @@ An Annotation includes required fields for owner id, a list of unique ids for th
 - comment: free-form text comment
 - tags: list of tags / keywords for cataloging the annotation
 - attributes: list of key / value attribute pairs for cataloging the annotation
-- eventMetadata: used to associate the annotation with an event or experiment
 - calculations: used to attach user-defined calculations (more details below)
 
 #### data provenance tracking
