@@ -346,21 +346,21 @@ The core element of the Data Platform is the "process variable" (PV).  In contro
 
 It is assumed that each PV for a particular facility is uniquely named.  E.g., "S01:GCC01" might identify the first vacuum cold cathode gauge in sector one in the storage ring for some accelerator facility.
 
-#### data vectors
+#### data vectors and handling heterogeneous data
 
-The Ingestion and Query Service APIs for handling data work with vectors of PV measurements.  In ___common.proto___, this is reflected in the message data type DataColumn, which includes a PV name and vector of measurements each of which is a DataValue message.
+The Ingestion and Query Service APIs for handling data work with vectors of PV samples.  In ___common.proto___, there are a number of column messages optimized for handling a range of heterogeneous data types.
 
-#### handling heterogeneous data
+Messages for vectors of individual scalar values include DoubleColumn, FloatColumn, Int64Column, Int32Column, BoolColumn, with corresponding messages for handling samples that are arrays of scalar values DoubleArrayColumn, FloatArrayColumn, Int64ArrayColumn, Int32ArrayColumn, and BoolArrayColumn.  Messages are provided for other data types including StringColumn, EnumColumn, ImageColumn, and StructColumn.  The SerializedDataColumn message is used to contain arbitrary binary data with user-defined encoding.
 
-One requirement for the Data Platform API is to provide a general mechanism for handling heterogeneous data types for PV measurements including simple scalar values, as well as multi-dimensional arrays, structures, and images.   This is accomplished by the DataValue message data type in _common.proto__,  which uses the Protobuf "oneof" mechanism to support a number of different data types for the values in a data vector (DataColumn).
+The original implementation includes the message DataColumn which contains a list of DataValue messages, where each DataValue specifies a heterogeneous data type for the sample value.  This feature is deprecated in the Ingestion Service API because 1) it causes per-sample JVM memory allocation in handling ingestion requests and 2) all sample values (including scalars) are stored as opaque binary blobs in the archive.
 
 #### timestamps
 
 Time is represented in the Data Platform API using the Timestamp message defined in ___common.proto___.  It contains two components, one for the number of seconds since the epoch, and the other for nanoseconds.  As a convenience, the message "TimestampList" is used to send a list of timestamps.
 
-#### ingestion data frame
+#### data frame
 
-The message IngestionDataFrame, defined in ___ingestion.proto___, is the primary unit of ingestion in the Data Platform API.  It contains the set of data to be ingested, using a list of DataColumn PV data vectors (described above).  It uses the message DataTimestamps, defined in ___common.proto___, to specify the timestamps for the data values in those vectors.
+The message DataFrame, defined in common.proto___, is the primary unit of ingestion in the Data Platform API.  It contains the set of data to be ingested using lists of the heterogeneous column messages listed above.  It uses the message DataTimestamps, defined in ___common.proto___, to specify the timestamps for the data values in those vectors.
 
 DataTimestamps provides two mechanisms for specifying the timestamps for the data values.
 
@@ -370,7 +370,7 @@ A second alternative is to use the SamplingClock message, defined in ___common.p
 
 #### bucketed time-series data
 
-We use the ["bucket pattern"](https://www.mongodb.com/blog/post/building-with-patterns-the-bucket-pattern) as an optimization for handling time-series data in the Data Platform API for query results, as well as for storing a vector of PV measurement values in MongoDB.  A "bucket" is a record that contains all the measurement values for a single PV for a specified time range.
+We use the ["bucket pattern"](https://www.mongodb.com/blog/post/building-with-patterns-the-bucket-pattern) as an optimization for handling batched time-series data in the MLDP Ingestion and Query Service APIs, as well as for storing vectors of PV samples in MongoDB.  A "bucket" is a record that contains all the sample values for a single PV for a specified time range.
 
 This allows a data vector to be stored in the database and returned in query results as a single unit, as opposed to storing and returning data values individually thus requiring that each record contain both a timestamp and data value (which effectively triples the record size for scalar data).  This leads to a more compact database, smaller gRPC messages to send query results, and improved overall performance.
 
@@ -406,15 +406,10 @@ With bucketing, we save the overhead of the sensor_id and timestamp in each reco
     measurements: [ 40, 40, 41 ]
 }
 ```
-Bucketing is used in the API for ingesting time-series data.  The message "IngestDataRequest" contains an "IngestionDataFrame" that contains the data for the request.  It includes a "DataTimestamps" object that describes the timestamps for the frame's data values, either using a "SamplingClock" that specifies the start time and sample period for the values, or with an explicit list of timestamps.  It also includes a list of "DataColumns", each of which is a bucket of data values (e.g., vector) for a particular PV, with a value for each of the frame's timestamps.
+Bucketing is used in the API for ingesting time-series data.  The message "IngestDataRequest" contains an "DataFrame" that contains the data for the request as well as a "DataTimestamps" object that describes the timestamps for the frame's data values, either using a "SamplingClock" that specifies the start time and sample period for the values, or with an explicit list of timestamps.  It also includes lists of heterogeneous column messages, each of which is a bucket of data values (e.g., vector) for a particular PV, with a value for each of the frame's timestamps.
 
-Bucketing is also used to send the results of time-series data queries.  The message "QueryDataResponse" in "query.proto" contains the query result in "QueryData", which contains a list of "DataBucket" messages.  Each "DataBucket" contains a vector of data in a "DataColumn" message for a single PV, along with time expressed using "DataTimestamps" (described above), with either an explicit list of timestamps for the bucket data values, or a SamplingClock with start time and sample period.
+Bucketing is also used to send the results of time-series data queries.  The message "QueryDataResponse" in "query.proto" contains the query result in "QueryData", which contains a list of "DataBucket" messages.  Each "DataBucket" contains a vector of data using one of the column message data types for a single PV, along with time expressed using "DataTimestamps" (described above), with either an explicit list of timestamps for the bucket data values, or a SamplingClock with start time and sample period.
 
-#### enhanced performance using serialized data columns
-
-As mentioned above, the core ingestion and query APIs use the DataColumn message to contain a vector of measurements (DataValues) for a particular PV.  The APIs for data ingestion, query, and subscription now include an option for sending SerializedDataColumns instead of regular DataColumns.  Using this mechanism improves performance significantly by avoiding redundant serialization and deserialization operations performed by the gRPC communication framework.  
-
-Sending regular DataColumns in ingestion requests requires 3 serialization operations.  The client performs serialization when sending the request; the server performs deserialization when receiving the request, and then the data are re-serialized for compact storage in MongoDB.  Sending SerializedDataColumns in ingestion requests requires a single serialization operation in the client with no deserialization or re-serialization required in the server before storage in MongoDB.  Similar improvements are made in the query and subscription APIs.
 
 ### PV Data Ingestion Methods
 <table>
@@ -434,37 +429,7 @@ The API provides three methods for data ingestion, including a simple unary sing
 
 ----
 
-All data ingestion methods share the same request message, IngestDataRequest.  An IngestDataRequest contains the data to be ingested to the archive along with some required identifying information and optional descriptive fields.  The unit of ingestion is the IngestionDataFrame.  Analogous to a worksheet in an Excel workbook, IngestionDataFrame contains 1) a DataTimestamps object specifying the timestamp rows for the worksheet and 2) a list of DataColumns each of which is a column vector of data values, one for each row in the worksheet.
-
-As mentioned above, for improved performance, the ingestion API method variants ingestData(), ingestDataStream(), and ingestDataBidiStream() now include a new optional list of SerializedDataColumns in the request's IngestionDataFrame object.  The API client can send either a list of regular DataColumns, SerializedDataColumns, or both.  Clients seeking maximum performance should send SerializedDataColumns, by manually serializing each DataColumn to its ByteString representation for use in the API request.
-
-Below is a Java code snippet showing how to convert a list of regular DataColumns to a list of SerializedDataColumns for use in an IngestDataRequest's IngestionDataFrame.
-```
-// build a list of DataColumns
-final List<DataColumn> frameColumns = new ArrayList<>();
-
-// create a DataColumn object
-DataColumn.Builder dataColumnBuilder = DataColumn.newBuilder();
-dataColumnBuilder.setName("S01-GCC01");
-
-// add a DataValue to the column
-DataValue.Builder dataValueBuilder = DataValue.newBuilder().setDoubleValue(12.34);
-dataColumnBuilder.addDataValues(dataValueBuilder.build());
-
-// add DataColumn to list
-frameColumns.add(dataColumnBuilder.build());
-
-// generate a list of SerializedDataColumn objects from list of DataColumn objects, and add them to IngesitonDataFrame
-IngestDataRequest.IngestionDataFrame.Builder dataFrameBuilder
-        = IngestDataRequest.IngestionDataFrame.newBuilder();
-for (DataColumn dataColumn : frameColumns) {
-    final SerializedDataColumn serializedDataColumn =
-            SerializedDataColumn.newBuilder()
-                    .setName(dataColumn.getName())
-                    .setDataColumnBytes(dataColumn.toByteString())
-                    .build();
-    dataFrameBuilder.addSerializedDataColumns(serializedDataColumn);
-```
+All data ingestion methods share the same request message, IngestDataRequest.  An IngestDataRequest contains the data to be ingested to the archive along with some required identifying information and optional descriptive fields.  The unit of ingestion is the DataFrame.  Analogous to a worksheet in an Excel workbook, DataFrame contains 1) a DataTimestamps object specifying the timestamp rows for the worksheet and 2) lists of heterogeneous column messages each of which is a column vector of data values, one for each timestamp row in the worksheet.
 
 ----
 
