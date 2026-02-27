@@ -475,25 +475,9 @@ For queryDataBidiStream(), the client sends a single QueryDataRequest message, r
 
 ----
 
-As mentioned above, the query API method variants queryData(), queryDataStream(), and queryDataBidiStream() now include a mechanism for using SerializedDataColumns in the query result for improved performance.  The request's QuerySpec now includes a flag "useSerializedDataColumns" that is set to indicate that the client wishes to receive SerializedDataColumns in the query result instead of regular ones.  When the flag is set, the response's DataBuckets contain a SerializedDataColumn instead of a regular one.  Clients seeking maximum performance should set the flag in the query request, and must manually deserialize each DataBucket's serializedDataColumn by parsing a DataColumn from the SerializedDataColumn's "dataColumnBytes" byte representation of the column.
-
-Below is a Java code snippet showing how to convert a SerializedDataColumn in the query result DataBucket to a regular DataColumn for accessing its name and data values.
-```
-if (responseBucket.hasSerializedDataColumn()) {
-    DataColumn responseDataColumn = null;
-    try {
-        responseDataColumn = DataColumn.parseFrom(responseBucket.getSerializedDataColumn().getDataColumnBytes());
-    } catch (InvalidProtocolBufferException e) {
-        fail("exception parsing DataColumn from SerializedDataColumn: " + e.getMessage());
-    }
-}
-```
-
-----
-
 Except for queryDataTable(), all time-series data query methods return QueryDataResponse messages.  A QueryDataResponse contains one of two message payloads, ExceptionalResult if an error is encountered or no data is found (described above) or QueryData with the query results.
 
-A QueryData message includes a list of DataBucket messages.  Each DataBucket contains a vector of data in a DataColumn message for a single PV, along with time expressed using a "DataTimestamps" message (described above), with either an explicit list of timestamps for the bucket data values or a SamplingClock with start time and sample period.  The DataBucket also includes a list of tags, a list of key/value "Attribute" pairs, and/or "EventMetadata" message if those descriptive fields were specified on the ingestion request that created the bucket.
+A QueryData message includes a list of DataBucket messages.  Each DataBucket contains a vector of data using one of the heterogeneous column messages for a single PV, along with time expressed using a "DataTimestamps" message (described above), with either an explicit list of timestamps for the bucket data values or a SamplingClock with start time and sample period.  The DataBucket also includes a list of tags and/or a list of key/value "Attribute" pairs if those descriptive fields were specified on the ingestion request that created the bucket.
 
 ----
 
@@ -549,13 +533,7 @@ The CancelSubscription message is an empty message that simply indicates the cli
 
 The service sends SubscribeDataResponse messages in the response stream for the subscribeData() method.  Each response contains one of three payload messages.  1) An ExceptionalResult payload is sent if the service rejects the subscription request or an error occurs while processing the subscription. 2) An AckResult payload is sent when the service accepts a subscription request.  3) A SubscribeDataResult is sent when the service publishes new data for any of the PVs registered for the subscription.
 
-Each SubscribeDataResult message payload contains a DataTimestamps message, specifying the timestamps for the included data values (either using a SamplingClock or explicit list of timestamps), and a list of DataColumn messages, each a column data vector for one of the PVs registered for the subscription.
-
-----
-
-As mentioned above, when ingestion requests utilize SerializedDataColumns for improved performance, SubscribeDataResponse messages sent by the subscribeData() API for subscribed PVs will automatically contain SerializedDataColumns instead of regular DataColumns for maximum performance in subscription communication.
-
-See the documentation above for [PV Data Query Methods](https://github.com/osprey-dcs/dp-grpc?tab=readme-ov-file#pv-data-subscription-methods) for a Java code snippet for converting SerializedDataColumns to regular DataColumns.
+Each SubscribeDataResult message contains a list of DataBucket messages, each containing a DataTimestamps message and a heterogeneous column message with a vector containing a sample value for each timestamp for one of the PVs registered for the subscription.
 
 ----
 
@@ -609,12 +587,6 @@ The CancelSubscription message is an empty message that simply indicates the cli
 ----
 
 The service sends SubscribeDataEventResponse messages in the response stream for the subscribeDataEvent() method.  Each response contains one of four payload messages.  1) An ExceptionalResult payload is sent if the service rejects the subscription request or an error occurs while processing the subscription. 2) An AckResult payload is sent when the service accepts a subscription request. 3) A Event payload is sent each time the condition is met for one of the subscription's PvConditionTriggers. 4) When an Event is triggered for a subscription, messages with EventData payloads are sent for the specified list of PV names and time interval in the subscription's DataEventOperation parameter.
-
-----
-
-As mentioned above, when ingestion requests utilize SerializedDataColumns for improved performance, SubscribeDataEventResponse messages sent in the subscribeDataEvent() API method's response stream will automatically contain DataBuckets with SerializedDataColumns instead of regular DataColumns for maximum performance in subscription communication.
-
-See the documentation above for [PV Data Query Methods](https://github.com/osprey-dcs/dp-grpc?tab=readme-ov-file#pv-data-subscription-methods) for a Java code snippet for converting SerializedDataColumns to regular DataColumns.
 
 ----
 
