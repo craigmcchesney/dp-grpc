@@ -1,0 +1,160 @@
+name: Generate Python gRPC Stubs
+
+on:
+  push:
+    tags:
+      - "rel-*"
+  workflow_dispatch:
+    inputs:
+      target_repo:
+        description: "Target dp-python-lib repo (owner/name)"
+        required: true
+        default: "craigmcchesney/dp-python-lib"
+      target_branch:
+        description: "Target branch in dp-python-lib"
+        required: true
+        default: "main"
+      dev_sync:
+        description: "Development sync (skip version bump)"
+        type: boolean
+        default: true
+
+jobs:
+  generate-python-stubs:
+    runs-on: ubuntu-latest
+
+    steps:
+      # -----------------------------
+      # Checkout dp-grpc (this repo)
+      # -----------------------------
+      - name: Checkout dp-grpc
+        uses: actions/checkout@v4
+
+      # -----------------------------
+      # Python + gRPC tooling
+      # -----------------------------
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install grpcio grpcio-tools protobuf
+
+      # -----------------------------
+      # Generate Python stubs
+      # -----------------------------
+      - name: Generate Python gRPC stubs
+        run: |
+          rm -rf out
+          mkdir -p out/python
+      
+          python -m grpc_tools.protoc \
+            -I src/main/proto \
+            --python_out=out/python \
+            --grpc_python_out=out/python \
+            src/main/proto/*.proto
+      
+          # Fix absolute imports in all generated Python files
+          find out/python -name "*_pb2*.py" -exec \
+            sed -i 's/^import \(.*_pb2\) as/from . import \1 as/' {} \;
+
+      - name: Debug generated Python output
+        run: |
+          echo "=== Generated files ==="
+          ls -l out/python || true
+          find out/python -type f || true
+
+      # -----------------------------
+      # Determine release vs dev mode
+      # -----------------------------
+      - name: Determine sync mode
+        id: mode
+        run: |
+          if [[ "${GITHUB_REF}" == refs/tags/rel-* ]]; then
+            VERSION="${GITHUB_REF#refs/tags/rel-}"
+            echo "release=true" >> $GITHUB_OUTPUT
+            echo "version=$VERSION" >> $GITHUB_OUTPUT
+          else
+            echo "release=false" >> $GITHUB_OUTPUT
+          fi
+
+      # -----------------------------
+      # Checkout dp-python-lib
+      # -----------------------------
+      - name: Checkout dp-python-lib
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ inputs.target_repo }}
+          ref: ${{ inputs.target_branch }}
+          token: ${{ secrets.DP_BOT_TOKEN }}
+          path: dp-python-lib
+
+      # -----------------------------
+      # Sync generated stubs
+      # -----------------------------
+      - name: Sync Python stubs into dp-python-lib
+        run: |
+          rm -rf dp-python-lib/src/dp_python_lib/grpc
+          mkdir -p dp-python-lib/src/dp_python_lib/grpc
+          cp -r out/python/* dp-python-lib/src/dp_python_lib/grpc/
+
+      # -----------------------------
+      # Bump version (release only)
+      # -----------------------------
+      - name: Update pyproject.toml version
+        if: steps.mode.outputs.release == 'true'
+        run: |
+          cd dp-python-lib
+          python - <<EOF
+          from pathlib import Path
+          import re
+
+          path = Path("pyproject.toml")
+          text = path.read_text()
+          text = re.sub(
+              r'version\\s*=\\s*"[^"]+"',
+              'version = "${{ steps.mode.outputs.version }}"',
+              text,
+          )
+          path.write_text(text)
+          EOF
+
+      # -----------------------------
+      # Commit + push
+      # -----------------------------
+
+      - name: Configure git identity
+        run: |
+          git config --global user.name "dp-grpc bot"
+          git config --global user.email "dp-grpc-bot@users.noreply.github.com"
+
+      - name: Commit changes
+        run: |
+          cd dp-python-lib
+          BRANCH="grpc-sync-${{ github.run_id }}"
+          git checkout -B "$BRANCH"
+          git add src/dp_python_lib/grpc pyproject.toml || true
+          git commit -m "Sync Python gRPC stubs from dp-grpc${{ steps.mode.outputs.release == 'true' && format(' rel-{0}', steps.mode.outputs.version) || '' }}" || echo "No changes to commit"
+
+      - name: Push branch
+        run: |
+          cd dp-python-lib
+          git push origin HEAD
+
+      # -----------------------------
+      # Create PR (optional but recommended)
+      # -----------------------------
+      - name: Create pull request
+        env:
+          GH_TOKEN: ${{ secrets.DP_BOT_TOKEN }}
+        run: |
+          cd dp-python-lib
+          gh pr create \
+            --title "Sync Python gRPC stubs from dp-grpc" \
+            --body "Automated sync of generated Python gRPC stubs from dp-grpc.\n\nRelease: ${{ steps.mode.outputs.release }}\nVersion: ${{ steps.mode.outputs.version || 'dev' }}" \
+            --base "${{ inputs.target_branch }}" \
+            --head "$(git branch --show-current)" || echo "PR already exists"
+

@@ -5,6 +5,8 @@
 
 syntax = "proto3";
 
+package dp.service.common;
+
 option java_multiple_files = true;
 option java_package = "com.ospreydcs.dp.grpc.v1.common";
 
@@ -20,16 +22,6 @@ message Attribute {
   string name = 1;
   string value = 2;
 }
-
-/*
- * Metadata associated with ingested data.
- */
-message EventMetadata {
-  string description = 1; // Description of the event.
-  Timestamp startTimestamp = 2; // Start time of event.
-  Timestamp stopTimestamp = 3; // End time of event.
-}
-
 
 //
 // ------------------- Time Definitions ---------------------------
@@ -111,51 +103,221 @@ message ExceptionalResult {
 }
 
 
-// ------------------- Data Definitions (Ingestion and Query)  ---------------------------
+// ------------------- Heterogeneous Column Data Types  ---------------------------
 //
+
+/*
+ * DoubleColumn
+ *
+ * Used to contain a vector of double data values. Individual data values are visible in the database.
+ */
+message DoubleColumn {
+  string name = 1; // PV name
+  repeated double values = 2 [packed = true];
+}
+
+/*
+ * FloatColumn
+ *
+ * Used to contain a vector of float data values. Individual data values are visible in the database.
+ */
+message FloatColumn {
+  string name = 1; // PV name
+  repeated float values = 2 [packed = true];
+}
+
+/*
+ * Int64Column
+ *
+ * Used to contain a vector of long data values. Individual data values are visible in the database.
+ */
+message Int64Column {
+  string name = 1; // PV name
+  repeated sint64 values = 2 [packed = true];
+}
+
+/*
+ * Int32Column
+ *
+ * Used to contain a vector of int data values. Individual data values are visible in the database.
+ */
+message Int32Column {
+  string name = 1; // PV name
+  repeated sint32 values = 2 [packed = true];
+}
+
+/*
+ * BoolColumn
+ *
+ * Used to contain a vector of boolean data values. Individual data values are visible in the database.
+ */
+message BoolColumn {
+  string name = 1; // PV name
+  repeated bool values = 2 [packed = true];
+}
+
+/*
+ * StringColumn
+ *
+ * Used to contain a vector of string data values. Individual data values are visible in the database.
+ *
+ * It is encouraged to consider the use of alternatives like EnumColumn for memory and storage efficiency reasons.
+ */
+message StringColumn {
+  string name = 1; // PV name
+  repeated string values = 2;
+}
+
+/*
+ * EnumColumn
+ *
+ * Used to contain a vector of int enum data values. Individual data values are visible in the database.
+ *
+ * The enumId is user-defined and not validated by the MLDP, and is contract between data producers and consumers.
+ */
+message EnumColumn {
+  string name = 1; // PV name
+  repeated int32 values = 2 [packed = true];
+  string enumId = 3; // identifier for enum semantics, e.g. "epics:alarm_status:v2"
+}
+
+/*
+ * ArrayDimensions
+ *
+ * Specifies the dimensions for a column whose sample values are arrays.  Dimensions are a list of values for each
+ * dimension up to 3.
+ */
+message ArrayDimensions {
+  repeated uint32 dims = 1; // e.g. [1024] or [64, 64] or [32, 32, 16]
+}
+
+/*
+ * DoubleArrayColumn
+ *
+ * Used to contain a vector of arrays of doubles, each of the specified dimensions.
+ * Data values are stored in the database as an opaque blob.
+ */
+message DoubleArrayColumn {
+  string name = 1; // PV name
+  ArrayDimensions dimensions = 2;
+  // Flattened: sample_count × product(dims)
+  repeated double values = 3 [packed = true];
+}
+
+/*
+ * FloatArrayColumn
+ *
+ * Used to contain a vector of arrays of floats, each of the specified dimensions.
+ * Data values are stored in the database as an opaque blob.
+ */
+message FloatArrayColumn {
+  string name = 1;
+  ArrayDimensions dimensions = 2;
+  repeated float values = 3 [packed = true];
+}
+
+/*
+ * Int64ArrayColumn
+ *
+ * Used to contain a vector of arrays of longs, each of the specified dimensions.
+ * Data values are stored in the database as an opaque blob.
+ */
+message Int64ArrayColumn {
+  string name = 1;
+  ArrayDimensions dimensions = 2;
+  repeated sint64 values = 3 [packed = true];
+}
+
+/*
+ * Int32ArrayColumn
+ *
+ * Used to contain a vector of arrays of ints, each of the specified dimensions.
+ * Data values are stored in the database as an opaque blob.
+ */
+message Int32ArrayColumn {
+  string name = 1;
+  ArrayDimensions dimensions = 2;
+  repeated sint32 values = 3 [packed = true];
+}
+
+/*
+ * BoolArrayColumn
+ *
+ * Used to contain a vector of arrays of booleans, each of the specified dimensions.
+ * Data values are stored in the database as an opaque blob.
+ */
+message BoolArrayColumn {
+  string name = 1;
+  ArrayDimensions dimensions = 2;
+  repeated bool values = 3 [packed = true];
+}
+
+/*
+ * ImageDescriptor
+ *
+ * Specifies the details for an image including width, height, number of channels, and a user-defined encoding specifying
+ * the image format that a contract between data producer and consumer.
+ */
+message ImageDescriptor {
+  uint32 width = 1;
+  uint32 height = 2;
+  uint32 channels = 3; // e.g. 1 (mono), 3 (RGB)
+  string encoding = 4; // e.g. "raw", "png", "jpeg"
+}
+
+/*
+ * ImageColumn
+ *
+ * Used to contain a vector of image data values. Each image is a byte string, encoded according to imageDescriptor.
+ * Data values are stored in the database as an opaque blob.
+ */
+message ImageColumn {
+  string name = 1;
+  ImageDescriptor imageDescriptor = 2;
+  // One image per sample
+  repeated bytes images = 3;
+}
+
+/*
+ * StructColumn
+ *
+ * Used to contain a vector of structure data values. Each structure's content is serialized to byte string format.
+ * The user-defined schemaId specifies the encoding for the structure, and is a contract between data producer and
+ * consumer.
+ */
+message StructColumn {
+  string name = 1;
+  string schemaId = 2; // e.g. "beam_position:v3"
+  // One struct per sample
+  repeated bytes values = 3;
+}
+
+/*
+ * SerializedDataColumn
+ *
+ * This "catch all" column contains the entire vector of data values as a single byte string. The user-defined
+ * encoding specifies the format of the byte content, and is a contract between data producer and consumer.
+ */
+message SerializedDataColumn {
+  string name = 1;
+  string encoding = 2; // e.g. "Image:v1", "Struct:BeamPosition:v2", "proto:Image".
+  bytes payload = 3;
+}
 
 /*
  * Data Column
  *
  * Contains a named vector of heterogeneous data values sampled for a particular PV.
  *
+ * NOTE: Use of this type for ingestion is deprecated, and may be removed in the next API version. Handling of
+ * DataColumns in ingestion causes per-sample memory allocation that is inefficient. Data values are stored in the
+ * database as a single opaque blob, even for scalar-valued columns. Consider using one of the above column-oriented
+ * data structures for ingestion efficiency.
+ *
  */
 message DataColumn {
   string name = 1; // Name of PV.
   repeated DataValue dataValues = 2; // List of heterogeneous column data values.
-}
-
-/*
- * SerializedDataColumn
- *
- * Contains the bytes for a serialized protobuf DataColumn object, used to avoid redundant serialization operations
- * for maximum API performance.  Use of SerializedDataColumns instead of regular DataColumns is supported in the
- * APIs for ingestion, query, and subscription.
- *
- * To create a SerializedDataColumn (e.g., for use in the ingestion API methods), the user should first create
- a regular DataColumn and then manually serialize it to the dataColumnBytes field of a SerializedDataColumn object.
- * Example Java code to create a SerializedDataColumn from a regular DataColumn is shown below:
- *
- *            SerializedDataColumn.newBuilder()
- *                  .setName(dataColumn.getName())
- *                  .setDataColumnBytes(dataColumn.toByteString())
- *                  .build();
- *
- * To create a regular DataColumn from a SerializedDataColumn (e.g., for clients of the query or subscription APIs),
- * the user should create a DataColumn by parsing (deserializing) the content of the SerializedDataColumn's
- * dataColumnBytes field.  Example Java code is shown below:
- *
- *  DataColumn responseDataColumn = null;
- *  try {
- *      responseDataColumn = DataColumn.parseFrom(responseBucket.getSerializedDataColumn().getDataColumnBytes());
- *  } catch (InvalidProtocolBufferException e) {
- *      fail("exception parsing DataColumn from SerializedDataColumn: " + e.getMessage());
- *  }
- *
- */
-message SerializedDataColumn {
-  string name = 1;
-  bytes dataColumnBytes = 2;
 }
 
 /*
@@ -172,6 +334,11 @@ message SerializedDataColumn {
  * The 'valueStatus' field is structure defined as an enclosed RPC message.  It contains information about the
  * value during acquisition, such as value alarm conditions, acquisition conditions, and any associated
  * message.  This field is subject to future modification for expanded use cases.
+ *
+ * NOTE: Use of this type for ingestion is deprecated, and may be removed in the next API version. Handling of
+ * DataValue in ingestion causes per-sample memory allocation that is inefficient. Also, the ValueStatus mechanismk
+ * is useful for capturing status information from the control system, but not for automated cleaning tools that must
+ * update value status information post-ingestion.
  */
 message DataValue {
 
@@ -255,6 +422,9 @@ message DataValue {
  * can be represented.  The 'value' field within a (name, value) pair may contain another Structure
  * message supporting multi-level structuring.  The depth of the structuring is currently indefinite
  * but may have practical restrictions within service implementation (yet unreported).
+ *
+ * NOTE: Use of this type for ingestion is deprecated and will probably be removed in the next API version.
+ * Consider using StructColumn instead.
  */
 message Structure {
 
@@ -275,6 +445,9 @@ message Structure {
  * DataValue types including simple scalars as well as more complex types like structures, images, and other nested
  * arrays.  The depth of array nesting is currently indefinite but may have practical restrictions within service
  * implementation (yet unreported).
+ *
+ * NOTE: Use of this type for ingestion is deprecated and will probably be removed in the next API version.
+ * Consider using one of the array column types instead.
  */
 message Array {
   repeated DataValue dataValues = 1; // List of array data values.
@@ -287,6 +460,9 @@ message Array {
  *
  * Images are stored as raw data as a byte vector.  Interpretation is determined by standard
  * image file formats enumerated by FileType.
+ *
+ * Note: Use of this type for ingestion is deprecated and will probably be removed in the next API version.
+ * Consider using ImageColumn instead.
  */
 message Image {
 
@@ -313,22 +489,77 @@ message Image {
 // ------------------- Common support for streaming data ---------------------------
 
 /*
+ * DataFrame
+ *
+ * A DataFrame contains lists of heterogeneous data column messages, and a DataTimestamps message specifying the timestamps for
+ * those columns.  Each list of columns is optimized for handling a specific data type.  Each column contains a data
+ * value for each timestamp in dataTimestamps.
+ *
+ * DataTimestamps can be expressed using either a SamplingClock with start time, sample period,
+ * and sample count, or using a TimestampsList with an explicit list of timestamps for the data values.
+ */
+message DataFrame {
+
+  dp.service.common.DataTimestamps dataTimestamps = 1; // Required, specifies timestamps for data values.
+
+  repeated dp.service.common.DataColumn dataColumns = 2; // Deprecated legacy column type, support may be removed in the next API version.
+
+  repeated dp.service.common.SerializedDataColumn serializedDataColumns = 3;
+
+  repeated dp.service.common.DoubleColumn doubleColumns = 10;
+  repeated dp.service.common.FloatColumn  floatColumns  = 11;
+  repeated dp.service.common.Int64Column  int64Columns  = 12;
+  repeated dp.service.common.Int32Column  int32Columns  = 13;
+  repeated dp.service.common.BoolColumn   boolColumns   = 14;
+  repeated dp.service.common.StringColumn stringColumns = 15;
+  repeated dp.service.common.EnumColumn   enumColumns   = 16;
+  repeated dp.service.common.ImageColumn  imageColumns  = 17;
+  repeated dp.service.common.StructColumn structColumns = 18;
+
+  repeated dp.service.common.DoubleArrayColumn doubleArrayColumns = 20;
+  repeated dp.service.common.FloatArrayColumn floatArrayColumns = 21;
+  repeated dp.service.common.Int32ArrayColumn int32ArrayColumns = 22;
+  repeated dp.service.common.Int64ArrayColumn int64ArrayColumns = 23;
+  repeated dp.service.common.BoolArrayColumn boolArrayColumns = 24;
+}
+
+/*
  * DataBucket
  *
- * Contains bucketed time-series data for a PV over a time period as specified in the dataTimestamps.
+ * Contains bucketed time-series data for a PV over a time period as specified in the dataTimestamps. Includes
+ * a DataTimestamps message specifying the timestamps for the individual data values, and a heterogeneous column
+ * message containing the vector of data values with one value per timestamp.
  */
 message DataBucket {
+  string pvName = 1; // Name of PV for data column.
+  DataTimestamps dataTimestamps = 2; // Specifies timestamps for bucket, using SamplingClock or explicit Timestamp list.
+  string providerId = 3; // unique id of provider from most recent ingestion request.
+  string providerName = 4; // name of provider from most recent ingestion request.
+  DataValues dataValues = 5;
+}
 
-  DataTimestamps dataTimestamps = 1; // Specifies timestamps for bucket, using SamplingClock or explicit Timestamp list.
-  repeated string tags = 2; // Specifies list of tags for bucket, if any.
-  repeated Attribute attributes = 3; // Specifies list of key/value attributes for bucket, if any.
-  EventMetadata eventMetadata = 4; // Specifies event metadata for bucket, if any.
-  string providerId = 5; // unique id of provider from most recent ingestion request.
-  string providerName = 6; // name of provider from most recent ingestion request.
+message DataValues {
+  oneof values {
 
-  oneof data {
-    DataColumn dataColumn = 10; // Vector of data values corresponding to data timestamps.
-    SerializedDataColumn serializedDataColumn = 11; // Serialized DataColumn byte data to avoid redundant serialization ops.
+    DataColumn dataColumn = 10;
+    SerializedDataColumn serializedDataColumn = 11;
+
+    DoubleColumn doubleColumn = 12;
+    FloatColumn  floatColumn  = 13;
+    Int64Column  int64Column  = 14;
+    Int32Column  int32Column  = 15;
+    BoolColumn   boolColumn   = 16;
+    StringColumn stringColumn = 17;
+    EnumColumn   enumColumn   = 18;
+
+    ImageColumn  imageColumn  = 19;
+    StructColumn structColumn = 20;
+
+    DoubleArrayColumn doubleArrayColumn = 30;
+    FloatArrayColumn floatArrayColumn = 31;
+    Int32ArrayColumn int32ArrayColumn = 32;
+    Int64ArrayColumn int64ArrayColumn = 33;
+    BoolArrayColumn boolArrayColumn = 34;
   }
 }
 

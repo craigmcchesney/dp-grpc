@@ -1,13 +1,12 @@
 # dp-grpc repo
 
-This repo contains the gRPC API definition for the Data Platform Ingestion, Query, and Annotation Services.  The [data-platform repo](https://github.com/osprey-dcs/data-platform) is the project home page and a good place to learn about the bigger picture.
+This repo contains the gRPC API definition for the Machine Learning Data Platform (MLDP) Ingestion, Query, Annotation, and Ingestion Stream Services.  The [data-platform repo](https://github.com/osprey-dcs/data-platform) is the project home page and a good place to learn about the bigger picture.
 
 This document includes the following information:
 
 - [gRPC communication framework overview](#grpc-overview)
+- [MLDP API overview](#mldp-api-overview)
 - [Data Platform gRPC API proto files](#data-platform-grpc-api-proto-files)
-- [Data Platform API conventions](#data-platform-API-conventions)
-- [Example Java code for calling the API](#example-java-grpc-api-code)
 - [Service-centric API summary](#service-api-summary)
 - [Entity-centric API summary](#entity-api-summary)
 - [API use cases and patterns](#api-use-cases-and-patterns)
@@ -17,6 +16,8 @@ This document includes the following information:
   - [Ingestion Request Status API](#ingestion-request-status-api)
   - [Data Set API](#data-set-api)
   - [Annotation API](#annotation-api)
+- [Data Platform API conventions](#data-platform-API-conventions)
+- [Example Java code for calling the API](#example-java-grpc-api-code)
 
 
 ---
@@ -36,6 +37,35 @@ See the links above for some simple examples of services, methods, and messages.
 
 
 ---
+## MLDP API Overview
+
+The MLDP gRPC API defines APIs for four individual services:
+
+- The Ingestion Service API focuses on high-performance ingestion of process variable (PV) time-series data in a large-scale research facility like a particle accelerator to an archive.
+- The Query Service API is used to retrieve PV time-series data from the archive.
+- The Annotation Service API provides mechanisms for use by researchers and automated data cleaning tools for managing a PV catalog, describing machine configuration at a given point in time, defining datasets, adding annotations, uploading calculations, marking individual data samples, and exporting data.
+- The Ingestion Stream Service provides downstream access to real-time PV time-series data from the PV ingestion stream.
+
+Each service API is described in more detail below.
+
+### Ingestion Service API
+
+The main objective of the Ingestion Service API is to provide a streamlined high-performance pipleline for capturing facility PV time-series data to the archive.  The API defines a set of methods for streaming "bucketed" data to the archive, where each bucket contains PV sample data for a specified time range.  The API offers a number of column-oriented message data structures optimized for handling heterogeneous sample data including scalars, arrays of scalars, strings, enums, stuctures, images, and arbitrary binary data.  Because ingestion requests are processed asynchronously for maximum performance, a query method is provided for determining the status of ingestion requests.  A mechanism for subscribing to PV data from the ingestion stream is also provided.
+
+### Query Service API
+
+The core feature of the Query Service API is retrieval of PV time-series data over a range of time.  There are both unary and streaming query methods, with results that contain either bucketed or tabular data.  Methods are also provided for querying ingestion metadata for PVs and data providers.
+
+### Annotation Service API
+
+The Annotation Service API provides tools for augmenting the PV time-series data archive with facility-specific information.  The core feature is identifying datasets, each containing blocks of data defined by a list of PVs and a range of time, and adding annotations to those datasets.  An annotation includes descriptive elements like freeform text comment, keywords, and key-value attributes, and may also include user-defined calculations that use links for tracking data provenance.  The API also includes tools for exporting datasets and calculations to common file formats including HDF5, CSV, and XLSX.  Features under development include a PV catalog, machine configuration at a point in time, and marking the disposition of individual PV samples.
+
+### Ingestion Stream Service API
+
+The Ingestion Stream Service layers tools on top of the PV data subscription mechanism provided by the Ingestion Service.  The initial implementation includes a method for subscribing to PV data events, to receive an event notification when a trigger condition is satisfied optionally to include data for a set of target PVs for a specified time window around the event time.  Under investigation is a means for executing user-defined code as a plugin to the service. 
+
+
+---
 ## Data Platform gRPC API Proto Files
 
 The Data Platform API is defined in the following _proto_ files, located in this repo's ___src/main/proto___ directory:
@@ -45,131 +75,6 @@ The Data Platform API is defined in the following _proto_ files, located in this
 - [___annotation.proto___](https://github.com/osprey-dcs/dp-grpc/blob/main/src/main/proto/annotation.proto) - Annotation Service API
 - [___ingestion_stream.proto___](https://github.com/osprey-dcs/dp-grpc/blob/main/src/main/proto/ingestion_stream.proto) - Ingestion Stream Service API
 - [___common.proto___](https://github.com/osprey-dcs/dp-grpc/blob/main/src/main/proto/common.proto) - Common data structures shared by  the Service APIs 
-
-
----
-## Data Platform API Conventions
-
-### ordering of elements
-
-Within the Data Platform service proto files, elements are listed in the following order:
-
-1. service method definitions
-2. definition of request and response data types
-
-### packaging of parameters for a method into a single "request" message
-
-For all Data Platform service methods, parameters are bundled into a single "request" message data type, instead of listing multiple parameters to the method.
-
-### naming of request and response messages
-
-The service-specific proto files each begin with a "service" definition block that defines the method interface for that service, including parameters and return types.  Where possible, the data types for the request and response use message names based on the corresponding method name.
-
-A simple example is the Ingestion Service method registerProvider(). The method request parameters are bundled in a message data structure called RegisterProviderRequest. The method returns the response message type RegisterProviderResponse.  So the method definition looks like this:
-
-```
-rpc registerProvider (RegisterProviderRequest) returns (RegisterProviderResponse);
-```
-
-A more complex example is the Ingestion Service RPC methods ingestDataBidiStream() (bidirectional streaming data ingestion API), ingestDataStream() (client-side streaming data ingestion API), and ingestData() (unary data ingestion API). We want the methods to use the same request and response data types, so we use the common message types IngestDataRequest and IngestDataResponse. This pattern is also used for time-series data queries defined in ___query.proto___.  The method definitions look like this:
-
-```
-rpc ingestData (IngestDataRequest) returns (IngestDataResponse);
-rpc ingestDataStream (stream IngestDataRequest) returns (IngestDataStreamResponse);
-rpc ingestDataBidiStream (stream IngestDataRequest) returns (stream IngestDataResponse);
-```
-
-### nesting of messages
-
-Where possible, nesting is used to enclose simpler messages within the more complex messages that use them.  In cases where we want to share messages between multiple request or response messages, the definition of those messages appears after the request and response messages in the proto file.
-
-### determining successful method execution
-
-A common pattern is used across all Data Platform service method responses to assist in determining whether an operation succeeded or failed.  All response messages use the gRPC "oneof" mechanism so that the message payload is either an ExceptionalResult message indicating that the operation failed, or a method-specific message containing the result of a successful operation.
-
-The ExceptionalResult message is defined in "common.proto" with an enum indicating the status of the operation and a descriptive message.  The enum indicates operations that were rejected, encountered an error in processing, failed to return data, resources that were unavailable when requested, etc.
-
-Here is an example of the use of this pattern in the "QueryDataResponse" message used to send the result of time-series data queries:
-
-```
-message QueryDataResponse {
-
-  oneof result {
-    ExceptionalResult exceptionalResult = 10;
-    QueryData queryData = 11;
-  }
-
-  message QueryData {
-
-    repeated DataBucket dataBuckets = 1;
-
-    message DataBucket {
-      // DataBucket field definitions...
-    }
-  }
-}
-```
-
-### empty query results
-
-Another common pattern across Data Platform API query methods is in reporting empty query results.  When a query matches no data, the list of results in the query response message is empty.  For example, when a time-series data query method returns no data, the QueryDataResponse message (show above) contains an empty dataBuckets list.
-
----
-## Example Java gRPC API Code
-
-Here is a simple example of calling the registerProvider() API from Java, after running protoc to build Java stubs.
-
-First the code to build a RegisterProviderRequest object from a "params" object containing the parameters for the request:
-
-```
-    public static RegisterProviderRequest buildRegisterProviderRequest(RegisterProviderRequestParams params) {
-
-        RegisterProviderRequest.Builder builder = RegisterProviderRequest.newBuilder();
-
-        if (params.name != null) {
-            builder.setProviderName(params.name);
-        }
-
-        if (params.description != null) {
-            builder.setDescription(params.description);
-        }
-
-        if (params.tags != null) {
-            builder.addAllTags(params.tags);
-        }
-
-        if (params.attributes != null) {
-            builder.addAllAttributes(AttributesUtility.attributeListFromMap(params.attributes));
-        }
-
-        return builder.build();
-    }
-```
-
-And the code to invoke the API using the request object:
-
-```
-    protected static RegisterProviderResponse sendRegsiterProvider(
-            RegisterProviderRequest request
-    ) {
-        final DpIngestionServiceGrpc.DpIngestionServiceStub asyncStub =
-                DpIngestionServiceGrpc.newStub(ingestionChannel);
-
-        final RegisterProviderUtility.RegisterProviderResponseObserver responseObserver =
-                new RegisterProviderUtility.RegisterProviderResponseObserver();
-
-        asyncStub.registerProvider(request, responseObserver);
-
-        responseObserver.await();
-
-        if (responseObserver.isError()) {
-            fail("responseObserver error: " + responseObserver.getErrorMessage());
-        }
-
-        return responseObserver.getResponseList().get(0);
-    }
-```
-
 
 
 ---
@@ -314,31 +219,31 @@ The core element of the Data Platform is the "process variable" (PV).  In contro
 
 It is assumed that each PV for a particular facility is uniquely named.  E.g., "S01:GCC01" might identify the first vacuum cold cathode gauge in sector one in the storage ring for some accelerator facility.
 
-#### data vectors
+#### data vectors and handling heterogeneous data
 
-The Ingestion and Query Service APIs for handling data work with vectors of PV measurements.  In ___common.proto___, this is reflected in the message data type DataColumn, which includes a PV name and vector of measurements each of which is a DataValue message.
+The Ingestion and Query Service APIs for handling data work with vectors of PV samples.  In ___common.proto___, there are a number of column messages optimized for handling a range of heterogeneous data types.
 
-#### handling heterogeneous data
+Messages for vectors of individual scalar values include DoubleColumn, FloatColumn, Int64Column, Int32Column, BoolColumn, with corresponding messages for handling samples that are arrays of scalar values DoubleArrayColumn, FloatArrayColumn, Int64ArrayColumn, Int32ArrayColumn, and BoolArrayColumn.  Messages are provided for other data types including StringColumn, EnumColumn, ImageColumn, and StructColumn.  The SerializedDataColumn message is used to contain arbitrary binary data with user-defined encoding.
 
-One requirement for the Data Platform API is to provide a general mechanism for handling heterogeneous data types for PV measurements including simple scalar values, as well as multi-dimensional arrays, structures, and images.   This is accomplished by the DataValue message data type in _common.proto__,  which uses the Protobuf "oneof" mechanism to support a number of different data types for the values in a data vector (DataColumn).
+The original implementation includes the message DataColumn which contains a list of DataValue messages, where each DataValue specifies a heterogeneous data type for the sample value.  This feature is deprecated in the Ingestion Service API because 1) it causes per-sample JVM memory allocation in handling ingestion requests and 2) all sample values (including scalars) are stored as opaque binary blobs in the archive.
 
 #### timestamps
 
 Time is represented in the Data Platform API using the Timestamp message defined in ___common.proto___.  It contains two components, one for the number of seconds since the epoch, and the other for nanoseconds.  As a convenience, the message "TimestampList" is used to send a list of timestamps.
 
-#### ingestion data frame
+#### data frame
 
-The message IngestionDataFrame, defined in ___ingestion.proto___, is the primary unit of ingestion in the Data Platform API.  It contains the set of data to be ingested, using a list of DataColumn PV data vectors (described above).  It uses the message DataTimestamps, defined in ___common.proto___, to specify the timestamps for the data values in those vectors.
+The message DataFrame, defined in common.proto___, is the primary unit of ingestion in the Data Platform API.  It contains the set of data to be ingested using lists of the heterogeneous column messages listed above.  It uses the message DataTimestamps, defined in ___common.proto___, to specify the timestamps for the data values in those vectors.
 
 DataTimestamps provides two mechanisms for specifying the timestamps for the data values.
 
-A TimestampList (described above) may be used to send an explicit list of Timestamp objects.  It is assumed that each PV data vector DataColumn is the same size as the list of timestamps, so that there is a data value specified for each corresponding time value.
+A TimestampList (described above) may be used to send an explicit list of Timestamp objects.  It is assumed that each PV data vector column message is the same size as the list of timestamps, so that there is a data value specified for each corresponding time value.
 
-A second alternative is to use the SamplingClock message, defined in ___common.proto___.  It uses three fields to specify the data timestamps, with a start time Timestamp, the sample period in nanoseconds, and an integer count of the number of samples.  The size of each data vector (DataColumn) in the IngestionDataFrame is expected to match the sample count.
+A second alternative is to use the SamplingClock message, defined in ___common.proto___.  It uses three fields to specify the data timestamps, with a start time Timestamp, the sample period in nanoseconds, and an integer count of the number of samples.  The size of each data vector (column message) in the DataFrame is expected to match the sample count.
 
 #### bucketed time-series data
 
-We use the ["bucket pattern"](https://www.mongodb.com/blog/post/building-with-patterns-the-bucket-pattern) as an optimization for handling time-series data in the Data Platform API for query results, as well as for storing a vector of PV measurement values in MongoDB.  A "bucket" is a record that contains all the measurement values for a single PV for a specified time range.
+We use the ["bucket pattern"](https://www.mongodb.com/blog/post/building-with-patterns-the-bucket-pattern) as an optimization for handling batched time-series data in the MLDP Ingestion and Query Service APIs, as well as for storing vectors of PV samples in MongoDB.  A "bucket" is a record that contains all the sample values for a single PV for a specified time range.
 
 This allows a data vector to be stored in the database and returned in query results as a single unit, as opposed to storing and returning data values individually thus requiring that each record contain both a timestamp and data value (which effectively triples the record size for scalar data).  This leads to a more compact database, smaller gRPC messages to send query results, and improved overall performance.
 
@@ -374,15 +279,10 @@ With bucketing, we save the overhead of the sensor_id and timestamp in each reco
     measurements: [ 40, 40, 41 ]
 }
 ```
-Bucketing is used in the API for ingesting time-series data.  The message "IngestDataRequest" contains an "IngestionDataFrame" that contains the data for the request.  It includes a "DataTimestamps" object that describes the timestamps for the frame's data values, either using a "SamplingClock" that specifies the start time and sample period for the values, or with an explicit list of timestamps.  It also includes a list of "DataColumns", each of which is a bucket of data values (e.g., vector) for a particular PV, with a value for each of the frame's timestamps.
+Bucketing is used in the API for ingesting time-series data.  The message "IngestDataRequest" contains an "DataFrame" that contains the data for the request as well as a "DataTimestamps" object that describes the timestamps for the frame's data values, either using a "SamplingClock" that specifies the start time and sample period for the values, or with an explicit list of timestamps.  It also includes lists of heterogeneous column messages, each of which is a bucket of data values (e.g., vector) for a particular PV, with a value for each of the frame's timestamps.
 
-Bucketing is also used to send the results of time-series data queries.  The message "QueryDataResponse" in "query.proto" contains the query result in "QueryData", which contains a list of "DataBucket" messages.  Each "DataBucket" contains a vector of data in a "DataColumn" message for a single PV, along with time expressed using "DataTimestamps" (described above), with either an explicit list of timestamps for the bucket data values, or a SamplingClock with start time and sample period.
+Bucketing is also used to send the results of time-series data queries.  The message "QueryDataResponse" in "query.proto" contains the query result in "QueryData", which contains a list of "DataBucket" messages.  Each "DataBucket" contains a vector of data using one of the column message data types for a single PV, along with time expressed using "DataTimestamps" (described above), with either an explicit list of timestamps for the bucket data values, or a SamplingClock with start time and sample period.
 
-#### enhanced performance using serialized data columns
-
-As mentioned above, the core ingestion and query APIs use the DataColumn message to contain a vector of measurements (DataValues) for a particular PV.  The APIs for data ingestion, query, and subscription now include an option for sending SerializedDataColumns instead of regular DataColumns.  Using this mechanism improves performance significantly by avoiding redundant serialization and deserialization operations performed by the gRPC communication framework.  
-
-Sending regular DataColumns in ingestion requests requires 3 serialization operations.  The client performs serialization when sending the request; the server performs deserialization when receiving the request, and then the data are re-serialized for compact storage in MongoDB.  Sending SerializedDataColumns in ingestion requests requires a single serialization operation in the client with no deserialization or re-serialization required in the server before storage in MongoDB.  Similar improvements are made in the query and subscription APIs.
 
 ### PV Data Ingestion Methods
 <table>
@@ -402,37 +302,7 @@ The API provides three methods for data ingestion, including a simple unary sing
 
 ----
 
-All data ingestion methods share the same request message, IngestDataRequest.  An IngestDataRequest contains the data to be ingested to the archive along with some required identifying information and optional descriptive fields.  The unit of ingestion is the IngestionDataFrame.  Analogous to a worksheet in an Excel workbook, IngestionDataFrame contains 1) a DataTimestamps object specifying the timestamp rows for the worksheet and 2) a list of DataColumns each of which is a column vector of data values, one for each row in the worksheet.
-
-As mentioned above, for improved performance, the ingestion API method variants ingestData(), ingestDataStream(), and ingestDataBidiStream() now include a new optional list of SerializedDataColumns in the request's IngestionDataFrame object.  The API client can send either a list of regular DataColumns, SerializedDataColumns, or both.  Clients seeking maximum performance should send SerializedDataColumns, by manually serializing each DataColumn to its ByteString representation for use in the API request.
-
-Below is a Java code snippet showing how to convert a list of regular DataColumns to a list of SerializedDataColumns for use in an IngestDataRequest's IngestionDataFrame.
-```
-// build a list of DataColumns
-final List<DataColumn> frameColumns = new ArrayList<>();
-
-// create a DataColumn object
-DataColumn.Builder dataColumnBuilder = DataColumn.newBuilder();
-dataColumnBuilder.setName("S01-GCC01");
-
-// add a DataValue to the column
-DataValue.Builder dataValueBuilder = DataValue.newBuilder().setDoubleValue(12.34);
-dataColumnBuilder.addDataValues(dataValueBuilder.build());
-
-// add DataColumn to list
-frameColumns.add(dataColumnBuilder.build());
-
-// generate a list of SerializedDataColumn objects from list of DataColumn objects, and add them to IngesitonDataFrame
-IngestDataRequest.IngestionDataFrame.Builder dataFrameBuilder
-        = IngestDataRequest.IngestionDataFrame.newBuilder();
-for (DataColumn dataColumn : frameColumns) {
-    final SerializedDataColumn serializedDataColumn =
-            SerializedDataColumn.newBuilder()
-                    .setName(dataColumn.getName())
-                    .setDataColumnBytes(dataColumn.toByteString())
-                    .build();
-    dataFrameBuilder.addSerializedDataColumns(serializedDataColumn);
-```
+All data ingestion methods share the same request message, IngestDataRequest.  An IngestDataRequest contains the data to be ingested to the archive along with some required identifying information and optional descriptive fields.  The unit of ingestion is the DataFrame.  Analogous to a worksheet in an Excel workbook, DataFrame contains 1) a DataTimestamps object specifying the timestamp rows for the worksheet and 2) lists of heterogeneous column messages each of which is a column vector of data values, one for each timestamp row in the worksheet.
 
 ----
 
@@ -478,25 +348,9 @@ For queryDataBidiStream(), the client sends a single QueryDataRequest message, r
 
 ----
 
-As mentioned above, the query API method variants queryData(), queryDataStream(), and queryDataBidiStream() now include a mechanism for using SerializedDataColumns in the query result for improved performance.  The request's QuerySpec now includes a flag "useSerializedDataColumns" that is set to indicate that the client wishes to receive SerializedDataColumns in the query result instead of regular ones.  When the flag is set, the response's DataBuckets contain a SerializedDataColumn instead of a regular one.  Clients seeking maximum performance should set the flag in the query request, and must manually deserialize each DataBucket's serializedDataColumn by parsing a DataColumn from the SerializedDataColumn's "dataColumnBytes" byte representation of the column.
-
-Below is a Java code snippet showing how to convert a SerializedDataColumn in the query result DataBucket to a regular DataColumn for accessing its name and data values.
-```
-if (responseBucket.hasSerializedDataColumn()) {
-    DataColumn responseDataColumn = null;
-    try {
-        responseDataColumn = DataColumn.parseFrom(responseBucket.getSerializedDataColumn().getDataColumnBytes());
-    } catch (InvalidProtocolBufferException e) {
-        fail("exception parsing DataColumn from SerializedDataColumn: " + e.getMessage());
-    }
-}
-```
-
-----
-
 Except for queryDataTable(), all time-series data query methods return QueryDataResponse messages.  A QueryDataResponse contains one of two message payloads, ExceptionalResult if an error is encountered or no data is found (described above) or QueryData with the query results.
 
-A QueryData message includes a list of DataBucket messages.  Each DataBucket contains a vector of data in a DataColumn message for a single PV, along with time expressed using a "DataTimestamps" message (described above), with either an explicit list of timestamps for the bucket data values or a SamplingClock with start time and sample period.  The DataBucket also includes a list of tags, a list of key/value "Attribute" pairs, and/or "EventMetadata" message if those descriptive fields were specified on the ingestion request that created the bucket.
+A QueryData message includes a list of DataBucket messages.  Each DataBucket contains a vector of data using one of the heterogeneous column messages for a single PV, along with time expressed using a "DataTimestamps" message (described above), with either an explicit list of timestamps for the bucket data values or a SamplingClock with start time and sample period.  The DataBucket also includes a list of tags and/or a list of key/value "Attribute" pairs if those descriptive fields were specified on the ingestion request that created the bucket.
 
 ----
 
@@ -552,13 +406,7 @@ The CancelSubscription message is an empty message that simply indicates the cli
 
 The service sends SubscribeDataResponse messages in the response stream for the subscribeData() method.  Each response contains one of three payload messages.  1) An ExceptionalResult payload is sent if the service rejects the subscription request or an error occurs while processing the subscription. 2) An AckResult payload is sent when the service accepts a subscription request.  3) A SubscribeDataResult is sent when the service publishes new data for any of the PVs registered for the subscription.
 
-Each SubscribeDataResult message payload contains a DataTimestamps message, specifying the timestamps for the included data values (either using a SamplingClock or explicit list of timestamps), and a list of DataColumn messages, each a column data vector for one of the PVs registered for the subscription.
-
-----
-
-As mentioned above, when ingestion requests utilize SerializedDataColumns for improved performance, SubscribeDataResponse messages sent by the subscribeData() API for subscribed PVs will automatically contain SerializedDataColumns instead of regular DataColumns for maximum performance in subscription communication.
-
-See the documentation above for [PV Data Query Methods](https://github.com/osprey-dcs/dp-grpc?tab=readme-ov-file#pv-data-subscription-methods) for a Java code snippet for converting SerializedDataColumns to regular DataColumns.
+Each SubscribeDataResult message contains a list of DataBucket messages, each containing a DataTimestamps message and a heterogeneous column message with a vector containing a sample value for each timestamp for one of the PVs registered for the subscription.
 
 ----
 
@@ -612,12 +460,6 @@ The CancelSubscription message is an empty message that simply indicates the cli
 ----
 
 The service sends SubscribeDataEventResponse messages in the response stream for the subscribeDataEvent() method.  Each response contains one of four payload messages.  1) An ExceptionalResult payload is sent if the service rejects the subscription request or an error occurs while processing the subscription. 2) An AckResult payload is sent when the service accepts a subscription request. 3) A Event payload is sent each time the condition is met for one of the subscription's PvConditionTriggers. 4) When an Event is triggered for a subscription, messages with EventData payloads are sent for the specified list of PV names and time interval in the subscription's DataEventOperation parameter.
-
-----
-
-As mentioned above, when ingestion requests utilize SerializedDataColumns for improved performance, SubscribeDataEventResponse messages sent in the subscribeDataEvent() API method's response stream will automatically contain DataBuckets with SerializedDataColumns instead of regular DataColumns for maximum performance in subscription communication.
-
-See the documentation above for [PV Data Query Methods](https://github.com/osprey-dcs/dp-grpc?tab=readme-ov-file#pv-data-subscription-methods) for a Java code snippet for converting SerializedDataColumns to regular DataColumns.
 
 ----
 
@@ -837,7 +679,6 @@ An Annotation includes required fields for owner id, a list of unique ids for th
 - comment: free-form text comment
 - tags: list of tags / keywords for cataloging the annotation
 - attributes: list of key / value attribute pairs for cataloging the annotation
-- eventMetadata: used to associate the annotation with an event or experiment
 - calculations: used to attach user-defined calculations (more details below)
 
 #### data provenance tracking
@@ -924,3 +765,132 @@ An Annotation message includes all of the required and optional Annotation field
 </td>
 </tr>
 </table>
+
+
+---
+## Data Platform API Conventions
+
+### ordering of elements
+
+Within the Data Platform service proto files, elements are listed in the following order:
+
+1. service method definitions
+2. definition of request and response messages
+3. supporting data structures used in the request and response messages
+
+### packaging of parameters for a method into a single "request" message
+
+For all Data Platform service methods, parameters are bundled into a single "request" message data type, instead of listing multiple parameters to the method.
+
+### naming of request and response messages
+
+The service-specific proto files each begin with a "service" definition block that defines the method interface for that service, including parameters and return types.  Where possible, the data types for the request and response use message names based on the corresponding method name.
+
+A simple example is the Ingestion Service method registerProvider(). The method request parameters are bundled in a message data structure called RegisterProviderRequest. The method returns the response message type RegisterProviderResponse.  So the method definition looks like this:
+
+```
+rpc registerProvider (RegisterProviderRequest) returns (RegisterProviderResponse);
+```
+
+A more complex example is the Ingestion Service RPC methods ingestDataBidiStream() (bidirectional streaming data ingestion API), ingestDataStream() (client-side streaming data ingestion API), and ingestData() (unary data ingestion API). We want the methods to use the same request and response data types, so we use the common message types IngestDataRequest and IngestDataResponse. This pattern is also used for time-series data queries defined in ___query.proto___.  The method definitions look like this:
+
+```
+rpc ingestData (IngestDataRequest) returns (IngestDataResponse);
+rpc ingestDataStream (stream IngestDataRequest) returns (IngestDataStreamResponse);
+rpc ingestDataBidiStream (stream IngestDataRequest) returns (stream IngestDataResponse);
+```
+
+### nesting of messages
+
+Where possible, nesting is used to enclose simpler messages within the more complex messages that use them.  In cases where we want to share messages between multiple request or response messages, the definition of those messages appears after the request and response messages in the proto file.  Messages whose scope is limited to a particular service are defined in the proto file for that service.  Messages whose scope is broader than a single service are defined in common.proto.
+
+### determining successful method execution
+
+A common pattern is used across all Data Platform service method responses to assist in determining whether an operation succeeded or failed.  All response messages use the gRPC "oneof" mechanism so that the message payload is either an ExceptionalResult message indicating that the operation failed, or a method-specific message containing the result of a successful operation.
+
+The ExceptionalResult message is defined in "common.proto" with an enum indicating the status of the operation and a descriptive message.  The enum indicates operations that were rejected, encountered an error in processing, failed to return data, resources that were unavailable when requested, etc.
+
+Here is an example of the use of this pattern in the "QueryDataResponse" message used to send the result of time-series data queries:
+
+```
+message QueryDataResponse {
+
+  oneof result {
+    ExceptionalResult exceptionalResult = 10;
+    QueryData queryData = 11;
+  }
+
+  message QueryData {
+
+    repeated DataBucket dataBuckets = 1;
+
+    message DataBucket {
+      // DataBucket field definitions...
+    }
+  }
+}
+```
+
+### empty query results
+
+Another common pattern across Data Platform API query methods is in reporting empty query results.  When a query matches no data, the list of results in the query response message is empty.  For example, when a time-series data query method returns no data, the QueryDataResponse message (show above) contains an empty dataBuckets list.
+
+
+---
+## Example Java gRPC API Code
+
+Here is a simple example of calling the registerProvider() API from Java, after running protoc to build Java stubs.
+
+First the code to build a RegisterProviderRequest object from a "params" object containing the parameters for the request:
+
+```
+    public static RegisterProviderRequest buildRegisterProviderRequest(RegisterProviderRequestParams params) {
+
+        RegisterProviderRequest.Builder builder = RegisterProviderRequest.newBuilder();
+
+        if (params.name != null) {
+            builder.setProviderName(params.name);
+        }
+
+        if (params.description != null) {
+            builder.setDescription(params.description);
+        }
+
+        if (params.tags != null) {
+            builder.addAllTags(params.tags);
+        }
+
+        if (params.attributes != null) {
+            builder.addAllAttributes(AttributesUtility.attributeListFromMap(params.attributes));
+        }
+
+        return builder.build();
+    }
+```
+
+And the code to invoke the API using the request object:
+
+```
+    protected static RegisterProviderResponse sendRegsiterProvider(
+            RegisterProviderRequest request
+    ) {
+        final DpIngestionServiceGrpc.DpIngestionServiceStub asyncStub =
+                DpIngestionServiceGrpc.newStub(ingestionChannel);
+
+        final RegisterProviderUtility.RegisterProviderResponseObserver responseObserver =
+                new RegisterProviderUtility.RegisterProviderResponseObserver();
+
+        asyncStub.registerProvider(request, responseObserver);
+
+        responseObserver.await();
+
+        if (responseObserver.isError()) {
+            fail("responseObserver error: " + responseObserver.getErrorMessage());
+        }
+
+        return responseObserver.getResponseList().get(0);
+    }
+```
+
+
+

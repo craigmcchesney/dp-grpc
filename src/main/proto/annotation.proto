@@ -96,8 +96,8 @@ message DataSet {
 }
 
 message DataBlock {
-  Timestamp beginTime = 1; // Required, specifies beginning of time range for basis set.
-  Timestamp endTime = 2; // Required, specifies end of time range for basis set.
+  dp.service.common.Timestamp beginTime = 1; // Required, specifies beginning of time range for basis set.
+  dp.service.common.Timestamp endTime = 2; // Required, specifies end of time range for basis set.
   repeated string pvNames = 3; // Required, contains list of data source names for basis set.
 }
 
@@ -125,11 +125,11 @@ message SaveDataSetRequest {
  */
 message SaveDataSetResponse {
 
-  Timestamp responseTime = 1; // Indicates time response was generated.
+  dp.service.common.Timestamp responseTime = 1; // Indicates time response was generated.
 
   // result: Contains query result payload with either ExceptionalResult or SuccessfulResult as described above.
   oneof result {
-    ExceptionalResult exceptionalResult = 10;
+    dp.service.common.ExceptionalResult exceptionalResult = 10;
     SaveDataSetResult saveDataSetResult = 11;
   }
 
@@ -209,12 +209,12 @@ message QueryDataSetsRequest {
  */
 message QueryDataSetsResponse {
 
-  Timestamp responseTime = 1; // Indicates time response was generated.
+  dp.service.common.Timestamp responseTime = 1; // Indicates time response was generated.
 
   // result: Response contains either an ExceptionalResult indicating a problem handling the request,
   // or DataSetsResult with query result.
   oneof result {
-    ExceptionalResult exceptionalResult = 10;
+    dp.service.common.ExceptionalResult exceptionalResult = 10;
     DataSetsResult dataSetsResult = 11;
   }
 
@@ -256,8 +256,8 @@ message Calculations {
 
   message CalculationsDataFrame {
     string name = 1; // Required, name of data frame.
-    DataTimestamps dataTimestamps = 2; // Required, specifies timestamps for data values.
-    repeated DataColumn dataColumns = 3; // Required list of columns, each containing a data value for each timestamp.
+    dp.service.common.DataTimestamps dataTimestamps = 2; // Required, specifies timestamps for data values.
+    repeated dp.service.common.DataColumn dataColumns = 3; // Required list of columns, each containing a data value for each timestamp.
   }
 }
 
@@ -297,8 +297,7 @@ message SaveAnnotationRequest {
   repeated string annotationIds = 5; // optional list of associated annotations, for provenance / linking of calculations
   string	comment = 6; // optional free-form comment text
   repeated string tags = 7; // optional list of keywords / tags for cataloging Annotation
-  repeated Attribute attributes = 8; // optional list of key/value attribute pairs for cataloging Annotation
-  EventMetadata eventMetadata = 9; // used to associate annotation with an experiment / event
+  repeated dp.service.common.Attribute attributes = 8; // optional list of key/value attribute pairs for cataloging Annotation
   Calculations calculations = 10; // optional user-defined calculations
 }
 
@@ -311,11 +310,11 @@ message SaveAnnotationRequest {
  */
 message SaveAnnotationResponse {
 
-  Timestamp responseTime = 1; // Indicates time response was generated.
+  dp.service.common.Timestamp responseTime = 1; // Indicates time response was generated.
 
   // result: Contains query result payload with either ExceptionalResult or SuccessfulResult as described above.
   oneof result {
-    ExceptionalResult exceptionalResult = 10;
+    dp.service.common.ExceptionalResult exceptionalResult = 10;
     SaveAnnotationResult saveAnnotationResult = 11;
   }
 
@@ -353,7 +352,7 @@ message QueryAnnotationsRequest {
       OwnerCriterion ownerCriterion = 11;  // Query by owner.
       DataSetsCriterion dataSetsCriterion = 12; // Query by unique id of associated DataSet.
       AnnotationsCriterion annotationsCriterion = 13; // Query by unique id of associated Annotation.
-      TextCriterion textCriterion = 14; // Full text query over name, comment, and event description fields.
+      TextCriterion textCriterion = 14; // Full text query over name and comment fields.
       TagsCriterion tagsCriterion = 15; // Query by tag / keyword value.
       AttributesCriterion attributesCriterion = 16; // Query attribute pairs by key and value.
     }
@@ -419,12 +418,12 @@ message QueryAnnotationsRequest {
  */
 message QueryAnnotationsResponse {
 
-  Timestamp responseTime = 1; // Indicates time response was generated.
+  dp.service.common.Timestamp responseTime = 1; // Indicates time response was generated.
 
   // result: Response contains either an ExceptionalResult indicating a problem handling the request,
   // or AnnotationsResult with query result.
   oneof result {
-    ExceptionalResult exceptionalResult = 10;
+    dp.service.common.ExceptionalResult exceptionalResult = 10;
     AnnotationsResult annotationsResult = 11;
   }
 
@@ -446,8 +445,7 @@ message QueryAnnotationsResponse {
       repeated string annotationIds = 6; // list of unique ids for associated Annotations
       string	comment = 7; // free-form comment text
       repeated string tags = 8; // list of keywords / tags
-      repeated Attribute attributes = 9; // list of key/value attribute pairs
-      EventMetadata eventMetadata = 10; // event metadata to associate Annotation with an experiment / event
+      repeated dp.service.common.Attribute attributes = 9; // list of key/value attribute pairs
       Calculations calculations = 11; // user-defined calculations
     }
   }
@@ -468,7 +466,7 @@ message QueryAnnotationsResponse {
 message ExportDataRequest {
 
   string dataSetId = 1;  // Required, specifies id of DataSet to be exported.
-  CalculationsSpec calculationsSpec = 2; // Optional, specifies details of Calculations to include in export.
+  dp.service.common.CalculationsSpec calculationsSpec = 2; // Optional, specifies details of Calculations to include in export.
   ExportOutputFormat outputFormat = 3;  // Optional, specifies export output file format.
 
   enum ExportOutputFormat {
@@ -490,10 +488,10 @@ message ExportDataRequest {
  */
 message ExportDataResponse {
 
-  Timestamp responseTime = 1; // Indicates time response was generated.
+  dp.service.common.Timestamp responseTime = 1; // Indicates time response was generated.
 
   oneof result {
-    ExceptionalResult exceptionalResult = 10; // Indicates a problem was encountered in handling the request.
+    dp.service.common.ExceptionalResult exceptionalResult = 10; // Indicates a problem was encountered in handling the request.
     ExportDataResult exportDataResult = 11; // Indicates the request was handled successfully.
   }
 

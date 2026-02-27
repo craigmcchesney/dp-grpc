@@ -159,7 +159,7 @@ message RegisterProviderRequest {
   string providerName = 1; // Required provider name uniquely identifies ingestion data provider.
   string	description = 2; // optional description
   repeated string tags = 3; // optional list of keywords / tags
-  repeated Attribute attributes = 4; // optional list of key/value attribute pairs
+  repeated dp.service.common.Attribute attributes = 4; // optional list of key/value attribute pairs
 }
 
 /*
@@ -175,10 +175,10 @@ message RegisterProviderRequest {
  */
 message RegisterProviderResponse {
 
-  Timestamp responseTime = 1; // Indicates time response is sent.
+  dp.service.common.Timestamp responseTime = 1; // Indicates time response is sent.
 
   oneof result {
-    ExceptionalResult exceptionalResult = 10; // Payload for an unsuccessful registerProvider() request.
+    dp.service.common.ExceptionalResult exceptionalResult = 10; // Payload for an unsuccessful registerProvider() request.
     RegistrationResult registrationResult = 11; // Payload for a successful registerProvider() request.
   }
 
@@ -208,9 +208,6 @@ message RegisterProviderResponse {
  * performance and simplicity, the service does not check uniqueness of incoming clientRequestId values, it is up to
  * the client to enforce uniqueness.
  *
- * The tags, attributes and eventMetadata fields are optional are optional and  used to further describe the ingested data or
- * associate it with an experiment, event, subsystem, etc.
- *
  * The required ingestionDataFrame field contains the column data vectors to be ingested.
  *
  * For maximum performance, data ingestion is an asynchronous operation.  The response for a request only indicates
@@ -220,37 +217,7 @@ message RegisterProviderResponse {
 message IngestDataRequest {
   string providerId = 1; // Required providerId must match id returned via registerProvider() API method.
   string clientRequestId = 2; // Required clientRequestId uniquely identifies an ingestion request for a provider.
-  repeated string tags = 3; // Optional, list of keywords / tags.
-  repeated Attribute attributes = 4; // Optional, list of key/value attributes describing the request data.
-  EventMetadata eventMetadata = 5; // Optional, metadata describing event that request data are associated with.
-  IngestionDataFrame ingestionDataFrame = 6; // Required, contains the data for the ingestion request.
-
-/*
- * IngestionDataFrame
- *
- * An IngestionDataFrame contains the data for an ingestion request.  It includes a set of vectors of data and a
- * a specification of the timestamps for the values in those vectors.
- *
- * DataTimestamps can be expressed using either a SamplingClock with start time, sample period,
- * and sample count, or using a TimestampsList with an explicit list of timestamps for the data values.
- *
- * Each DataColumn is a vector of data values for a particular PV, with a single data value for each
- * data timestamp.
- *
- * For maximum performance, the client can optionally provide a list of SerializedDataColumn objects instead of
- * regular DataColumn objects.  Each SerializedDataColumn which contains the bytes for a serialized DataColumn object.
- * This avoids extra deserialization / re-serialization operations performed by the gRPC communication framework
- * in the client and Ingestion Service.
- *
- * Each data column must be the same size, with a value for each timestamp specified in dataTimestamps. Ingestion
- * requests with inconsistent dimensions are rejected. Can contain regular DataColumns and/or SerializedDataColumns,
- * and must contain at least one or the other.
- */
-  message IngestionDataFrame {
-    DataTimestamps dataTimestamps = 1; // Required, specifies timestamps for data values.
-    repeated DataColumn dataColumns = 2; // Optional list of columns, each containing a data value for each timestamp.
-    repeated SerializedDataColumn serializedDataColumns = 3; // Optional list of serialized DataColumn objects for maximum performance.
-  }
+  dp.service.common.DataFrame ingestionDataFrame = 3; // Required, contains the data for the ingestion request.
 }
 
 /*
@@ -277,10 +244,10 @@ message IngestDataResponse {
 
   string providerId = 1; // providerId echoed from the corresponding IngestDataRequest.
   string clientRequestId = 2; // clientRequestid echoed from the corresponding IngestDataRequest.
-  Timestamp responseTime = 3; // Indicates time response is generated.
+  dp.service.common.Timestamp responseTime = 3; // Indicates time response is generated.
 
   oneof result {
-    ExceptionalResult exceptionalResult = 10; // Payload for an invalid IngestDataRequest.
+    dp.service.common.ExceptionalResult exceptionalResult = 10; // Payload for an invalid IngestDataRequest.
     AckResult ackResult = 11; // Payload for a valid IngestDataRequest.
   }
 
@@ -308,12 +275,12 @@ message IngestDataResponse {
  */
 message IngestDataStreamResponse {
 
-  Timestamp responseTime = 1; // Indicates time response is generated.
+  dp.service.common.Timestamp responseTime = 1; // Indicates time response is generated.
   repeated string clientRequestIds = 2; // List of clientRequestIds received in the request stream.
   repeated string rejectedRequestIds = 3; // List of clientRequestIds received in the request stream rejected by service.
 
   oneof result {
-    ExceptionalResult exceptionalResult = 10; // Payload if any IngestDataRequest in request stream is rejected.
+    dp.service.common.ExceptionalResult exceptionalResult = 10; // Payload if any IngestDataRequest in request stream is rejected.
     IngestDataStreamResult ingestDataStreamResult = 11; // Payload if all IngestDataRequests in request stream are valid.
   }
 
@@ -380,8 +347,8 @@ message QueryRequestStatusRequest {
     }
 
     message TimeRangeCriterion {
-      Timestamp beginTime = 1;
-      Timestamp endTime = 2;
+      dp.service.common.Timestamp beginTime = 1;
+      dp.service.common.Timestamp endTime = 2;
     }
   }
 }
@@ -400,10 +367,10 @@ message QueryRequestStatusRequest {
  */
 message QueryRequestStatusResponse {
 
-  Timestamp responseTime = 1; // Indicates time response was generated.
+  dp.service.common.Timestamp responseTime = 1; // Indicates time response was generated.
 
   oneof result {
-    ExceptionalResult exceptionalResult = 10;
+    dp.service.common.ExceptionalResult exceptionalResult = 10;
     RequestStatusResult requestStatusResult = 11;
   }
 
@@ -419,7 +386,7 @@ message QueryRequestStatusResponse {
       IngestionRequestStatus ingestionRequestStatus = 5;
       string statusMessage = 6;
       repeated string idsCreated = 7;
-      Timestamp updateTime = 8;
+      dp.service.common.Timestamp updateTime = 8;
     }
   }
 }
@@ -471,18 +438,16 @@ message SubscribeDataRequest {
  * sent when the service accepts a subscription request.  3) A SubscribeDataResult is sent when the service publishes
  * new data for any of the PVs registered for the subscription.
  *
- * Each SubscribeDataResult message payload contains a DataTimestamps message, specifying the timestamps for the
- * included data values (either using a SamplingClock or explicit list of timestamps), and lists of either regular
- * DataColumns or SerializedDataColumns (or both), determined by the contents of the ingestion request being published,
- * e.g., if the IngestDataRequest message contains SerializedDataColumns, so will SubscribeDataResponse messages.
- * For maximum performance, it is advised to use SerializedDataColumns for ingestion and query API methods.
+ * Each SubscribeDataResult message payload contains a list of DataBuckets matching the PV specified for the
+ * subscription, each with a DataTimestamps object and a heterogeneous column data message containing the vector of
+ * values.  Each data column contains a data value for each timestamp.
  */
 message SubscribeDataResponse {
 
-  Timestamp responseTime = 1; // Indicates time response is generated.
+  dp.service.common.Timestamp responseTime = 1; // Indicates time response is generated.
 
   oneof result {
-    ExceptionalResult exceptionalResult = 10;
+    dp.service.common.ExceptionalResult exceptionalResult = 10;
     AckResult ackResult = 11;
     SubscribeDataResult subscribeDataResult = 12;
   }
@@ -492,9 +457,7 @@ message SubscribeDataResponse {
   }
 
   message SubscribeDataResult {
-    DataTimestamps dataTimestamps = 1; // Specifies timestamps for DataColumn values.
-    repeated DataColumn dataColumns = 2; // List of PV column vectors, each containing a data value for each timestamp.
-    repeated SerializedDataColumn serializedDataColumns = 3; // List of serialized DataColumn objects for maximum performance.
+    repeated dp.service.common.DataBucket dataBuckets = 1; // List of PV data buckets with timestamps and data vector.
   }
 
 }
