@@ -7,8 +7,6 @@ This document includes the following information:
 - [gRPC communication framework overview](#grpc-overview)
 - [MLDP API overview](#mldp-api-overview)
 - [Data Platform gRPC API proto files](#data-platform-grpc-api-proto-files)
-- [Data Platform API conventions](#data-platform-API-conventions)
-- [Example Java code for calling the API](#example-java-grpc-api-code)
 - [Service-centric API summary](#service-api-summary)
 - [Entity-centric API summary](#entity-api-summary)
 - [API use cases and patterns](#api-use-cases-and-patterns)
@@ -18,6 +16,8 @@ This document includes the following information:
   - [Ingestion Request Status API](#ingestion-request-status-api)
   - [Data Set API](#data-set-api)
   - [Annotation API](#annotation-api)
+- [Data Platform API conventions](#data-platform-API-conventions)
+- [Example Java code for calling the API](#example-java-grpc-api-code)
 
 
 ---
@@ -75,133 +75,6 @@ The Data Platform API is defined in the following _proto_ files, located in this
 - [___annotation.proto___](https://github.com/osprey-dcs/dp-grpc/blob/main/src/main/proto/annotation.proto) - Annotation Service API
 - [___ingestion_stream.proto___](https://github.com/osprey-dcs/dp-grpc/blob/main/src/main/proto/ingestion_stream.proto) - Ingestion Stream Service API
 - [___common.proto___](https://github.com/osprey-dcs/dp-grpc/blob/main/src/main/proto/common.proto) - Common data structures shared by  the Service APIs 
-
-
----
-## Data Platform API Conventions
-
-### ordering of elements
-
-Within the Data Platform service proto files, elements are listed in the following order:
-
-1. service method definitions
-2. definition of request and response messages
-3. supporting data structures used in the request and response messages
-
-### packaging of parameters for a method into a single "request" message
-
-For all Data Platform service methods, parameters are bundled into a single "request" message data type, instead of listing multiple parameters to the method.
-
-### naming of request and response messages
-
-The service-specific proto files each begin with a "service" definition block that defines the method interface for that service, including parameters and return types.  Where possible, the data types for the request and response use message names based on the corresponding method name.
-
-A simple example is the Ingestion Service method registerProvider(). The method request parameters are bundled in a message data structure called RegisterProviderRequest. The method returns the response message type RegisterProviderResponse.  So the method definition looks like this:
-
-```
-rpc registerProvider (RegisterProviderRequest) returns (RegisterProviderResponse);
-```
-
-A more complex example is the Ingestion Service RPC methods ingestDataBidiStream() (bidirectional streaming data ingestion API), ingestDataStream() (client-side streaming data ingestion API), and ingestData() (unary data ingestion API). We want the methods to use the same request and response data types, so we use the common message types IngestDataRequest and IngestDataResponse. This pattern is also used for time-series data queries defined in ___query.proto___.  The method definitions look like this:
-
-```
-rpc ingestData (IngestDataRequest) returns (IngestDataResponse);
-rpc ingestDataStream (stream IngestDataRequest) returns (IngestDataStreamResponse);
-rpc ingestDataBidiStream (stream IngestDataRequest) returns (stream IngestDataResponse);
-```
-
-### nesting of messages
-
-Where possible, nesting is used to enclose simpler messages within the more complex messages that use them.  In cases where we want to share messages between multiple request or response messages, the definition of those messages appears after the request and response messages in the proto file.  Messages whose scope is limited to a particular service are defined in the proto file for that service.  Messages whose scope is broader than a single service are defined in common.proto.
-
-### determining successful method execution
-
-A common pattern is used across all Data Platform service method responses to assist in determining whether an operation succeeded or failed.  All response messages use the gRPC "oneof" mechanism so that the message payload is either an ExceptionalResult message indicating that the operation failed, or a method-specific message containing the result of a successful operation.
-
-The ExceptionalResult message is defined in "common.proto" with an enum indicating the status of the operation and a descriptive message.  The enum indicates operations that were rejected, encountered an error in processing, failed to return data, resources that were unavailable when requested, etc.
-
-Here is an example of the use of this pattern in the "QueryDataResponse" message used to send the result of time-series data queries:
-
-```
-message QueryDataResponse {
-
-  oneof result {
-    ExceptionalResult exceptionalResult = 10;
-    QueryData queryData = 11;
-  }
-
-  message QueryData {
-
-    repeated DataBucket dataBuckets = 1;
-
-    message DataBucket {
-      // DataBucket field definitions...
-    }
-  }
-}
-```
-
-### empty query results
-
-Another common pattern across Data Platform API query methods is in reporting empty query results.  When a query matches no data, the list of results in the query response message is empty.  For example, when a time-series data query method returns no data, the QueryDataResponse message (show above) contains an empty dataBuckets list.
-
-
----
-## Example Java gRPC API Code
-
-Here is a simple example of calling the registerProvider() API from Java, after running protoc to build Java stubs.
-
-First the code to build a RegisterProviderRequest object from a "params" object containing the parameters for the request:
-
-```
-    public static RegisterProviderRequest buildRegisterProviderRequest(RegisterProviderRequestParams params) {
-
-        RegisterProviderRequest.Builder builder = RegisterProviderRequest.newBuilder();
-
-        if (params.name != null) {
-            builder.setProviderName(params.name);
-        }
-
-        if (params.description != null) {
-            builder.setDescription(params.description);
-        }
-
-        if (params.tags != null) {
-            builder.addAllTags(params.tags);
-        }
-
-        if (params.attributes != null) {
-            builder.addAllAttributes(AttributesUtility.attributeListFromMap(params.attributes));
-        }
-
-        return builder.build();
-    }
-```
-
-And the code to invoke the API using the request object:
-
-```
-    protected static RegisterProviderResponse sendRegsiterProvider(
-            RegisterProviderRequest request
-    ) {
-        final DpIngestionServiceGrpc.DpIngestionServiceStub asyncStub =
-                DpIngestionServiceGrpc.newStub(ingestionChannel);
-
-        final RegisterProviderUtility.RegisterProviderResponseObserver responseObserver =
-                new RegisterProviderUtility.RegisterProviderResponseObserver();
-
-        asyncStub.registerProvider(request, responseObserver);
-
-        responseObserver.await();
-
-        if (responseObserver.isError()) {
-            fail("responseObserver error: " + responseObserver.getErrorMessage());
-        }
-
-        return responseObserver.getResponseList().get(0);
-    }
-```
-
 
 
 ---
@@ -892,3 +765,132 @@ An Annotation message includes all of the required and optional Annotation field
 </td>
 </tr>
 </table>
+
+
+---
+## Data Platform API Conventions
+
+### ordering of elements
+
+Within the Data Platform service proto files, elements are listed in the following order:
+
+1. service method definitions
+2. definition of request and response messages
+3. supporting data structures used in the request and response messages
+
+### packaging of parameters for a method into a single "request" message
+
+For all Data Platform service methods, parameters are bundled into a single "request" message data type, instead of listing multiple parameters to the method.
+
+### naming of request and response messages
+
+The service-specific proto files each begin with a "service" definition block that defines the method interface for that service, including parameters and return types.  Where possible, the data types for the request and response use message names based on the corresponding method name.
+
+A simple example is the Ingestion Service method registerProvider(). The method request parameters are bundled in a message data structure called RegisterProviderRequest. The method returns the response message type RegisterProviderResponse.  So the method definition looks like this:
+
+```
+rpc registerProvider (RegisterProviderRequest) returns (RegisterProviderResponse);
+```
+
+A more complex example is the Ingestion Service RPC methods ingestDataBidiStream() (bidirectional streaming data ingestion API), ingestDataStream() (client-side streaming data ingestion API), and ingestData() (unary data ingestion API). We want the methods to use the same request and response data types, so we use the common message types IngestDataRequest and IngestDataResponse. This pattern is also used for time-series data queries defined in ___query.proto___.  The method definitions look like this:
+
+```
+rpc ingestData (IngestDataRequest) returns (IngestDataResponse);
+rpc ingestDataStream (stream IngestDataRequest) returns (IngestDataStreamResponse);
+rpc ingestDataBidiStream (stream IngestDataRequest) returns (stream IngestDataResponse);
+```
+
+### nesting of messages
+
+Where possible, nesting is used to enclose simpler messages within the more complex messages that use them.  In cases where we want to share messages between multiple request or response messages, the definition of those messages appears after the request and response messages in the proto file.  Messages whose scope is limited to a particular service are defined in the proto file for that service.  Messages whose scope is broader than a single service are defined in common.proto.
+
+### determining successful method execution
+
+A common pattern is used across all Data Platform service method responses to assist in determining whether an operation succeeded or failed.  All response messages use the gRPC "oneof" mechanism so that the message payload is either an ExceptionalResult message indicating that the operation failed, or a method-specific message containing the result of a successful operation.
+
+The ExceptionalResult message is defined in "common.proto" with an enum indicating the status of the operation and a descriptive message.  The enum indicates operations that were rejected, encountered an error in processing, failed to return data, resources that were unavailable when requested, etc.
+
+Here is an example of the use of this pattern in the "QueryDataResponse" message used to send the result of time-series data queries:
+
+```
+message QueryDataResponse {
+
+  oneof result {
+    ExceptionalResult exceptionalResult = 10;
+    QueryData queryData = 11;
+  }
+
+  message QueryData {
+
+    repeated DataBucket dataBuckets = 1;
+
+    message DataBucket {
+      // DataBucket field definitions...
+    }
+  }
+}
+```
+
+### empty query results
+
+Another common pattern across Data Platform API query methods is in reporting empty query results.  When a query matches no data, the list of results in the query response message is empty.  For example, when a time-series data query method returns no data, the QueryDataResponse message (show above) contains an empty dataBuckets list.
+
+
+---
+## Example Java gRPC API Code
+
+Here is a simple example of calling the registerProvider() API from Java, after running protoc to build Java stubs.
+
+First the code to build a RegisterProviderRequest object from a "params" object containing the parameters for the request:
+
+```
+    public static RegisterProviderRequest buildRegisterProviderRequest(RegisterProviderRequestParams params) {
+
+        RegisterProviderRequest.Builder builder = RegisterProviderRequest.newBuilder();
+
+        if (params.name != null) {
+            builder.setProviderName(params.name);
+        }
+
+        if (params.description != null) {
+            builder.setDescription(params.description);
+        }
+
+        if (params.tags != null) {
+            builder.addAllTags(params.tags);
+        }
+
+        if (params.attributes != null) {
+            builder.addAllAttributes(AttributesUtility.attributeListFromMap(params.attributes));
+        }
+
+        return builder.build();
+    }
+```
+
+And the code to invoke the API using the request object:
+
+```
+    protected static RegisterProviderResponse sendRegsiterProvider(
+            RegisterProviderRequest request
+    ) {
+        final DpIngestionServiceGrpc.DpIngestionServiceStub asyncStub =
+                DpIngestionServiceGrpc.newStub(ingestionChannel);
+
+        final RegisterProviderUtility.RegisterProviderResponseObserver responseObserver =
+                new RegisterProviderUtility.RegisterProviderResponseObserver();
+
+        asyncStub.registerProvider(request, responseObserver);
+
+        responseObserver.await();
+
+        if (responseObserver.isError()) {
+            fail("responseObserver error: " + responseObserver.getErrorMessage());
+        }
+
+        return responseObserver.getResponseList().get(0);
+    }
+```
+
+
+
