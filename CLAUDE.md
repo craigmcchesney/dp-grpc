@@ -6,7 +6,7 @@ This repo defines the gRPC API for the **Machine Learning Data Platform (MLDP)**
 
 - **GitHub**: https://github.com/osprey-dcs/dp-grpc
 - **Project home**: https://github.com/osprey-dcs/data-platform
-- **Java package**: `com.ospreydcs.dp.grpc.v1`
+- **Java package prefix**: `com.ospreydcs.dp.grpc.v1` (generated classes use service-scoped packages such as `com.ospreydcs.dp.grpc.v1.common`, `.query`, `.ingestion`, `.annotation`, and `.ingestion_stream`)
 - **Maven coordinates**: `com.ospreydcs:dp-grpc` (see `pom.xml` for current version)
 - **Java target**: 21
 
