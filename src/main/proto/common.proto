@@ -30,6 +30,7 @@ message Attribute {
  * The "source" identifies the origin of the data (e.g., an NTTable/column identifier), and the
  * "process" describes any processing applied to the source data (e.g., normalization).
  * The MLDP does not constrain, enforce, or otherwise interpret these values.
+ * Empty string values for either field are ignored by the MLDP.
  */
 message ColumnProvenance {
   string source = 1;
@@ -571,7 +572,8 @@ message DataFrame {
  *
  * Contains bucketed time-series data for a PV over a time period as specified in the dataTimestamps. Includes
  * a DataTimestamps message specifying the timestamps for the individual data values, and a heterogeneous column
- * message containing the vector of data values with one value per timestamp.
+ * message containing the vector of data values with one value per timestamp. If ColumnMetadata was supplied
+ * for the column at ingestion time, it is stored with the bucket and returned in the embedded column message.
  */
 message DataBucket {
   string pvName = 1; // Name of PV for data column.
