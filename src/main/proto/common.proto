@@ -30,7 +30,7 @@ message Attribute {
  * The "source" identifies the origin of the data (e.g., an NTTable/column identifier), and the
  * "process" describes any processing applied to the source data (e.g., normalization).
  * The MLDP does not constrain, enforce, or otherwise interpret these values.
- * Empty string values for either field are ignored by the MLDP.
+ * Clients should omit unset provenance fields rather than sending empty string values.
  */
 message ColumnProvenance {
   string source = 1;
