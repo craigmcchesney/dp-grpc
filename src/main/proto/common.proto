@@ -42,7 +42,7 @@ message ColumnProvenance {
  *
  * Wrapper for optional column-level metadata included with an ingestion request.
  * Includes provenance information, a list of string tags, and a list of key-value attributes.
- * Overuse of bucket-level metadata will burden the ingestion server process, which is
+ * Overuse of per-request column metadata will burden the ingestion server process, which is
  * optimized for continually ingesting PV time-series data.
  */
 message ColumnMetadata {
