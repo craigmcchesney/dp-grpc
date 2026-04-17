@@ -223,9 +223,17 @@ It is assumed that each PV for a particular facility is uniquely named.  E.g., "
 
 The Ingestion and Query Service APIs for handling data work with vectors of PV samples.  In ___common.proto___, there are a number of column messages optimized for handling a range of heterogeneous data types.
 
-Messages for vectors of individual scalar values include DoubleColumn, FloatColumn, Int64Column, Int32Column, BoolColumn, with corresponding messages for handling samples that are arrays of scalar values DoubleArrayColumn, FloatArrayColumn, Int64ArrayColumn, Int32ArrayColumn, and BoolArrayColumn.  Messages are provided for other data types including StringColumn, EnumColumn, ImageColumn, and StructColumn.  The SerializedDataColumn message is used to contain arbitrary binary data with user-defined encoding.
+Messages for vectors of individual scalar values include DoubleColumn, FloatColumn, Int64Column, Int32Column, BoolColumn, with corresponding messages for handling samples that are arrays of scalar values DoubleArrayColumn, FloatArrayColumn, Int64ArrayColumn, Int32ArrayColumn, and BoolArrayColumn.  Messages are provided for other data types including StringColumn, EnumColumn, ImageColumn, and StructColumn.  The SerializedDataColumn message is used to contain arbitrary binary data with user-defined encoding.  Each column message includes an optional ColumnMetadata field for per-column provenance, tags, and attributes (see below).
 
 The original implementation includes the message DataColumn which contains a list of DataValue messages, where each DataValue specifies a heterogeneous data type for the sample value.  This feature is deprecated in the Ingestion Service API because 1) it causes per-sample JVM memory allocation in handling ingestion requests and 2) all sample values (including scalars) are stored as opaque binary blobs in the archive.
+
+#### column metadata and provenance
+
+Each column message includes an optional ColumnMetadata field for attaching per-column metadata to an ingestion request.  ColumnMetadata contains a ColumnProvenance message, a list of string tags, and a list of key/value Attribute pairs.
+
+ColumnProvenance has two unconstrained, facility-specific string fields: "source", which identifies the origin of the data (e.g., an NTTable/column identifier), and "process", which describes any processing applied to the source data (e.g., normalization).  The MLDP does not constrain, enforce, or otherwise interpret these values.
+
+Column metadata is truly dynamic — it travels with each ingestion request and is stored at the bucket level.  For more static PV information, use the PV metadata query API.  Overuse of bucket-level metadata will burden the ingestion server process, which is optimized for continually ingesting PV time-series data.
 
 #### timestamps
 
@@ -302,7 +310,7 @@ The API provides three methods for data ingestion, including a simple unary sing
 
 ----
 
-All data ingestion methods share the same request message, IngestDataRequest.  An IngestDataRequest contains the data to be ingested to the archive along with some required identifying information and optional descriptive fields.  The unit of ingestion is the DataFrame.  Analogous to a worksheet in an Excel workbook, DataFrame contains 1) a DataTimestamps object specifying the timestamp rows for the worksheet and 2) lists of heterogeneous column messages each of which is a column vector of data values, one for each timestamp row in the worksheet.
+All data ingestion methods share the same request message, IngestDataRequest.  An IngestDataRequest contains the data to be ingested to the archive along with some required identifying information and optional descriptive fields.  The unit of ingestion is the DataFrame.  Analogous to a worksheet in an Excel workbook, DataFrame contains 1) a DataTimestamps object specifying the timestamp rows for the worksheet and 2) lists of heterogeneous column messages each of which is a column vector of data values, one for each timestamp row in the worksheet.  Each column message in the DataFrame may optionally include a ColumnMetadata field containing provenance information, tags, and key/value attributes that are stored at the bucket level in the archive.
 
 ----
 

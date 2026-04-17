@@ -23,6 +23,34 @@ message Attribute {
   string value = 2;
 }
 
+/*
+ * ColumnProvenance
+ *
+ * Describes the provenance of a data column. These fields are unconstrained and facility-specific.
+ * The "source" identifies the origin of the data (e.g., an NTTable/column identifier), and the
+ * "process" describes any processing applied to the source data (e.g., normalization).
+ * The MLDP does not constrain, enforce, or otherwise interpret these values.
+ * Clients should omit unset provenance fields rather than sending empty string values.
+ */
+message ColumnProvenance {
+  string source = 1;
+  string process = 2;
+}
+
+/*
+ * ColumnMetadata
+ *
+ * Wrapper for optional column-level metadata included with an ingestion request.
+ * Includes provenance information, a list of string tags, and a list of key-value attributes.
+ * Overuse of per-request column metadata will burden the ingestion server process, which is
+ * optimized for continually ingesting PV time-series data.
+ */
+message ColumnMetadata {
+  ColumnProvenance provenance = 1;
+  repeated string tags = 2;
+  repeated Attribute attributes = 3;
+}
+
 //
 // ------------------- Time Definitions ---------------------------
 //
@@ -114,6 +142,7 @@ message ExceptionalResult {
 message DoubleColumn {
   string name = 1; // PV name
   repeated double values = 2 [packed = true];
+  ColumnMetadata metadata = 10; // optional
 }
 
 /*
@@ -124,6 +153,7 @@ message DoubleColumn {
 message FloatColumn {
   string name = 1; // PV name
   repeated float values = 2 [packed = true];
+  ColumnMetadata metadata = 10; // optional
 }
 
 /*
@@ -134,6 +164,7 @@ message FloatColumn {
 message Int64Column {
   string name = 1; // PV name
   repeated sint64 values = 2 [packed = true];
+  ColumnMetadata metadata = 10; // optional
 }
 
 /*
@@ -144,6 +175,7 @@ message Int64Column {
 message Int32Column {
   string name = 1; // PV name
   repeated sint32 values = 2 [packed = true];
+  ColumnMetadata metadata = 10; // optional
 }
 
 /*
@@ -154,6 +186,7 @@ message Int32Column {
 message BoolColumn {
   string name = 1; // PV name
   repeated bool values = 2 [packed = true];
+  ColumnMetadata metadata = 10; // optional
 }
 
 /*
@@ -166,6 +199,7 @@ message BoolColumn {
 message StringColumn {
   string name = 1; // PV name
   repeated string values = 2;
+  ColumnMetadata metadata = 10; // optional
 }
 
 /*
@@ -179,6 +213,7 @@ message EnumColumn {
   string name = 1; // PV name
   repeated int32 values = 2 [packed = true];
   string enumId = 3; // identifier for enum semantics, e.g. "epics:alarm_status:v2"
+  ColumnMetadata metadata = 10; // optional
 }
 
 /*
@@ -202,6 +237,7 @@ message DoubleArrayColumn {
   ArrayDimensions dimensions = 2;
   // Flattened: sample_count × product(dims)
   repeated double values = 3 [packed = true];
+  ColumnMetadata metadata = 10; // optional
 }
 
 /*
@@ -214,6 +250,7 @@ message FloatArrayColumn {
   string name = 1;
   ArrayDimensions dimensions = 2;
   repeated float values = 3 [packed = true];
+  ColumnMetadata metadata = 10; // optional
 }
 
 /*
@@ -226,6 +263,7 @@ message Int64ArrayColumn {
   string name = 1;
   ArrayDimensions dimensions = 2;
   repeated sint64 values = 3 [packed = true];
+  ColumnMetadata metadata = 10; // optional
 }
 
 /*
@@ -238,6 +276,7 @@ message Int32ArrayColumn {
   string name = 1;
   ArrayDimensions dimensions = 2;
   repeated sint32 values = 3 [packed = true];
+  ColumnMetadata metadata = 10; // optional
 }
 
 /*
@@ -250,6 +289,7 @@ message BoolArrayColumn {
   string name = 1;
   ArrayDimensions dimensions = 2;
   repeated bool values = 3 [packed = true];
+  ColumnMetadata metadata = 10; // optional
 }
 
 /*
@@ -276,6 +316,7 @@ message ImageColumn {
   ImageDescriptor imageDescriptor = 2;
   // One image per sample
   repeated bytes images = 3;
+  ColumnMetadata metadata = 10; // optional
 }
 
 /*
@@ -290,6 +331,7 @@ message StructColumn {
   string schemaId = 2; // e.g. "beam_position:v3"
   // One struct per sample
   repeated bytes values = 3;
+  ColumnMetadata metadata = 10; // optional
 }
 
 /*
@@ -302,6 +344,7 @@ message SerializedDataColumn {
   string name = 1;
   string encoding = 2; // e.g. "Image:v1", "Struct:BeamPosition:v2", "proto:Image".
   bytes payload = 3;
+  ColumnMetadata metadata = 10; // optional
 }
 
 /*
@@ -318,6 +361,7 @@ message SerializedDataColumn {
 message DataColumn {
   string name = 1; // Name of PV.
   repeated DataValue dataValues = 2; // List of heterogeneous column data values.
+  ColumnMetadata metadata = 10; // optional
 }
 
 /*
@@ -528,7 +572,8 @@ message DataFrame {
  *
  * Contains bucketed time-series data for a PV over a time period as specified in the dataTimestamps. Includes
  * a DataTimestamps message specifying the timestamps for the individual data values, and a heterogeneous column
- * message containing the vector of data values with one value per timestamp.
+ * message containing the vector of data values with one value per timestamp. If ColumnMetadata was supplied
+ * for the column at ingestion time, it is stored with the bucket and returned in the embedded column message.
  */
 message DataBucket {
   string pvName = 1; // Name of PV for data column.
