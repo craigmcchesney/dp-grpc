@@ -94,6 +94,60 @@ All response messages use a `oneof result` with either `ExceptionalResult` (reje
 - Nested messages are used to limit scope where the type is only used within one parent message.
 - Empty query results return an empty list in the result payload, not an `ExceptionalResult`.
 
+### CRUD Pattern for Metadata APIs
+
+Metadata APIs follow a standard CRUD method set. `DpAnnotationService.savePvMetadata` /
+`queryPvMetadata` / `getPvMetadata` / `deletePvMetadata` / `patchPvMetadata` /
+`bulkSavePvMetadata` is the reference implementation of this pattern.
+
+**Standard method set:**
+
+| Method | Semantics | Status |
+|---|---|---|
+| `save*` | Full-replace upsert (create or replace) | Implemented |
+| `query*` | Structured multi-criterion search with pagination | Implemented |
+| `get*` | Single-record lookup by primary key | Implemented |
+| `delete*` | Delete record by primary key | Implemented |
+| `patch*` | Partial update via field mask | Deferred (see below) |
+| `bulk Save*` | Bulk full-replace upsert for large imports | Deferred (see below) |
+
+**Pagination** (`query*` methods): use `uint32 limit` + `string pageToken` in the request
+and `string nextPageToken` in the result message. An empty `nextPageToken` signals the last
+page. Do not include a `totalCount` field — obtaining it requires an expensive separate
+count query against MongoDB.
+
+**Query criteria**: use `repeated *Criterion criteria` (not `clauses`). Multiple criteria
+are combined with AND; multiple values within a single criterion are combined with OR.
+Name/alias criteria provide `exact`, `prefix`, and `contains` sub-lists (all ORed).
+`AttributesCriterion` uses an empty `values` list to mean key-only (existence) search —
+do not add a `keyOnly` flag.
+
+**`save*` full-replace warning**: comments on `Save*Request` must explicitly warn that all
+fields are replaced on update and callers must supply the complete desired state. Reference
+`patch*` as the future partial-update path.
+
+**Deferred methods** (`patch*`, `bulkSave*`): include the RPC stub and request/response
+messages in the proto even when not yet implemented, to reserve names and establish the
+pattern. Mark them clearly in both the service comment and the request message comment:
+
+```proto
+/*
+ * patchFoo()
+ *
+ * <description of intended behavior>
+ *
+ * NOT YET IMPLEMENTED — calling this method returns an error response.
+ * Planned for a future release.
+ *
+ * This method is defined now to reserve its name and message shapes as part
+ * of the standard CRUD pattern for metadata APIs in this service.
+ */
+rpc patchFoo(PatchFooRequest) returns (PatchFooResponse);
+```
+
+The service handler must return `RESULT_STATUS_ERROR` with a "not implemented" message
+for deferred methods.
+
 ## Build
 
 ```bash

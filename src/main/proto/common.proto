@@ -51,6 +51,35 @@ message ColumnMetadata {
   repeated Attribute attributes = 3;
 }
 
+/*
+ * PvMetadata
+ *
+ * Canonical metadata record for a process variable (PV).  PV name is the
+ * primary identifier — no pre-registration of PVs is required before
+ * ingestion.
+ *
+ * Placed in common.proto so it can be referenced by any service (annotation,
+ * query, etc.) without introducing cross-service import cycles.
+ *
+ * createdTime / updatedTime are included because they are often useful to API
+ * consumers for synchronization, auditing, cache invalidation, operational
+ * visibility, and UI display.
+ *
+ * modifiedBy is an unvalidated free-form string identifying the actor (user,
+ * service, or system) that performed the most recent save.  It reflects only
+ * the last writer; no history is maintained.
+ */
+message PvMetadata {
+  string pvName = 1; // canonical PV name
+  repeated string aliases = 2; // optional historical / alternate names
+  repeated string tags = 3; // optional keyword tags (normalized to lowercase unique set)
+  repeated Attribute attributes = 4; // optional key/value attribute pairs
+  Timestamp createdTime = 5; // time the record was first created
+  Timestamp updatedTime = 6; // time the record was most recently saved
+  string modifiedBy = 7; // optional actor / user / service identity for last save
+  string description = 8; // optional free-text description
+}
+
 //
 // ------------------- Time Definitions ---------------------------
 //

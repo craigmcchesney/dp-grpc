@@ -72,6 +72,87 @@ service DpAnnotationService {
    * details about the exported file including the path and optional (if configured) URL for accessing the file.
    */
   rpc exportData(ExportDataRequest) returns (ExportDataResponse);
+
+  /*
+   * savePvMetadata()
+   *
+   * Create or replace the metadata record for the specified PV.
+   *
+   * Full replace (upsert) semantics: if a record does not exist it is created;
+   * if a record already exists, ALL fields (aliases, tags, attributes,
+   * description, modifiedBy) are replaced with the request contents.
+   * Callers must supply the complete desired state on every call — fields
+   * omitted from the request are not preserved.  Use patchPvMetadata()
+   * (future) for partial updates.
+   *
+   * The response may indicate rejection, an error handling the request, or
+   * successful handling of the request.
+   */
+  rpc savePvMetadata(SavePvMetadataRequest) returns (SavePvMetadataResponse);
+
+  /*
+   * queryPvMetadata()
+   *
+   * Query PV metadata records using structured search criteria.
+   *
+   * The response may indicate rejection, an error handling the request, or
+   * a PvMetadataResult containing the matching records and pagination token.
+   */
+  rpc queryPvMetadata(QueryPvMetadataRequest) returns (QueryPvMetadataResponse);
+
+  /*
+   * getPvMetadata()
+   *
+   * Retrieve a single PV metadata record by canonical PV name or alias.
+   * Provided as a convenience over queryPvMetadata() for the common
+   * single-record lookup case.
+   *
+   * The response may indicate rejection, an error handling the request, or
+   * a GetPvMetadataResponse containing the matching record.  If no record
+   * is found for the specified name or alias, an ExceptionalResult is returned.
+   */
+  rpc getPvMetadata(GetPvMetadataRequest) returns (GetPvMetadataResponse);
+
+  /*
+   * patchPvMetadata()
+   *
+   * Partial update of an existing PV metadata record.  Allows individual
+   * fields (aliases, tags, attributes, description, modifiedBy) to be updated
+   * without replacing the entire record, unlike the full-replace semantics
+   * of savePvMetadata().
+   *
+   * NOT YET IMPLEMENTED — calling this method returns an error response.
+   * Planned for a future release.  Field mask design is deferred.
+   *
+   * This method is defined now to reserve its name and message shapes as part
+   * of the standard CRUD pattern for metadata APIs in this service.
+   */
+  rpc patchPvMetadata(PatchPvMetadataRequest) returns (PatchPvMetadataResponse);
+
+  /*
+   * deletePvMetadata()
+   *
+   * Delete the metadata record for the specified canonical PV name.
+   *
+   * The response may indicate rejection, an error handling the request, or
+   * a DeletePvMetadataResult confirming the name of the deleted record.
+   */
+  rpc deletePvMetadata(DeletePvMetadataRequest) returns (DeletePvMetadataResponse);
+
+  /*
+   * bulkSavePvMetadata()
+   *
+   * Bulk create or replace multiple PV metadata records in a single request.
+   * Each record uses the same full-replace upsert semantics as savePvMetadata().
+   * Intended for large initial imports or bulk synchronization use cases.
+   *
+   * NOT YET IMPLEMENTED — calling this method returns an error response.
+   * Planned for a future release.
+   *
+   * This method is defined now to reserve its name and message shapes as part
+   * of the standard bulk-write pattern for metadata APIs in this service.
+   */
+  rpc bulkSavePvMetadata(BulkSavePvMetadataRequest) returns (BulkSavePvMetadataResponse);
 }
 
 
@@ -498,5 +579,363 @@ message ExportDataResponse {
   message ExportDataResult {
     string filePath = 1; // Specifies full path to export output file.
     string fileUrl = 2; // (If configured to generate URLs) Specifies URL for accessing file via web server.
+  }
+}
+
+
+//
+// ------------------- PV Metadata Save Request/Response ---------------------------
+//
+
+/*
+ * SavePvMetadataRequest
+ *
+ * Encapsulates the details for creating or replacing the metadata record for
+ * the specified PV.
+ *
+ * Full replace (upsert) semantics:
+ *   - If no record exists for pvName, a new record is created.
+ *   - If a record already exists, aliases / tags / attributes / description /
+ *     modifiedBy are ALL replaced with the values in this request.
+ *
+ * WARNING: Fields omitted from the request are NOT preserved on update.
+ * Callers must supply the complete desired state on every save.
+ * patchPvMetadata() (future placeholder) will provide partial-update semantics.
+ *
+ * Data normalization rules applied by the service:
+ *   - tags are normalized to a lowercase unique set.
+ *   - attribute keys (Attribute.name) must be unique within the request;
+ *     duplicate keys are rejected.
+ */
+message SavePvMetadataRequest {
+
+  string pvName = 1; // required canonical PV name
+  repeated string aliases = 2; // optional historical / alternate names
+  repeated string tags = 3; // optional keyword tags
+  repeated dp.service.common.Attribute attributes = 4; // optional key/value attribute pairs
+  string modifiedBy = 5; // optional actor / user / service identity
+  string description = 6; // optional free-text description
+}
+
+/*
+ * SavePvMetadataResponse
+ *
+ * Contains the response to a savePvMetadata() request.  Payload is an
+ * ExceptionalResult if the request is rejected or an error is encountered,
+ * otherwise contains a SavePvMetadataResult.
+ */
+message SavePvMetadataResponse {
+
+  dp.service.common.Timestamp responseTime = 1; // Indicates time response was generated.
+
+  oneof result {
+    dp.service.common.ExceptionalResult exceptionalResult = 10;
+    SavePvMetadataResult savePvMetadataResult = 11;
+  }
+
+  /*
+   * SavePvMetadataResult
+   *
+   * Contains the result of a successful savePvMetadata() request.
+   */
+  message SavePvMetadataResult {
+    string pvName = 1; // canonical PV name of the created or updated record
+  }
+}
+
+
+//
+// ------------------- PV Metadata Query ---------------------------
+//
+
+/*
+ * QueryPvMetadataRequest
+ *
+ * Contains parameters for a PV metadata query using structured search criteria.
+ *
+ * Combining semantics:
+ *   - Multiple criteria in the top-level list are combined with logical AND:
+ *     a record must satisfy ALL criteria to be returned.
+ *   - Within a single criterion, all match values / sub-lists are combined
+ *     with logical OR: a record satisfies the criterion if it matches ANY
+ *     supplied value.
+ *   - Within PvNameCriterion and AliasesCriterion, the exact / prefix /
+ *     contains sub-lists are each ORed internally and then ORed together:
+ *     a name matches if it satisfies any value from any sub-list.
+ *
+ * Pagination:
+ *   - limit specifies the maximum number of records to return per response.
+ *   - pageToken is omitted on the first request; subsequent requests supply
+ *     the nextPageToken returned in the previous response.
+ *   - An empty nextPageToken in the response indicates no further pages.
+ */
+message QueryPvMetadataRequest {
+
+  repeated QueryPvMetadataCriterion criteria = 1;
+
+  uint32 limit = 2;
+  string pageToken = 3;
+
+  /*
+   * QueryPvMetadataCriterion
+   *
+   * A single search criterion.  Exactly one criterion must be set.
+   */
+  message QueryPvMetadataCriterion {
+
+    oneof criterion {
+      PvNameCriterion pvNameCriterion = 10;
+      TagsCriterion tagsCriterion = 11;
+      AttributesCriterion attributesCriterion = 12;
+      AliasesCriterion aliasesCriterion = 13;
+    }
+
+    /*
+     * PvNameCriterion
+     *
+     * Match records by canonical PV name.  Values across all three sub-lists
+     * are ORed: a name matches if it satisfies any supplied value from any
+     * sub-list.
+     */
+    message PvNameCriterion {
+      repeated string exact = 1;    // exact string match
+      repeated string prefix = 2;   // prefix match
+      repeated string contains = 3; // substring match
+    }
+
+    /*
+     * TagsCriterion
+     *
+     * Match records that have any of the specified tags.  Multiple tags within
+     * a single TagsCriterion are ORed; use separate TagsCriterion entries in
+     * the outer criteria list (ANDed) to require multiple tags simultaneously.
+     */
+    message TagsCriterion {
+      repeated string tags = 1;
+    }
+
+    /*
+     * AttributesCriterion
+     *
+     * Match records by attribute key and optional value(s).
+     * key (maps to Attribute.name) is required.
+     * values is optional: if non-empty, the record must have the key with one
+     * of the specified values (OR); if empty, any record possessing the key
+     * matches regardless of its value (key-only / existence search).
+     */
+    message AttributesCriterion {
+      string key = 1;             // required; matches Attribute.name
+      repeated string values = 2; // optional; empty list = key-only search
+    }
+
+    /*
+     * AliasesCriterion
+     *
+     * Match records by alias.  Mirrors PvNameCriterion: values across all
+     * three sub-lists are ORed.
+     */
+    message AliasesCriterion {
+      repeated string exact = 1;    // exact string match
+      repeated string prefix = 2;   // prefix match
+      repeated string contains = 3; // substring match
+    }
+  }
+}
+
+/*
+ * QueryPvMetadataResponse
+ *
+ * Contains the results of a queryPvMetadata() request.  Payload is an
+ * ExceptionalResult if the request is rejected or an error is encountered,
+ * otherwise contains a PvMetadataResult with the matching records.
+ *
+ * An empty query result is returned as a PvMetadataResult with an empty
+ * pvMetadata list (not an ExceptionalResult).
+ */
+message QueryPvMetadataResponse {
+
+  dp.service.common.Timestamp responseTime = 1; // Indicates time response was generated.
+
+  oneof result {
+    dp.service.common.ExceptionalResult exceptionalResult = 10;
+    PvMetadataResult pvMetadataResult = 11;
+  }
+
+  /*
+   * PvMetadataResult
+   *
+   * Contains a page of PvMetadata records matching the query criteria.
+   *
+   * nextPageToken is non-empty when additional pages are available; supply it
+   * as pageToken in the next request to retrieve the following page.
+   * An empty nextPageToken indicates the last page.
+   */
+  message PvMetadataResult {
+    repeated dp.service.common.PvMetadata pvMetadata = 1;
+    string nextPageToken = 2;
+  }
+}
+
+
+//
+// ------------------- PV Metadata Get / Patch / Delete / Bulk Save ---------------------------
+//
+
+/*
+ * GetPvMetadataRequest
+ *
+ * Retrieve a single PV metadata record by canonical PV name or alias.
+ */
+message GetPvMetadataRequest {
+  string pvName = 1; // canonical PV name or alias
+}
+
+/*
+ * GetPvMetadataResponse
+ *
+ * Contains the result of a getPvMetadata() request.  Payload is an
+ * ExceptionalResult if the request is rejected, an error is encountered, or
+ * no record is found, otherwise contains the matching PvMetadata record.
+ */
+message GetPvMetadataResponse {
+
+  dp.service.common.Timestamp responseTime = 1; // Indicates time response was generated.
+
+  oneof result {
+    dp.service.common.ExceptionalResult exceptionalResult = 10;
+    dp.service.common.PvMetadata pvMetadata = 11;
+  }
+}
+
+/*
+ * PatchPvMetadataRequest
+ *
+ * Partial update of an existing PV metadata record.
+ *
+ * NOT YET IMPLEMENTED.  The patch fields and field mask mechanism are deferred
+ * to the release that implements patchPvMetadata().  This message is defined
+ * now to reserve the name and establish the pattern.
+ */
+message PatchPvMetadataRequest {
+  string pvName = 1; // required canonical PV name
+}
+
+/*
+ * PatchPvMetadataResponse
+ *
+ * Contains the result of a patchPvMetadata() request.  Payload is an
+ * ExceptionalResult if the request is rejected or an error is encountered,
+ * otherwise contains a PatchPvMetadataResult.
+ */
+message PatchPvMetadataResponse {
+
+  dp.service.common.Timestamp responseTime = 1; // Indicates time response was generated.
+
+  oneof result {
+    dp.service.common.ExceptionalResult exceptionalResult = 10;
+    PatchPvMetadataResult patchPvMetadataResult = 11;
+  }
+
+  /*
+   * PatchPvMetadataResult
+   *
+   * Contains the result of a successful patchPvMetadata() request.
+   */
+  message PatchPvMetadataResult {
+    string pvName = 1; // canonical PV name of the updated record
+  }
+}
+
+/*
+ * DeletePvMetadataRequest
+ *
+ * Delete the metadata record for the specified canonical PV name.
+ */
+message DeletePvMetadataRequest {
+  string pvName = 1; // required canonical PV name
+}
+
+/*
+ * DeletePvMetadataResponse
+ *
+ * Contains the result of a deletePvMetadata() request.  Payload is an
+ * ExceptionalResult if the request is rejected or an error is encountered,
+ * otherwise contains a DeletePvMetadataResult.
+ */
+message DeletePvMetadataResponse {
+
+  dp.service.common.Timestamp responseTime = 1; // Indicates time response was generated.
+
+  oneof result {
+    dp.service.common.ExceptionalResult exceptionalResult = 10;
+    DeletePvMetadataResult deletePvMetadataResult = 11;
+  }
+
+  /*
+   * DeletePvMetadataResult
+   *
+   * Contains the result of a successful deletePvMetadata() request.
+   */
+  message DeletePvMetadataResult {
+    string pvName = 1; // canonical PV name of the deleted record
+  }
+}
+
+/*
+ * BulkSavePvMetadataRequest
+ *
+ * Bulk create or replace multiple PV metadata records in a single request.
+ * Each record uses the same full-replace upsert semantics as savePvMetadata().
+ * Intended for large initial imports or bulk synchronization use cases.
+ *
+ * NOT YET IMPLEMENTED.  This message is defined now to reserve the name and
+ * establish the pattern for bulk-write operations in this service.
+ */
+message BulkSavePvMetadataRequest {
+  repeated SavePvMetadataRequest requests = 1;
+}
+
+/*
+ * BulkSavePvMetadataResponse
+ *
+ * Contains the result of a bulkSavePvMetadata() request.  Payload is an
+ * ExceptionalResult if the entire request is rejected (e.g. validation failure
+ * before any records are processed), otherwise contains a
+ * BulkSavePvMetadataResult reporting the count of successfully saved records
+ * and per-item details for any failures.
+ *
+ * A response with BulkSavePvMetadataResult and a non-empty errors list
+ * indicates a partial failure: some records were saved and some were not.
+ */
+message BulkSavePvMetadataResponse {
+
+  dp.service.common.Timestamp responseTime = 1; // Indicates time response was generated.
+
+  oneof result {
+    dp.service.common.ExceptionalResult exceptionalResult = 10;
+    BulkSavePvMetadataResult bulkSavePvMetadataResult = 11;
+  }
+
+  /*
+   * BulkSavePvMetadataResult
+   *
+   * savedCount is the number of records successfully saved.
+   * errors contains one entry per failed record; an empty list means all
+   * records were saved successfully.
+   */
+  message BulkSavePvMetadataResult {
+
+    uint64 savedCount = 1;
+    repeated BulkSaveError errors = 2;
+
+    /*
+     * BulkSaveError
+     *
+     * Describes a failure for a single record within a bulk save request.
+     */
+    message BulkSaveError {
+      string pvName = 1;
+      dp.service.common.ExceptionalResult exceptionalResult = 2;
+    }
   }
 }
