@@ -132,7 +132,7 @@ service DpAnnotationService {
   /*
    * deletePvMetadata()
    *
-   * Delete the metadata record for the specified canonical PV name.
+   * Delete the metadata record for the specified canonical PV name or alias.
    *
    * The response may indicate rejection, an error handling the request, or
    * a DeletePvMetadataResult confirming the name of the deleted record.
@@ -662,6 +662,8 @@ message SavePvMetadataResponse {
  *   - Within PvNameCriterion and AliasesCriterion, the exact / prefix /
  *     contains sub-lists are each ORed internally and then ORed together:
  *     a name matches if it satisfies any value from any sub-list.
+ *   - An empty criteria list is rejected with an ExceptionalResult; at least
+ *     one criterion is required.
  *
  * Pagination:
  *   - limit specifies the maximum number of records to return per response.
@@ -711,7 +713,7 @@ message QueryPvMetadataRequest {
      * the outer criteria list (ANDed) to require multiple tags simultaneously.
      */
     message TagsCriterion {
-      repeated string tags = 1;
+      repeated string values = 1;
     }
 
     /*
@@ -795,7 +797,8 @@ message GetPvMetadataRequest {
  *
  * Contains the result of a getPvMetadata() request.  Payload is an
  * ExceptionalResult if the request is rejected, an error is encountered, or
- * no record is found, otherwise contains the matching PvMetadata record.
+ * no record is found, otherwise contains a GetPvMetadataResult with the
+ * matching PvMetadata record.
  */
 message GetPvMetadataResponse {
 
@@ -803,7 +806,16 @@ message GetPvMetadataResponse {
 
   oneof result {
     dp.service.common.ExceptionalResult exceptionalResult = 10;
-    dp.service.common.PvMetadata pvMetadata = 11;
+    GetPvMetadataResult getPvMetadataResult = 11;
+  }
+
+  /*
+   * GetPvMetadataResult
+   *
+   * Contains the result of a successful getPvMetadata() request.
+   */
+  message GetPvMetadataResult {
+    dp.service.common.PvMetadata pvMetadata = 1; // the matching PvMetadata record
   }
 }
 
@@ -849,10 +861,10 @@ message PatchPvMetadataResponse {
 /*
  * DeletePvMetadataRequest
  *
- * Delete the metadata record for the specified canonical PV name.
+ * Delete the metadata record for the specified canonical PV name or alias.
  */
 message DeletePvMetadataRequest {
-  string pvName = 1; // required canonical PV name
+  string pvNameOrAlias = 1; // required canonical PV name or alias
 }
 
 /*
@@ -925,7 +937,7 @@ message BulkSavePvMetadataResponse {
    */
   message BulkSavePvMetadataResult {
 
-    uint64 savedCount = 1;
+    uint32 savedCount = 1;
     repeated BulkSaveError errors = 2;
 
     /*
