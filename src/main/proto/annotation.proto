@@ -787,7 +787,7 @@ message QueryPvMetadataResponse {
  * Retrieve a single PV metadata record by canonical PV name or alias.
  */
 message GetPvMetadataRequest {
-  string pvName = 1; // canonical PV name or alias
+  string pvNameOrAlias = 1; // canonical PV name or alias
 }
 
 /*

@@ -345,7 +345,7 @@ message QueryPvStatsResponse {
    */
   message StatsResult {
 
-    repeated PvStats pvStats = 1; // List of stats objects matching query specificiation.
+    repeated PvStats pvStats = 1; // List of stats objects matching query specification.
 
     message PvStats {
       string pvName = 1; // Name of PV.
@@ -453,7 +453,7 @@ message QueryProvidersResponse {
    */
   message ProvidersResult {
 
-    repeated ProviderInfo providerInfos = 1; // List of stats objects matching query specification.
+    repeated ProviderInfo providerInfos = 1; // List of ProviderInfo objects matching query specification.
 
     message ProviderInfo {
       string id = 1; // Provider unique id.
@@ -504,7 +504,7 @@ message QueryProviderStatsResponse {
    * Contains a list of ProviderStats objects, one for each provider matching the query specification.
    */
   message StatsResult {
-    repeated ProviderStats providerStats = 1; // List of stats objects matching query specificiation.
+    repeated ProviderStats providerStats = 1; // List of stats objects matching query specification.
   }
 }
 
@@ -516,7 +516,7 @@ message QueryProviderStatsResponse {
 message ProviderStats {
   string id = 1; // Provider id.
   repeated string pvNames = 2; // List of PV names with buckets using provider.
-  dp.service.common.Timestamp firstBucketTime = 3; // Timstamp of first bucket using provider.
+  dp.service.common.Timestamp firstBucketTime = 3; // Timestamp of first bucket using provider.
   dp.service.common.Timestamp lastBucketTime = 4; // Timestamp of most recent bucket using provider.
   int32 numBuckets = 5; // Number of buckets using provider.
 }

@@ -109,7 +109,7 @@ Metadata APIs follow a standard CRUD method set. `DpAnnotationService.savePvMeta
 | `get*` | Single-record lookup by primary key | Implemented |
 | `delete*` | Delete record by primary key | Implemented |
 | `patch*` | Partial update via field mask | Deferred (see below) |
-| `bulk Save*` | Bulk full-replace upsert for large imports | Deferred (see below) |
+| `bulkSave*` | Bulk full-replace upsert for large imports | Deferred (see below) |
 
 **Pagination** (`query*` methods): use `uint32 limit` + `string pageToken` in the request
 and `string nextPageToken` in the result message. An empty `nextPageToken` signals the last
