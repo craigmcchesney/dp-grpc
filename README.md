@@ -14,6 +14,7 @@ This document includes the following information:
   - [Provider API](#provider-api)
   - [PV Time-Series Data API](#pv-time-series-data-api)
   - [Ingestion Request Status API](#ingestion-request-status-api)
+  - [PV Metadata API](#pv-metadata-api)
   - [Data Set API](#data-set-api)
   - [Annotation API](#annotation-api)
 - [Data Platform API conventions](#data-platform-API-conventions)
@@ -54,11 +55,11 @@ The main objective of the Ingestion Service API is to provide a streamlined high
 
 ### Query Service API
 
-The core feature of the Query Service API is retrieval of PV time-series data over a range of time.  There are both unary and streaming query methods, with results that contain either bucketed or tabular data.  Methods are also provided for querying ingestion metadata for PVs and data providers.
+The core feature of the Query Service API is retrieval of PV time-series data over a range of time.  There are both unary and streaming query methods, with results that contain either bucketed or tabular data.  Methods are also provided for querying archive ingestion statistics for PVs and data providers.
 
 ### Annotation Service API
 
-The Annotation Service API provides tools for augmenting the PV time-series data archive with facility-specific information.  The core feature is identifying datasets, each containing blocks of data defined by a list of PVs and a range of time, and adding annotations to those datasets.  An annotation includes descriptive elements like freeform text comment, keywords, and key-value attributes, and may also include user-defined calculations that use links for tracking data provenance.  The API also includes tools for exporting datasets and calculations to common file formats including HDF5, CSV, and XLSX.  Features under development include a PV catalog, machine configuration at a point in time, and marking the disposition of individual PV samples.
+The Annotation Service API provides tools for augmenting the PV time-series data archive with facility-specific information.  The core feature is identifying datasets, each containing blocks of data defined by a list of PVs and a range of time, and adding annotations to those datasets.  An annotation includes descriptive elements like freeform text comment, keywords, and key-value attributes, and may also include user-defined calculations that use links for tracking data provenance.  The API also includes tools for exporting datasets and calculations to common file formats including HDF5, CSV, and XLSX.  A PV metadata API is provided for associating user-defined metadata (aliases, tags, attributes, description) with PVs and using that metadata to discover PVs of interest.
 
 ### Ingestion Stream Service API
 
@@ -81,36 +82,38 @@ The Data Platform API is defined in the following _proto_ files, located in this
 ## Service API Summary
 The table below gives an overview of the Data Platform API organized by service.  Links to additional details are provided for each method category.
 
-| Service          | API Methods                                                                                                                                                                                                                                                                        |
-|------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Ingestion        | [Provider&nbsp;registration](#provider-registration-methods)<br>[PV&nbsp;data&nbsp;ingestion](#pv-data-ingestion-methods)<br>[PV&nbsp;data&nbsp;subscription](#pv-data-subscription-methods)<br>[Request&nbsp;Status&nbsp;query](#request-status-query-methods)<br>                |
-| Query            | [PV&nbsp;data&nbsp;query](#pv-data-query-methods)<br>[PV&nbsp;metadata&nbsp;query](#pv-metadata-query-methods)<br>[Provider&nbsp;query](#provider-query-methods)<br>[Provider&nbsp;metadata&nbsp;query](#provider-metadata-query-methods)<br>                                      |
-| Annotation       | [Data&nbsp;Set&nbsp;creation](#data-set-creation-methods)<br>[Data&nbsp;Set&nbsp;query](#data-set-query-methods)<br>[Data&nbsp;export](#data-export-methods)<br>[Annotation&nbsp;creation](#annotation-creation-methods)<br>[Annotation&nbsp;query](#annotation-query-methods)<br> |
-| Ingestion Stream | [Data&nbsp;Event&nbsp;subscription](#pv-data-event-subscription-methods)<br>                                                                                                                                                                                                       |
+| Service          | API Methods                                                                                                                                                                                                                                                                                                                                                                                                                              |
+|------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Ingestion        | [Provider&nbsp;registration](#provider-registration-methods)<br>[PV&nbsp;data&nbsp;ingestion](#pv-data-ingestion-methods)<br>[PV&nbsp;data&nbsp;subscription](#pv-data-subscription-methods)<br>[Request&nbsp;Status&nbsp;query](#request-status-query-methods)<br>                                                                                                                                                                      |
+| Query            | [PV&nbsp;data&nbsp;query](#pv-data-query-methods)<br>[PV&nbsp;stats&nbsp;query](#pv-stats-query-methods)<br>[Provider&nbsp;query](#provider-query-methods)<br>[Provider&nbsp;stats&nbsp;query](#provider-stats-query-methods)<br>                                                                                                                                                                                                        |
+| Annotation       | [PV&nbsp;metadata&nbsp;save](#pv-metadata-save-methods)<br>[PV&nbsp;metadata&nbsp;query](#pv-metadata-query-methods)<br>[PV&nbsp;metadata&nbsp;get](#pv-metadata-get-methods)<br>[PV&nbsp;metadata&nbsp;delete](#pv-metadata-delete-methods)<br>[Data&nbsp;Set&nbsp;save](#data-set-save-methods)<br>[Data&nbsp;Set&nbsp;query](#data-set-query-methods)<br>[Data&nbsp;export](#data-export-methods)<br>[Annotation&nbsp;save](#annotation-save-methods)<br>[Annotation&nbsp;query](#annotation-query-methods)<br> |
+| Ingestion Stream | [Data&nbsp;Event&nbsp;subscription](#pv-data-event-subscription-methods)<br>                                                                                                                                                                                                                                                                                                                                                             |
 
 ---
 ## Entity API Summary
 
 The table below gives an overview of the Data Platform API organized by entity.  A brief description of each entity is provided with links to additional details about API support for that entity.
 
-| Entity   | Description | API Methods                                                                                                                                                                                                                                                                                                                    |
-|----------|-------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Provider | An infrastructure component that sends correlated PV time-series data to the archive.  Might be associated with an EPICS IOC. | [Provider&nbsp;registration](#provider-registration-methods)<br>[Provider&nbsp;query](#provider-query-methods)<br>[Provider&nbsp;metadata&nbsp;query](#provider-metadata-query-methods)<br>                                                                                                                                    |
-| PV Time-Series Data | The core of the MLDP archive is correlated PV time-series data captured from devices in an accelerator facility. | [PV&nbsp;data&nbsp;ingestion](#pv-data-ingestion-methods)<br>[PV&nbsp;data&nbsp;query](#pv-data-query-methods)<br>[PV&nbsp;data&nbsp;subscription](#pv-data-subscription-methods)<br>[Data&nbsp;Event&nbsp;subscription](#pv-data-event-subscription-methods)<br>[PV&nbsp;metadata&nbsp;query](#pv-metadata-query-methods)<br> |
+| Entity   | Description | API Methods                                                                                                                                                                                                                                                                                                                                                                         |
+|----------|-------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Provider | An infrastructure component that sends correlated PV time-series data to the archive.  Might be associated with an EPICS IOC. | [Provider&nbsp;registration](#provider-registration-methods)<br>[Provider&nbsp;query](#provider-query-methods)<br>[Provider&nbsp;stats&nbsp;query](#provider-stats-query-methods)<br>                                                                                                                                         |
+| PV Time-Series Data | The core of the MLDP archive is correlated PV time-series data captured from devices in an accelerator facility. | [PV&nbsp;data&nbsp;ingestion](#pv-data-ingestion-methods)<br>[PV&nbsp;data&nbsp;query](#pv-data-query-methods)<br>[PV&nbsp;data&nbsp;subscription](#pv-data-subscription-methods)<br>[Data&nbsp;Event&nbsp;subscription](#pv-data-event-subscription-methods)<br>[PV&nbsp;stats&nbsp;query](#pv-stats-query-methods)<br>      |
+| PV Metadata | User-defined metadata associated with a PV, including aliases, tags, key-value attributes, and description.  Used to discover and identify PVs of interest. | [PV&nbsp;metadata&nbsp;save](#pv-metadata-save-methods)<br>[PV&nbsp;metadata&nbsp;query](#pv-metadata-query-methods)<br>[PV&nbsp;metadata&nbsp;get](#pv-metadata-get-methods)<br>[PV&nbsp;metadata&nbsp;delete](#pv-metadata-delete-methods)<br>                                                                               |
 | Ingestion Request Status | Data ingestion requests are handled asynchronously to maximize performance, so the disposition of individual requests is recorded in a Request Status record. | [Request&nbsp;Status&nbsp;query](#request-status-query-methods)<br>                                                                                                                                                                                                                                                            |
-| Data Set | A Data Set identifies PV data of interest in the archive through the use of Data Blocks, each one identifying a list of PVs and range of time. | [Data&nbsp;Set&nbsp;creation](#data-set-creation-methods)<br>[Data&nbsp;Set&nbsp;query](#data-set-query-methods)<br>[Data&nbsp;Set&nbsp;export](#data-set-export-methods)<br>                                                                                                                                                  |
-| Annotation | Annotations are used to annotate Data Sets in the archive with descriptive information, data associations, Calculations, and provenance tracking information. | [Annotation&nbsp;creation](#annotation-creation-methods)<br>[Annotation&nbsp;query](#annotation-query-methods)<br>                                                                                                                                                                                                             |
+| Data Set | A Data Set identifies PV data of interest in the archive through the use of Data Blocks, each one identifying a list of PVs and range of time. | [Data&nbsp;Set&nbsp;save](#data-set-save-methods)<br>[Data&nbsp;Set&nbsp;query](#data-set-query-methods)<br>[Data&nbsp;Set&nbsp;export](#data-set-export-methods)<br>                                                                                                                                                          |
+| Annotation | Annotations are used to annotate Data Sets in the archive with descriptive information, data associations, Calculations, and provenance tracking information. | [Annotation&nbsp;save](#annotation-save-methods)<br>[Annotation&nbsp;query](#annotation-query-methods)<br>                                                                                                                                                                                                                    |
 
 
 
 ---
 ## API Use Cases and Patterns
 The Data Platform API is intended to support the following use cases and patterns:
-- Register ingestion data Providers, query Provider details and metadata.
+- Register ingestion data Providers, query Provider details and archive ingestion statistics.
 - Ingest PV time-series data, either in continuous or batch mode.
 - Subscribe to PV data and data events from the ingestion stream.
 - Monitor ingestion Request Status records for errors and other problems.
-- Query PV time-series data and metadata.
+- Query PV time-series data and archive ingestion statistics.
+- Save and query user-defined PV metadata (aliases, tags, attributes, description) to discover and identify PVs of interest.
 - Create Data Sets identifying archive data blocks of interest by PVs and time range.
 - Annotate Data Sets by adding descriptive information, linking to associated other Data Sets and Annotations, adding user-defined Calculations, and tracking data provenance.
 - Query Annotations and identify Data Sets of interest.
@@ -182,11 +185,11 @@ The response message payload is either an ExceptionalResult indicating rejection
 </tr>
 </table>
 
-### Provider Metadata Query Methods
+### Provider Stats Query Methods
 <table>
 <tr>
 <td><pre>
-rpc queryProviderMetadata(QueryProviderMetadataRequest) returns (QueryProviderMetadataResponse);
+rpc queryProviderStats(QueryProviderStatsRequest) returns (QueryProviderStatsResponse);
 </pre></td>
 </tr>
 <tr>
@@ -194,7 +197,7 @@ rpc queryProviderMetadata(QueryProviderMetadataRequest) returns (QueryProviderMe
 </tr>
 <tr>
 <td>
-The queryProviderMetadata() API method is used by clients to retrieve ingestion statistics for data Providers defined in the archive.  It accepts a single QueryProviderMetadataRequest message containing the query parameters, and returns a single QueryProviderMetadataResponse.  
+The queryProviderStats() API method is used by clients to retrieve archive ingestion statistics for data Providers defined in the archive.  It accepts a single QueryProviderStatsRequest message containing the query parameters, and returns a single QueryProviderStatsResponse.
 
 ----
 
@@ -202,7 +205,7 @@ The request message includes the unique id of a data Provider.
 
 ----
 
-The response message payload is either an ExceptionalResult indicating rejection or an error handling the request, or a MetadataResult with a ProviderMetadata entry for the Provider matching the id specified in the request.
+The response message payload is either an ExceptionalResult indicating rejection or an error handling the request, or a StatsResult with a ProviderStats entry for the Provider matching the id specified in the request.
 </td>
 </tr>
 </table>
@@ -358,7 +361,7 @@ For queryDataBidiStream(), the client sends a single QueryDataRequest message, r
 
 Except for queryDataTable(), all time-series data query methods return QueryDataResponse messages.  A QueryDataResponse contains one of two message payloads, ExceptionalResult if an error is encountered or no data is found (described above) or QueryData with the query results.
 
-A QueryData message includes a list of DataBucket messages.  Each DataBucket contains a vector of data using one of the heterogeneous column messages for a single PV, along with time expressed using a "DataTimestamps" message (described above), with either an explicit list of timestamps for the bucket data values or a SamplingClock with start time and sample period.  The DataBucket also includes a list of tags and/or a list of key/value "Attribute" pairs if those descriptive fields were specified on the ingestion request that created the bucket.
+A QueryData message includes a list of DataBucket messages.  Each DataBucket contains a vector of data using one of the heterogeneous column messages for a single PV, along with time expressed using a "DataTimestamps" message (described above), with either an explicit list of timestamps for the bucket data values or a SamplingClock with start time and sample period.  If ColumnMetadata (including provenance, tags, and/or key-value attributes) was supplied for the column at ingestion time, it is returned in the embedded column message within the DataBucket.
 
 ----
 
@@ -475,11 +478,11 @@ The service sends SubscribeDataEventResponse messages in the response stream for
 </tr>
 </table>
 
-### PV Metadata Query Methods
+### PV Stats Query Methods
 <table>
 <tr>
 <td><pre>
-rpc queryPvMetadata(QueryPvMetadataRequest) returns (QueryPvMetadataResponse);
+rpc queryPvStats(QueryPvStatsRequest) returns (QueryPvStatsResponse);
 </pre></td>
 </tr>
 <tr>
@@ -488,21 +491,19 @@ rpc queryPvMetadata(QueryPvMetadataRequest) returns (QueryPvMetadataResponse);
 <tr>
 <td>
 
-The Data Platform Query Service includes a single method, queryPvMetadata(), for querying the archive's metadata about the PVs available in the archive and ingestion statistics for those PVs.
+The queryPvStats() method queries archive ingestion statistics for PVs available in the archive.  It is a unary single request/response method that accepts a QueryPvStatsRequest and returns a QueryPvStatsResponse.
 
-It is a unary single request/response method that accepts a QueryPvMetadataRequest and returns a QueryPvMetadataResponse.
-
-
-----
-
-The QueryPvMetadataRequest message contains one of two payloads, PvNameList or PvNamePattern.  A PvNameList message specifies an explicit list of PVs to find metadata for.  A PvNamePattern specifies a regular expression pattern for matching against PV names available in the archive.
-
+For querying user-defined PV metadata (aliases, tags, attributes, description), see [PV Metadata API](#pv-metadata-api) in the Annotation Service.
 
 ----
 
-The QueryPvMetadataResponse message contains the result of a metadata query and includes one of two payloads, either an ExceptionalResult if an error is encountered or no data is found or MetadataResult with the results of the query.
+The QueryPvStatsRequest message contains one of two payloads, PvNameList or PvNamePattern.  A PvNameList message specifies an explicit list of PVs to retrieve stats for.  A PvNamePattern specifies a regular expression pattern for matching against PV names available in the archive.
 
-A MetadataResult message contains a list of PvInfo messages, one for each PV specified for the query (either explicitly in the PV name list or by matching the supplied PV name pattern).  A PvInfo message contains metadata for an individual PV in the archive, including name, timestamps for the first and last PV measurement in the archive, and stats for the most recent bucket including bucket id, data type information, data timestamps details, total number of data buckets, and sample count/period.
+----
+
+The QueryPvStatsResponse message contains one of two payloads, either an ExceptionalResult if an error is encountered or no data is found, or a StatsResult with the results of the query.
+
+A StatsResult message contains a list of PvStats messages, one for each PV matching the query.  A PvStats message contains archive ingestion statistics for an individual PV, including name, timestamps for the first and last PV measurement in the archive, and stats for the most recent bucket including bucket id, data type information, data timestamps details, total number of data buckets, and sample count/period.
 
 </td>
 </tr>
@@ -551,6 +552,155 @@ Each RequestStatus message contains details about the status of an individual in
 
 
 
+## PV Metadata API
+
+The PV Metadata API, part of the Annotation Service, provides methods for associating user-defined metadata with PVs and using that metadata to discover PVs of interest.  A PV metadata record stores the canonical PV name as its primary key, along with optional aliases (historical or alternate names), keyword tags, key-value attributes, and a free-text description.  Records also include audit timestamps (`createdTime`, `updatedTime`) and an optional `modifiedBy` field identifying the last writer.
+
+No pre-registration of PVs is required — metadata records can be created independently of whether data has been ingested for a PV.
+
+For querying archive ingestion statistics (first/last data timestamp, bucket counts, data types), see [PV Stats Query Methods](#pv-stats-query-methods) in the Query Service.
+
+### PV Metadata Save Methods
+<table>
+<tr>
+<td><pre>
+rpc savePvMetadata(SavePvMetadataRequest) returns (SavePvMetadataResponse);
+</pre></td>
+</tr>
+<tr>
+<td>defined in: annotation.proto</td>
+</tr>
+<tr>
+<td>
+
+The savePvMetadata() method creates or replaces the metadata record for a PV.  It uses full-replace upsert semantics: if no record exists for the PV name, a new record is created; if a record already exists, all fields are replaced with the contents of the request.
+
+**Warning:** Fields omitted from the request are not preserved on update — callers must supply the complete desired state on every save.  Use patchPvMetadata() (future) for partial updates.
+
+----
+
+A SavePvMetadataRequest includes the required canonical PV name and optional fields: aliases, tags, attributes, modifiedBy, and description.  Data normalization rules applied by the service: tags and aliases are normalized to a lowercase unique set; attribute keys must be unique within the request.
+
+----
+
+The response payload is an ExceptionalResult if the request is rejected or an error is encountered, otherwise a SavePvMetadataResult containing the canonical PV name of the created or updated record.
+
+</td>
+</tr>
+</table>
+
+### PV Metadata Query Methods
+<table>
+<tr>
+<td><pre>
+rpc queryPvMetadata(QueryPvMetadataRequest) returns (QueryPvMetadataResponse);
+</pre></td>
+</tr>
+<tr>
+<td>defined in: annotation.proto</td>
+</tr>
+<tr>
+<td>
+
+The queryPvMetadata() method searches PV metadata records using structured criteria and returns a paginated result.
+
+----
+
+A QueryPvMetadataRequest contains a list of QueryPvMetadataCriterion entries and optional pagination parameters (limit, pageToken).  Multiple criteria are combined with logical AND; values within a single criterion are combined with logical OR.  Criterion types include:
+
+- **PvNameCriterion** — match by canonical PV name using exact, prefix, and/or contains sub-lists (all ORed together).
+- **AliasesCriterion** — match by alias using the same exact/prefix/contains sub-lists.
+- **TagsCriterion** — match records that have any of the specified tags.
+- **AttributesCriterion** — match by attribute key and optional value(s); an empty values list matches any record that has the key regardless of value (key-only / existence search).
+
+----
+
+The response payload is an ExceptionalResult if the request is rejected or an error is encountered, otherwise a PvMetadataResult containing a list of PvMetadata records and a nextPageToken for retrieving subsequent pages.  An empty nextPageToken indicates the last page.  An empty result set is returned as a PvMetadataResult with an empty list, not an ExceptionalResult.
+
+</td>
+</tr>
+</table>
+
+### PV Metadata Get Methods
+<table>
+<tr>
+<td><pre>
+rpc getPvMetadata(GetPvMetadataRequest) returns (GetPvMetadataResponse);
+</pre></td>
+</tr>
+<tr>
+<td>defined in: annotation.proto</td>
+</tr>
+<tr>
+<td>
+
+The getPvMetadata() method retrieves a single PV metadata record by canonical PV name or alias.  It is a convenience method for the common single-record lookup case, as an alternative to using queryPvMetadata() with a single exact PvNameCriterion.
+
+----
+
+A GetPvMetadataRequest contains the PV name or alias to look up.  The service first searches by canonical PV name; if no match is found it searches aliases.
+
+----
+
+The response payload is an ExceptionalResult if the request is rejected, an error is encountered, or no matching record is found, otherwise the matching PvMetadata record.
+
+</td>
+</tr>
+</table>
+
+### PV Metadata Delete Methods
+<table>
+<tr>
+<td><pre>
+rpc deletePvMetadata(DeletePvMetadataRequest) returns (DeletePvMetadataResponse);
+</pre></td>
+</tr>
+<tr>
+<td>defined in: annotation.proto</td>
+</tr>
+<tr>
+<td>
+
+The deletePvMetadata() method deletes the metadata record for the specified canonical PV name.
+
+----
+
+A DeletePvMetadataRequest contains the canonical PV name of the record to delete.  Aliases are not accepted as delete keys.
+
+----
+
+The response payload is an ExceptionalResult if the request is rejected, an error is encountered, or no record exists for the specified PV name, otherwise a DeletePvMetadataResult containing the canonical PV name of the deleted record.
+
+</td>
+</tr>
+</table>
+
+### PV Metadata Placeholder Methods
+
+Two additional PV metadata methods are defined in the proto but not yet implemented.  Calling either method returns an error response.  They are defined now to reserve their names and establish the standard CRUD pattern for metadata APIs in this service.
+
+<table>
+<tr>
+<td><pre>
+rpc patchPvMetadata(PatchPvMetadataRequest) returns (PatchPvMetadataResponse);
+rpc bulkSavePvMetadata(BulkSavePvMetadataRequest) returns (BulkSavePvMetadataResponse);
+</pre></td>
+</tr>
+<tr>
+<td>defined in: annotation.proto</td>
+</tr>
+<tr>
+<td>
+
+**patchPvMetadata()** will provide partial-update semantics, allowing individual fields to be updated without replacing the entire record.  Field mask design is deferred to the release that implements this method.
+
+**bulkSavePvMetadata()** will accept a list of SavePvMetadataRequest messages and apply the same full-replace upsert semantics as savePvMetadata() to each record in a single request.  Intended for large initial imports or bulk synchronization use cases.
+
+</td>
+</tr>
+</table>
+
+
 ## Data Set API
 
 When designing the Data Platform's Annotation Service, we found we needed a mechanism for specifying a collection of data in the archive as the subject of an annotation.  We decided to add the notion of a Data Set consisting of a list of Data Blocks, where each Data Block specifies a list of PV names and a time range.
@@ -563,11 +713,11 @@ The file ___annotation.proto___ defines the messages DataSet and DataBlock for u
 
 The API includes methods for creating, querying, and exporting Data Sets.  Each is described in more detail below.
 
-### Data Set Creation Methods
+### Data Set Save Methods
 <table>
 <tr>
 <td><pre>
-rpc createDataSet(CreateDataSetRequest) returns (CreateDataSetResponse);
+rpc saveDataSet(SaveDataSetRequest) returns (SaveDataSetResponse);
 </pre></td>
 </tr>
 <tr>
@@ -576,17 +726,17 @@ rpc createDataSet(CreateDataSetRequest) returns (CreateDataSetResponse);
 <tr>
 <td>
 
-createDataSet() is a unary single request/response method for creating a dataset.  It accepts a CreateDataSetRequest message and returns a CreateDataSetResponse.
+saveDataSet() is a unary single request/response method for creating or updating a dataset.  It accepts a SaveDataSetRequest message and returns a SaveDataSetResponse.
 
 ----
 
-A CreateDataSetRequest message contains a DataSet message with details of the dataset to be created, e.g., its list of DataBlock messages.  Each DataBlock message specifies a list of PVs and a range of time to identify a region of interest in the archive.
+A SaveDataSetRequest message contains a DataSet message with details of the dataset to be created or updated, e.g., its list of DataBlock messages.  Each DataBlock message specifies a list of PVs and a range of time to identify a region of interest in the archive.  If the DataSet's id field is populated, the corresponding existing DataSet is updated; otherwise a new DataSet is created.
 
 ----
 
-A CreateDataSetResponse message contains one of two payloads, an ExceptionalResult message if a rejection or error was encountered creating the dataset, or a CreateDataSetResult.
+A SaveDataSetResponse message contains one of two payloads, an ExceptionalResult message if a rejection or error was encountered, or a SaveDataSetResult.
 
-A CreateDataSetResult message simply contains the unique identifier assigned to the new dataset if it was created successfully.
+A SaveDataSetResult message contains the unique identifier of the new or updated dataset.
 
 </td>
 </tr>
@@ -710,11 +860,11 @@ The Calculations object includes a list of CalculationsDataFrames.  Each Calcula
 
 It might be helpful to use the analogy of an Excel workbook.  The Calculations object is the workbook, and each CalculationDataFrame is a worksheet in that workbook that contains a column of timestamps and columns of calculated data with a value for each timestamp.
 
-### Annotation Creation Methods
+### Annotation Save Methods
 <table>
 <tr>
 <td><pre>
-rpc createAnnotation(CreateAnnotationRequest) returns (CreateAnnotationResponse);
+rpc saveAnnotation(SaveAnnotationRequest) returns (SaveAnnotationResponse);
 </pre></td>
 </tr>
 <tr>
@@ -723,17 +873,17 @@ rpc createAnnotation(CreateAnnotationRequest) returns (CreateAnnotationResponse)
 <tr>
 <td>
 
-The method createAnnotation() creates an Annotation for the specified list of associated dataset(s).  It accepts a CreateAnnotationRequest message and returns a CreateAnnotationResponse message.
+The method saveAnnotation() creates or updates an Annotation for the specified list of associated dataset(s).  It accepts a SaveAnnotationRequest message and returns a SaveAnnotationResponse message.
 
 ----
 
-A CreateAnnotationRequest includes fields for the required and optional Annotation fields described above.
+A SaveAnnotationRequest includes fields for the required and optional Annotation fields described above.  If the optional id field is populated, the corresponding existing Annotation is updated; otherwise a new Annotation is created.
 
 ----
 
-A CreateAnnotationResponse message is used to return the result of the createAnnotation() method.  It includes one of two payloads, either an ExceptionalResult (described above) if an error is encountered creating the Annotation, or a CreateAnnotationResult if the operation is successful.
+A SaveAnnotationResponse message includes one of two payloads, either an ExceptionalResult if an error is encountered, or a SaveAnnotationResult if the operation is successful.
 
-A CreateAnnotationResult message simply contains the unique identifier assigned to the annotation.
+A SaveAnnotationResult message contains the unique identifier of the new or updated annotation.
 
 </td>
 </tr>
