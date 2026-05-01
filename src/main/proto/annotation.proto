@@ -1171,13 +1171,22 @@ message BulkSavePvMetadataResponse {
  * Callers must supply the complete desired state on every save.
  * patchConfiguration() (future placeholder) will provide partial-update semantics.
  *
+ * Note: createdTime and updatedTime are server-set audit timestamps and are
+ * not accepted as input; they are returned in query and get responses only.
+ *
  * Data normalization rules applied by the service:
  *   - tags are normalized to a lowercase unique set.
  *   - attribute keys (Attribute.name) must be unique within the request;
  *     duplicate keys are rejected.
  */
 message SaveConfigurationRequest {
-  dp.service.common.Configuration configuration = 1;
+  string configurationName = 1;       // required canonical configuration name
+  string category = 2;                // required
+  string description = 3;             // optional free-text description
+  string parentConfigurationName = 4; // optional parent configuration name
+  repeated string tags = 5;           // optional keyword tags
+  repeated dp.service.common.Attribute attributes = 6; // optional key/value attribute pairs
+  string modifiedBy = 7;              // optional actor / user / service identity
 }
 
 /*
@@ -1519,10 +1528,14 @@ message BulkSaveConfigurationResponse {
      * BulkSaveError
      *
      * Describes a failure for a single record within a bulk save request.
+     * requestIndex is the 0-based position of the failed record in the
+     * requests list, providing a stable correlation reference regardless
+     * of whether configurationName was supplied.
      */
     message BulkSaveError {
-      string configurationName = 1;
-      dp.service.common.ExceptionalResult exceptionalResult = 2;
+      uint32 requestIndex = 1;
+      string configurationName = 2;
+      dp.service.common.ExceptionalResult exceptionalResult = 3;
     }
   }
 }
@@ -1551,6 +1564,9 @@ message BulkSaveConfigurationResponse {
  * To close an open-ended activation, call saveConfigurationActivation() with
  * endTime set to the desired close time.
  *
+ * Note: createdTime and updatedTime are server-set audit timestamps and are
+ * not accepted as input; they are returned in query and get responses only.
+ *
  * Validation rules applied by the service:
  *   - configurationName must reference an existing Configuration record.
  *   - startTime is required.
@@ -1561,7 +1577,14 @@ message BulkSaveConfigurationResponse {
  *   - Duplicate attribute keys (Attribute.name) are rejected.
  */
 message SaveConfigurationActivationRequest {
-  dp.service.common.ConfigurationActivation configurationActivation = 1;
+  string clientActivationId = 1;      // optional client-supplied primary key; server-generated if absent
+  string configurationName = 2;       // required; references a Configuration record
+  dp.service.common.Timestamp startTime = 3;           // required
+  dp.service.common.Timestamp endTime = 4;             // optional; absent = open-ended interval
+  string description = 5;             // optional free-text description
+  repeated string tags = 6;           // optional keyword tags
+  repeated dp.service.common.Attribute attributes = 7; // optional key/value attribute pairs
+  string modifiedBy = 8;              // optional actor / user / service identity
 }
 
 /*
@@ -1870,14 +1893,32 @@ message DeleteConfigurationActivationResponse {
 /*
  * PatchConfigurationActivationRequest
  *
- * Partial update of an existing ConfigurationActivation record.
+ * Partial update of an existing ConfigurationActivation record.  The record
+ * is identified by clientActivationId or composite key (configurationName +
+ * startTime), matching the same key semantics as getConfigurationActivation()
+ * and deleteConfigurationActivation().
  *
  * NOT YET IMPLEMENTED.  The patch fields and field mask mechanism are deferred
  * to the release that implements patchConfigurationActivation().  This message
  * is defined now to reserve the name and establish the pattern.
  */
 message PatchConfigurationActivationRequest {
-  string clientActivationId = 1; // required
+
+  oneof key {
+    string clientActivationId = 1;
+    CompositeKey compositeKey = 2;
+  }
+
+  /*
+   * CompositeKey
+   *
+   * Identifies a ConfigurationActivation by configurationName and startTime
+   * when clientActivationId is not available.
+   */
+  message CompositeKey {
+    string configurationName = 1;
+    dp.service.common.Timestamp startTime = 2;
+  }
 }
 
 /*
@@ -1958,10 +1999,14 @@ message BulkSaveConfigurationActivationResponse {
      * BulkSaveError
      *
      * Describes a failure for a single record within a bulk save request.
+     * requestIndex is the 0-based position of the failed record in the
+     * requests list, providing a stable correlation reference regardless
+     * of whether clientActivationId was supplied.
      */
     message BulkSaveError {
-      string clientActivationId = 1;
-      dp.service.common.ExceptionalResult exceptionalResult = 2;
+      uint32 requestIndex = 1;
+      string clientActivationId = 2;
+      dp.service.common.ExceptionalResult exceptionalResult = 3;
     }
   }
 }
