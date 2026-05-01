@@ -153,6 +153,205 @@ service DpAnnotationService {
    * of the standard bulk-write pattern for metadata APIs in this service.
    */
   rpc bulkSavePvMetadata(BulkSavePvMetadataRequest) returns (BulkSavePvMetadataResponse);
+
+
+  //
+  // ------------------- Configuration Definition CRUD ---------------------------
+  //
+
+  /*
+   * saveConfiguration()
+   *
+   * Create or replace the metadata record for the specified machine configuration.
+   *
+   * Full replace (upsert) semantics: if a record does not exist it is created;
+   * if a record already exists, ALL fields (category, description,
+   * parentConfigurationName, tags, attributes, modifiedBy) are replaced with
+   * the request contents.  Callers must supply the complete desired state on
+   * every call — fields omitted from the request are not preserved.
+   * Use patchConfiguration() (future) for partial updates.
+   *
+   * The response may indicate rejection, an error handling the request, or
+   * successful handling of the request.
+   */
+  rpc saveConfiguration(SaveConfigurationRequest) returns (SaveConfigurationResponse);
+
+  /*
+   * getConfiguration()
+   *
+   * Retrieve a single Configuration record by configurationName.
+   * Provided as a convenience over queryConfigurations() for the common
+   * single-record lookup case.
+   *
+   * The response may indicate rejection, an error handling the request, or
+   * a GetConfigurationResult containing the matching record.  If no record
+   * is found, an ExceptionalResult is returned.
+   */
+  rpc getConfiguration(GetConfigurationRequest) returns (GetConfigurationResponse);
+
+  /*
+   * queryConfigurations()
+   *
+   * Query Configuration records using structured search criteria.
+   *
+   * The response may indicate rejection, an error handling the request, or
+   * a QueryConfigurationsResult containing the matching records and pagination token.
+   */
+  rpc queryConfigurations(QueryConfigurationsRequest) returns (QueryConfigurationsResponse);
+
+  /*
+   * deleteConfiguration()
+   *
+   * Delete the Configuration record for the specified configurationName.
+   * The request is rejected if ConfigurationActivation records exist for the
+   * configuration; delete associated activations first.
+   *
+   * The response may indicate rejection, an error handling the request, or
+   * a DeleteConfigurationResult confirming the name of the deleted record.
+   */
+  rpc deleteConfiguration(DeleteConfigurationRequest) returns (DeleteConfigurationResponse);
+
+  /*
+   * patchConfiguration()
+   *
+   * Partial update of an existing Configuration record.  Allows individual
+   * fields to be updated without replacing the entire record, unlike the
+   * full-replace semantics of saveConfiguration().
+   *
+   * NOT YET IMPLEMENTED — calling this method returns an error response.
+   * Planned for a future release.
+   *
+   * This method is defined now to reserve its name and message shapes as part
+   * of the standard CRUD pattern for metadata APIs in this service.
+   */
+  rpc patchConfiguration(PatchConfigurationRequest) returns (PatchConfigurationResponse);
+
+  /*
+   * bulkSaveConfiguration()
+   *
+   * Bulk create or replace multiple Configuration records in a single request.
+   * Each record uses the same full-replace upsert semantics as saveConfiguration().
+   * Intended for large initial imports or bulk synchronization use cases.
+   *
+   * NOT YET IMPLEMENTED — calling this method returns an error response.
+   * Planned for a future release.
+   *
+   * This method is defined now to reserve its name and message shapes as part
+   * of the standard bulk-write pattern for metadata APIs in this service.
+   */
+  rpc bulkSaveConfiguration(BulkSaveConfigurationRequest) returns (BulkSaveConfigurationResponse);
+
+
+  //
+  // ------------------- Configuration Activation CRUD ---------------------------
+  //
+
+  /*
+   * saveConfigurationActivation()
+   *
+   * Create or replace an activation record indicating the time interval during
+   * which a Configuration was active.
+   *
+   * Full replace (upsert) semantics: if a record does not exist it is created;
+   * if a record already exists (matched by clientActivationId, or by composite
+   * key configurationName + startTime if clientActivationId is absent), ALL
+   * fields are replaced with the request contents.  Callers must supply the
+   * complete desired state on every call — fields omitted from the request are
+   * not preserved.  Use patchConfigurationActivation() (future) for partial updates.
+   *
+   * To close an open-ended activation, call saveConfigurationActivation() with
+   * endTime set to the desired close time.
+   *
+   * The response may indicate rejection, an error handling the request, or
+   * successful handling of the request.
+   */
+  rpc saveConfigurationActivation(SaveConfigurationActivationRequest) returns (SaveConfigurationActivationResponse);
+
+  /*
+   * getConfigurationActivation()
+   *
+   * Retrieve a single ConfigurationActivation record by clientActivationId or
+   * composite key (configurationName + startTime).
+   *
+   * The response may indicate rejection, an error handling the request, or
+   * a GetConfigurationActivationResult containing the matching record.  If no
+   * record is found, an ExceptionalResult is returned.
+   */
+  rpc getConfigurationActivation(GetConfigurationActivationRequest) returns (GetConfigurationActivationResponse);
+
+  /*
+   * queryConfigurationActivations()
+   *
+   * Query ConfigurationActivation records using structured search criteria.
+   *
+   * The response may indicate rejection, an error handling the request, or
+   * a QueryConfigurationActivationsResult containing the matching records and
+   * pagination token.
+   */
+  rpc queryConfigurationActivations(QueryConfigurationActivationsRequest) returns (QueryConfigurationActivationsResponse);
+
+  /*
+   * deleteConfigurationActivation()
+   *
+   * Delete a ConfigurationActivation record by clientActivationId or composite
+   * key (configurationName + startTime).
+   *
+   * The response may indicate rejection, an error handling the request, or
+   * a DeleteConfigurationActivationResult confirming the ID of the deleted record.
+   */
+  rpc deleteConfigurationActivation(DeleteConfigurationActivationRequest) returns (DeleteConfigurationActivationResponse);
+
+  /*
+   * patchConfigurationActivation()
+   *
+   * Partial update of an existing ConfigurationActivation record.  Allows
+   * individual fields to be updated without replacing the entire record, unlike
+   * the full-replace semantics of saveConfigurationActivation().
+   *
+   * NOT YET IMPLEMENTED — calling this method returns an error response.
+   * Planned for a future release.
+   *
+   * This method is defined now to reserve its name and message shapes as part
+   * of the standard CRUD pattern for metadata APIs in this service.
+   */
+  rpc patchConfigurationActivation(PatchConfigurationActivationRequest) returns (PatchConfigurationActivationResponse);
+
+  /*
+   * bulkSaveConfigurationActivation()
+   *
+   * Bulk create or replace multiple ConfigurationActivation records in a single
+   * request.  Each record uses the same full-replace upsert semantics as
+   * saveConfigurationActivation().  Intended for bulk loading of activation
+   * records from operational calendars.
+   *
+   * NOT YET IMPLEMENTED — calling this method returns an error response.
+   * Planned for a future release.
+   *
+   * This method is defined now to reserve its name and message shapes as part
+   * of the standard bulk-write pattern for metadata APIs in this service.
+   */
+  rpc bulkSaveConfigurationActivation(BulkSaveConfigurationActivationRequest) returns (BulkSaveConfigurationActivationResponse);
+
+
+  //
+  // ------------------- Active Configuration Query ---------------------------
+  //
+
+  /*
+   * getActiveConfigurations()
+   *
+   * Returns all ConfigurationActivation records in effect at the specified
+   * timestamp, i.e., records where:
+   *   startTime <= timestamp AND (endTime is absent OR endTime > timestamp)
+   *
+   * timestamp is required.  Requests with an absent (zero-value) timestamp
+   * are rejected with an ExceptionalResult.
+   *
+   * An empty result (no active configurations at the specified time) is
+   * returned as a GetActiveConfigurationsResult with an empty list, not
+   * an ExceptionalResult.
+   */
+  rpc getActiveConfigurations(GetActiveConfigurationsRequest) returns (GetActiveConfigurationsResponse);
 }
 
 
@@ -949,5 +1148,870 @@ message BulkSavePvMetadataResponse {
       string pvName = 1;
       dp.service.common.ExceptionalResult exceptionalResult = 2;
     }
+  }
+}
+
+
+//
+// ------------------- Configuration Definition Save Request/Response ---------------------------
+//
+
+/*
+ * SaveConfigurationRequest
+ *
+ * Encapsulates the details for creating or replacing a Configuration record.
+ *
+ * Full replace (upsert) semantics:
+ *   - If no record exists for configurationName, a new record is created.
+ *   - If a record already exists, ALL fields (category, description,
+ *     parentConfigurationName, tags, attributes, modifiedBy) are replaced
+ *     with the values in this request.
+ *
+ * WARNING: Fields omitted from the request are NOT preserved on update.
+ * Callers must supply the complete desired state on every save.
+ * patchConfiguration() (future placeholder) will provide partial-update semantics.
+ *
+ * Data normalization rules applied by the service:
+ *   - tags are normalized to a lowercase unique set.
+ *   - attribute keys (Attribute.name) must be unique within the request;
+ *     duplicate keys are rejected.
+ */
+message SaveConfigurationRequest {
+  dp.service.common.Configuration configuration = 1;
+}
+
+/*
+ * SaveConfigurationResponse
+ *
+ * Contains the response to a saveConfiguration() request.  Payload is an
+ * ExceptionalResult if the request is rejected or an error is encountered,
+ * otherwise contains a SaveConfigurationResult.
+ */
+message SaveConfigurationResponse {
+
+  dp.service.common.Timestamp responseTime = 1; // Indicates time response was generated.
+
+  oneof result {
+    dp.service.common.ExceptionalResult exceptionalResult = 10;
+    SaveConfigurationResult saveConfigurationResult = 11;
+  }
+
+  /*
+   * SaveConfigurationResult
+   *
+   * Contains the result of a successful saveConfiguration() request.
+   */
+  message SaveConfigurationResult {
+    string configurationName = 1; // canonical name of the created or updated record
+  }
+}
+
+
+//
+// ------------------- Configuration Definition Get Request/Response ---------------------------
+//
+
+/*
+ * GetConfigurationRequest
+ *
+ * Retrieve a single Configuration record by canonical configuration name.
+ */
+message GetConfigurationRequest {
+  string configurationName = 1; // required canonical configuration name
+}
+
+/*
+ * GetConfigurationResponse
+ *
+ * Contains the result of a getConfiguration() request.  Payload is an
+ * ExceptionalResult if the request is rejected, an error is encountered, or
+ * no record is found, otherwise contains a GetConfigurationResult with the
+ * matching Configuration record.
+ */
+message GetConfigurationResponse {
+
+  dp.service.common.Timestamp responseTime = 1; // Indicates time response was generated.
+
+  oneof result {
+    dp.service.common.ExceptionalResult exceptionalResult = 10;
+    GetConfigurationResult getConfigurationResult = 11;
+  }
+
+  /*
+   * GetConfigurationResult
+   *
+   * Contains the result of a successful getConfiguration() request.
+   */
+  message GetConfigurationResult {
+    dp.service.common.Configuration configuration = 1;
+  }
+}
+
+
+//
+// ------------------- Configuration Definition Query ---------------------------
+//
+
+/*
+ * QueryConfigurationsRequest
+ *
+ * Contains parameters for a Configuration query using structured search criteria.
+ *
+ * Combining semantics:
+ *   - Multiple criteria in the top-level list are combined with logical AND:
+ *     a record must satisfy ALL criteria to be returned.
+ *   - Within a single criterion, multiple values are combined with logical OR:
+ *     a record satisfies the criterion if it matches ANY supplied value.
+ *   - An empty criteria list is rejected with an ExceptionalResult; at least
+ *     one criterion is required.
+ *
+ * Pagination:
+ *   - limit specifies the maximum number of records to return per response.
+ *   - pageToken is omitted on the first request; subsequent requests supply
+ *     the nextPageToken returned in the previous response.
+ *   - An empty nextPageToken in the response indicates no further pages.
+ */
+message QueryConfigurationsRequest {
+
+  repeated QueryConfigurationsCriterion criteria = 1;
+
+  uint32 limit = 2;
+  string pageToken = 3;
+
+  /*
+   * QueryConfigurationsCriterion
+   *
+   * A single search criterion.  Exactly one criterion must be set.
+   */
+  message QueryConfigurationsCriterion {
+
+    oneof criterion {
+      NameCriterion nameCriterion = 10;
+      CategoryCriterion categoryCriterion = 11;
+      TagsCriterion tagsCriterion = 12;
+      AttributesCriterion attributesCriterion = 13;
+      ParentCriterion parentCriterion = 14;
+    }
+
+    /*
+     * NameCriterion
+     *
+     * Match Configuration records by name.  Values across all three sub-lists
+     * are ORed: a name matches if it satisfies any supplied value from any sub-list.
+     */
+    message NameCriterion {
+      repeated string exact = 1;    // exact string match
+      repeated string prefix = 2;   // prefix match
+      repeated string contains = 3; // substring match
+    }
+
+    /*
+     * CategoryCriterion
+     *
+     * Match records whose category equals any of the specified values.
+     * Multiple values are ORed.
+     */
+    message CategoryCriterion {
+      repeated string values = 1;
+    }
+
+    /*
+     * TagsCriterion
+     *
+     * Match records that have any of the specified tags.  Multiple tags within
+     * a single TagsCriterion are ORed; use separate TagsCriterion entries in
+     * the outer criteria list (ANDed) to require multiple tags simultaneously.
+     */
+    message TagsCriterion {
+      repeated string values = 1;
+    }
+
+    /*
+     * AttributesCriterion
+     *
+     * Match records by attribute key and optional value(s).
+     * key (maps to Attribute.name) is required.
+     * values is optional: if non-empty, the record must have the key with one
+     * of the specified values (OR); if empty, any record possessing the key
+     * matches regardless of its value (key-only / existence search).
+     */
+    message AttributesCriterion {
+      string key = 1;             // required; matches Attribute.name
+      repeated string values = 2; // optional; empty list = key-only search
+    }
+
+    /*
+     * ParentCriterion
+     *
+     * Match records whose parentConfigurationName equals any of the specified
+     * values.  Returns direct children only; recursive hierarchy traversal is
+     * not supported in Phase 1.
+     */
+    message ParentCriterion {
+      repeated string values = 1;
+    }
+  }
+}
+
+/*
+ * QueryConfigurationsResponse
+ *
+ * Contains the results of a queryConfigurations() request.  Payload is an
+ * ExceptionalResult if the request is rejected or an error is encountered,
+ * otherwise contains a QueryConfigurationsResult with the matching records.
+ *
+ * An empty query result is returned as a QueryConfigurationsResult with an
+ * empty configurations list (not an ExceptionalResult).
+ */
+message QueryConfigurationsResponse {
+
+  dp.service.common.Timestamp responseTime = 1; // Indicates time response was generated.
+
+  oneof result {
+    dp.service.common.ExceptionalResult exceptionalResult = 10;
+    QueryConfigurationsResult queryConfigurationsResult = 11;
+  }
+
+  /*
+   * QueryConfigurationsResult
+   *
+   * Contains a page of Configuration records matching the query criteria.
+   *
+   * nextPageToken is non-empty when additional pages are available; supply it
+   * as pageToken in the next request to retrieve the following page.
+   * An empty nextPageToken indicates the last page.
+   */
+  message QueryConfigurationsResult {
+    repeated dp.service.common.Configuration configurations = 1;
+    string nextPageToken = 2;
+  }
+}
+
+
+//
+// ------------------- Configuration Definition Delete / Patch / BulkSave ---------------------------
+//
+
+/*
+ * DeleteConfigurationRequest
+ *
+ * Delete the Configuration record for the specified canonical configuration name.
+ * The request is rejected if ConfigurationActivation records exist for the
+ * configuration; delete associated activations first.
+ */
+message DeleteConfigurationRequest {
+  string configurationName = 1; // required canonical configuration name
+}
+
+/*
+ * DeleteConfigurationResponse
+ *
+ * Contains the result of a deleteConfiguration() request.  Payload is an
+ * ExceptionalResult if the request is rejected or an error is encountered,
+ * otherwise contains a DeleteConfigurationResult.
+ */
+message DeleteConfigurationResponse {
+
+  dp.service.common.Timestamp responseTime = 1; // Indicates time response was generated.
+
+  oneof result {
+    dp.service.common.ExceptionalResult exceptionalResult = 10;
+    DeleteConfigurationResult deleteConfigurationResult = 11;
+  }
+
+  /*
+   * DeleteConfigurationResult
+   *
+   * Contains the result of a successful deleteConfiguration() request.
+   */
+  message DeleteConfigurationResult {
+    string configurationName = 1; // canonical name of the deleted record
+  }
+}
+
+/*
+ * PatchConfigurationRequest
+ *
+ * Partial update of an existing Configuration record.
+ *
+ * NOT YET IMPLEMENTED.  The patch fields and field mask mechanism are deferred
+ * to the release that implements patchConfiguration().  This message is defined
+ * now to reserve the name and establish the pattern.
+ */
+message PatchConfigurationRequest {
+  string configurationName = 1; // required canonical configuration name
+}
+
+/*
+ * PatchConfigurationResponse
+ *
+ * Contains the result of a patchConfiguration() request.  Payload is an
+ * ExceptionalResult if the request is rejected or an error is encountered,
+ * otherwise contains a PatchConfigurationResult.
+ */
+message PatchConfigurationResponse {
+
+  dp.service.common.Timestamp responseTime = 1; // Indicates time response was generated.
+
+  oneof result {
+    dp.service.common.ExceptionalResult exceptionalResult = 10;
+    PatchConfigurationResult patchConfigurationResult = 11;
+  }
+
+  /*
+   * PatchConfigurationResult
+   *
+   * Contains the result of a successful patchConfiguration() request.
+   */
+  message PatchConfigurationResult {
+    string configurationName = 1; // canonical name of the updated record
+  }
+}
+
+/*
+ * BulkSaveConfigurationRequest
+ *
+ * Bulk create or replace multiple Configuration records in a single request.
+ * Each record uses the same full-replace upsert semantics as saveConfiguration().
+ * Intended for large initial imports or bulk synchronization use cases.
+ *
+ * NOT YET IMPLEMENTED.  This message is defined now to reserve the name and
+ * establish the pattern for bulk-write operations in this service.
+ */
+message BulkSaveConfigurationRequest {
+  repeated SaveConfigurationRequest requests = 1;
+}
+
+/*
+ * BulkSaveConfigurationResponse
+ *
+ * Contains the result of a bulkSaveConfiguration() request.  Payload is an
+ * ExceptionalResult if the entire request is rejected (e.g. validation failure
+ * before any records are processed), otherwise contains a
+ * BulkSaveConfigurationResult reporting the count of successfully saved records
+ * and per-item details for any failures.
+ *
+ * A response with BulkSaveConfigurationResult and a non-empty errors list
+ * indicates a partial failure: some records were saved and some were not.
+ */
+message BulkSaveConfigurationResponse {
+
+  dp.service.common.Timestamp responseTime = 1; // Indicates time response was generated.
+
+  oneof result {
+    dp.service.common.ExceptionalResult exceptionalResult = 10;
+    BulkSaveConfigurationResult bulkSaveConfigurationResult = 11;
+  }
+
+  /*
+   * BulkSaveConfigurationResult
+   *
+   * savedCount is the number of records successfully saved.
+   * errors contains one entry per failed record; an empty list means all
+   * records were saved successfully.
+   */
+  message BulkSaveConfigurationResult {
+
+    uint32 savedCount = 1;
+    repeated BulkSaveError errors = 2;
+
+    /*
+     * BulkSaveError
+     *
+     * Describes a failure for a single record within a bulk save request.
+     */
+    message BulkSaveError {
+      string configurationName = 1;
+      dp.service.common.ExceptionalResult exceptionalResult = 2;
+    }
+  }
+}
+
+
+//
+// ------------------- Configuration Activation Save Request/Response ---------------------------
+//
+
+/*
+ * SaveConfigurationActivationRequest
+ *
+ * Encapsulates the details for creating or replacing a ConfigurationActivation record.
+ *
+ * Full replace (upsert) semantics:
+ *   - The record is matched for update by clientActivationId if provided,
+ *     otherwise by composite key (configurationName + startTime).
+ *   - If no matching record exists, a new record is created.
+ *   - If a matching record exists, ALL fields are replaced with the values
+ *     in this request.
+ *
+ * WARNING: Fields omitted from the request are NOT preserved on update.
+ * Callers must supply the complete desired state on every save.
+ * patchConfigurationActivation() (future placeholder) will provide partial-update semantics.
+ *
+ * To close an open-ended activation, call saveConfigurationActivation() with
+ * endTime set to the desired close time.
+ *
+ * Validation rules applied by the service:
+ *   - configurationName must reference an existing Configuration record.
+ *   - startTime is required.
+ *   - If endTime is present, endTime must be >= startTime.
+ *   - Overlapping activations for the same configurationName are rejected.
+ *   - Overlapping activations within the same category are rejected.
+ *   - tags are normalized to a lowercase unique set.
+ *   - Duplicate attribute keys (Attribute.name) are rejected.
+ */
+message SaveConfigurationActivationRequest {
+  dp.service.common.ConfigurationActivation configurationActivation = 1;
+}
+
+/*
+ * SaveConfigurationActivationResponse
+ *
+ * Contains the response to a saveConfigurationActivation() request.  Payload is an
+ * ExceptionalResult if the request is rejected or an error is encountered,
+ * otherwise contains a SaveConfigurationActivationResult.
+ */
+message SaveConfigurationActivationResponse {
+
+  dp.service.common.Timestamp responseTime = 1; // Indicates time response was generated.
+
+  oneof result {
+    dp.service.common.ExceptionalResult exceptionalResult = 10;
+    SaveConfigurationActivationResult saveConfigurationActivationResult = 11;
+  }
+
+  /*
+   * SaveConfigurationActivationResult
+   *
+   * Contains the result of a successful saveConfigurationActivation() request.
+   */
+  message SaveConfigurationActivationResult {
+    string clientActivationId = 1; // client-supplied or server-generated activation ID
+  }
+}
+
+
+//
+// ------------------- Configuration Activation Get Request/Response ---------------------------
+//
+
+/*
+ * GetConfigurationActivationRequest
+ *
+ * Retrieve a single ConfigurationActivation record by clientActivationId or
+ * composite key (configurationName + startTime).  Exactly one key must be set.
+ */
+message GetConfigurationActivationRequest {
+
+  oneof key {
+    string clientActivationId = 1;
+    CompositeKey compositeKey = 2;
+  }
+
+  /*
+   * CompositeKey
+   *
+   * Identifies a ConfigurationActivation by configurationName and startTime
+   * when clientActivationId is not available.
+   */
+  message CompositeKey {
+    string configurationName = 1;
+    dp.service.common.Timestamp startTime = 2;
+  }
+}
+
+/*
+ * GetConfigurationActivationResponse
+ *
+ * Contains the result of a getConfigurationActivation() request.  Payload is an
+ * ExceptionalResult if the request is rejected, an error is encountered, or no
+ * record is found, otherwise contains a GetConfigurationActivationResult with the
+ * matching ConfigurationActivation record.
+ */
+message GetConfigurationActivationResponse {
+
+  dp.service.common.Timestamp responseTime = 1; // Indicates time response was generated.
+
+  oneof result {
+    dp.service.common.ExceptionalResult exceptionalResult = 10;
+    GetConfigurationActivationResult getConfigurationActivationResult = 11;
+  }
+
+  /*
+   * GetConfigurationActivationResult
+   *
+   * Contains the result of a successful getConfigurationActivation() request.
+   */
+  message GetConfigurationActivationResult {
+    dp.service.common.ConfigurationActivation configurationActivation = 1;
+  }
+}
+
+
+//
+// ------------------- Configuration Activation Query ---------------------------
+//
+
+/*
+ * QueryConfigurationActivationsRequest
+ *
+ * Contains parameters for a ConfigurationActivation query using structured
+ * search criteria.
+ *
+ * Combining semantics:
+ *   - Multiple criteria in the top-level list are combined with logical AND:
+ *     a record must satisfy ALL criteria to be returned.
+ *   - Within a single criterion, multiple values are combined with logical OR:
+ *     a record satisfies the criterion if it matches ANY supplied value.
+ *   - An empty criteria list is rejected with an ExceptionalResult; at least
+ *     one criterion is required.
+ *
+ * Pagination:
+ *   - limit specifies the maximum number of records to return per response.
+ *   - pageToken is omitted on the first request; subsequent requests supply
+ *     the nextPageToken returned in the previous response.
+ *   - An empty nextPageToken in the response indicates no further pages.
+ */
+message QueryConfigurationActivationsRequest {
+
+  repeated QueryConfigurationActivationsCriterion criteria = 1;
+
+  uint32 limit = 2;
+  string pageToken = 3;
+
+  /*
+   * QueryConfigurationActivationsCriterion
+   *
+   * A single search criterion.  Exactly one criterion must be set.
+   */
+  message QueryConfigurationActivationsCriterion {
+
+    oneof criterion {
+      TimestampCriterion timestampCriterion = 10;
+      TimeRangeCriterion timeRangeCriterion = 11;
+      ConfigurationNameCriterion configurationNameCriterion = 12;
+      ClientActivationIdCriterion clientActivationIdCriterion = 13;
+      CategoryCriterion categoryCriterion = 14;
+      TagsCriterion tagsCriterion = 15;
+      AttributesCriterion attributesCriterion = 16;
+    }
+
+    /*
+     * TimestampCriterion
+     *
+     * Match activations in effect at the specified point in time:
+     *   activation.startTime <= timestamp AND
+     *   (activation.endTime is absent OR activation.endTime > timestamp)
+     */
+    message TimestampCriterion {
+      dp.service.common.Timestamp timestamp = 1;
+    }
+
+    /*
+     * TimeRangeCriterion
+     *
+     * Match activations that overlap the specified time window, i.e., the
+     * activation is active at any point during [startTime, endTime):
+     *   activation.startTime < endTime AND
+     *   (activation.endTime is absent OR activation.endTime > startTime)
+     */
+    message TimeRangeCriterion {
+      dp.service.common.Timestamp startTime = 1;
+      dp.service.common.Timestamp endTime = 2;
+    }
+
+    /*
+     * ConfigurationNameCriterion
+     *
+     * Match activations whose configurationName equals any of the specified
+     * values (exact match, OR semantics).
+     */
+    message ConfigurationNameCriterion {
+      repeated string values = 1;
+    }
+
+    /*
+     * ClientActivationIdCriterion
+     *
+     * Match activations by client-supplied activation ID (exact match, OR semantics).
+     */
+    message ClientActivationIdCriterion {
+      repeated string values = 1;
+    }
+
+    /*
+     * CategoryCriterion
+     *
+     * Match activations whose configuration belongs to any of the specified
+     * categories (exact match, OR semantics).
+     */
+    message CategoryCriterion {
+      repeated string values = 1;
+    }
+
+    /*
+     * TagsCriterion
+     *
+     * Match activations that have any of the specified tags.  Multiple tags
+     * within a single TagsCriterion are ORed; use separate TagsCriterion
+     * entries in the outer criteria list (ANDed) to require multiple tags
+     * simultaneously.
+     */
+    message TagsCriterion {
+      repeated string values = 1;
+    }
+
+    /*
+     * AttributesCriterion
+     *
+     * Match activations by attribute key and optional value(s).
+     * key (maps to Attribute.name) is required.
+     * values is optional: if non-empty, the activation must have the key with
+     * one of the specified values (OR); if empty, any activation possessing
+     * the key matches regardless of value (key-only / existence search).
+     */
+    message AttributesCriterion {
+      string key = 1;             // required; matches Attribute.name
+      repeated string values = 2; // optional; empty list = key-only search
+    }
+  }
+}
+
+/*
+ * QueryConfigurationActivationsResponse
+ *
+ * Contains the results of a queryConfigurationActivations() request.  Payload
+ * is an ExceptionalResult if the request is rejected or an error is encountered,
+ * otherwise contains a QueryConfigurationActivationsResult with the matching records.
+ *
+ * An empty query result is returned as a QueryConfigurationActivationsResult with
+ * an empty configurationActivations list (not an ExceptionalResult).
+ */
+message QueryConfigurationActivationsResponse {
+
+  dp.service.common.Timestamp responseTime = 1; // Indicates time response was generated.
+
+  oneof result {
+    dp.service.common.ExceptionalResult exceptionalResult = 10;
+    QueryConfigurationActivationsResult queryConfigurationActivationsResult = 11;
+  }
+
+  /*
+   * QueryConfigurationActivationsResult
+   *
+   * Contains a page of ConfigurationActivation records matching the query criteria.
+   *
+   * nextPageToken is non-empty when additional pages are available; supply it
+   * as pageToken in the next request to retrieve the following page.
+   * An empty nextPageToken indicates the last page.
+   */
+  message QueryConfigurationActivationsResult {
+    repeated dp.service.common.ConfigurationActivation configurationActivations = 1;
+    string nextPageToken = 2;
+  }
+}
+
+
+//
+// ------------------- Configuration Activation Delete / Patch / BulkSave ---------------------------
+//
+
+/*
+ * DeleteConfigurationActivationRequest
+ *
+ * Delete a ConfigurationActivation record by clientActivationId or composite
+ * key (configurationName + startTime).  Exactly one key must be set.
+ */
+message DeleteConfigurationActivationRequest {
+
+  oneof key {
+    string clientActivationId = 1;
+    CompositeKey compositeKey = 2;
+  }
+
+  /*
+   * CompositeKey
+   *
+   * Identifies a ConfigurationActivation by configurationName and startTime
+   * when clientActivationId is not available.
+   */
+  message CompositeKey {
+    string configurationName = 1;
+    dp.service.common.Timestamp startTime = 2;
+  }
+}
+
+/*
+ * DeleteConfigurationActivationResponse
+ *
+ * Contains the result of a deleteConfigurationActivation() request.  Payload is an
+ * ExceptionalResult if the request is rejected or an error is encountered,
+ * otherwise contains a DeleteConfigurationActivationResult.
+ */
+message DeleteConfigurationActivationResponse {
+
+  dp.service.common.Timestamp responseTime = 1; // Indicates time response was generated.
+
+  oneof result {
+    dp.service.common.ExceptionalResult exceptionalResult = 10;
+    DeleteConfigurationActivationResult deleteConfigurationActivationResult = 11;
+  }
+
+  /*
+   * DeleteConfigurationActivationResult
+   *
+   * Contains the result of a successful deleteConfigurationActivation() request.
+   */
+  message DeleteConfigurationActivationResult {
+    string clientActivationId = 1; // ID of the deleted activation record
+  }
+}
+
+/*
+ * PatchConfigurationActivationRequest
+ *
+ * Partial update of an existing ConfigurationActivation record.
+ *
+ * NOT YET IMPLEMENTED.  The patch fields and field mask mechanism are deferred
+ * to the release that implements patchConfigurationActivation().  This message
+ * is defined now to reserve the name and establish the pattern.
+ */
+message PatchConfigurationActivationRequest {
+  string clientActivationId = 1; // required
+}
+
+/*
+ * PatchConfigurationActivationResponse
+ *
+ * Contains the result of a patchConfigurationActivation() request.  Payload is an
+ * ExceptionalResult if the request is rejected or an error is encountered,
+ * otherwise contains a PatchConfigurationActivationResult.
+ */
+message PatchConfigurationActivationResponse {
+
+  dp.service.common.Timestamp responseTime = 1; // Indicates time response was generated.
+
+  oneof result {
+    dp.service.common.ExceptionalResult exceptionalResult = 10;
+    PatchConfigurationActivationResult patchConfigurationActivationResult = 11;
+  }
+
+  /*
+   * PatchConfigurationActivationResult
+   *
+   * Contains the result of a successful patchConfigurationActivation() request.
+   */
+  message PatchConfigurationActivationResult {
+    string clientActivationId = 1; // ID of the updated activation record
+  }
+}
+
+/*
+ * BulkSaveConfigurationActivationRequest
+ *
+ * Bulk create or replace multiple ConfigurationActivation records in a single
+ * request.  Each record uses the same full-replace upsert semantics as
+ * saveConfigurationActivation().  Intended for bulk loading of activation
+ * records from operational calendars.
+ *
+ * NOT YET IMPLEMENTED.  This message is defined now to reserve the name and
+ * establish the pattern for bulk-write operations in this service.
+ */
+message BulkSaveConfigurationActivationRequest {
+  repeated SaveConfigurationActivationRequest requests = 1;
+}
+
+/*
+ * BulkSaveConfigurationActivationResponse
+ *
+ * Contains the result of a bulkSaveConfigurationActivation() request.  Payload
+ * is an ExceptionalResult if the entire request is rejected (e.g. validation
+ * failure before any records are processed), otherwise contains a
+ * BulkSaveConfigurationActivationResult reporting the count of successfully
+ * saved records and per-item details for any failures.
+ *
+ * A response with BulkSaveConfigurationActivationResult and a non-empty errors
+ * list indicates a partial failure: some records were saved and some were not.
+ */
+message BulkSaveConfigurationActivationResponse {
+
+  dp.service.common.Timestamp responseTime = 1; // Indicates time response was generated.
+
+  oneof result {
+    dp.service.common.ExceptionalResult exceptionalResult = 10;
+    BulkSaveConfigurationActivationResult bulkSaveConfigurationActivationResult = 11;
+  }
+
+  /*
+   * BulkSaveConfigurationActivationResult
+   *
+   * savedCount is the number of records successfully saved.
+   * errors contains one entry per failed record; an empty list means all
+   * records were saved successfully.
+   */
+  message BulkSaveConfigurationActivationResult {
+
+    uint32 savedCount = 1;
+    repeated BulkSaveError errors = 2;
+
+    /*
+     * BulkSaveError
+     *
+     * Describes a failure for a single record within a bulk save request.
+     */
+    message BulkSaveError {
+      string clientActivationId = 1;
+      dp.service.common.ExceptionalResult exceptionalResult = 2;
+    }
+  }
+}
+
+
+//
+// ------------------- Get Active Configurations Request/Response ---------------------------
+//
+
+/*
+ * GetActiveConfigurationsRequest
+ *
+ * Returns all ConfigurationActivation records in effect at the specified
+ * timestamp, i.e., records where:
+ *   startTime <= timestamp AND (endTime is absent OR endTime > timestamp)
+ *
+ * timestamp is required.  Requests with an absent (zero-value) timestamp are
+ * rejected with an ExceptionalResult.
+ */
+message GetActiveConfigurationsRequest {
+  dp.service.common.Timestamp timestamp = 1; // required point in time
+}
+
+/*
+ * GetActiveConfigurationsResponse
+ *
+ * Contains the result of a getActiveConfigurations() request.  Payload is an
+ * ExceptionalResult if the request is rejected or an error is encountered,
+ * otherwise contains a GetActiveConfigurationsResult.
+ *
+ * An empty result (no active configurations at the specified time) is returned
+ * as a GetActiveConfigurationsResult with an empty configurationActivations
+ * list (not an ExceptionalResult).
+ */
+message GetActiveConfigurationsResponse {
+
+  dp.service.common.Timestamp responseTime = 1; // Indicates time response was generated.
+
+  oneof result {
+    dp.service.common.ExceptionalResult exceptionalResult = 10;
+    GetActiveConfigurationsResult getActiveConfigurationsResult = 11;
+  }
+
+  /*
+   * GetActiveConfigurationsResult
+   *
+   * Contains the list of ConfigurationActivation records in effect at the
+   * requested timestamp.
+   */
+  message GetActiveConfigurationsResult {
+    repeated dp.service.common.ConfigurationActivation configurationActivations = 1;
   }
 }
