@@ -15,6 +15,8 @@ This document includes the following information:
   - [PV Time-Series Data API](#pv-time-series-data-api)
   - [Ingestion Request Status API](#ingestion-request-status-api)
   - [PV Metadata API](#pv-metadata-api)
+  - [Machine Configuration API](#machine-configuration-api)
+  - [Configuration Activation API](#configuration-activation-api)
   - [Data Set API](#data-set-api)
   - [Annotation API](#annotation-api)
 - [Data Platform API conventions](#data-platform-API-conventions)
@@ -59,7 +61,7 @@ The core feature of the Query Service API is retrieval of PV time-series data ov
 
 ### Annotation Service API
 
-The Annotation Service API provides tools for augmenting the PV time-series data archive with facility-specific information.  The core feature is identifying datasets, each containing blocks of data defined by a list of PVs and a range of time, and adding annotations to those datasets.  An annotation includes descriptive elements like freeform text comment, keywords, and key-value attributes, and may also include user-defined calculations that use links for tracking data provenance.  The API also includes tools for exporting datasets and calculations to common file formats including HDF5, CSV, and XLSX.  A PV metadata API is provided for associating user-defined metadata (aliases, tags, attributes, description) with PVs and using that metadata to discover PVs of interest.
+The Annotation Service API provides tools for augmenting the PV time-series data archive with facility-specific information.  The core feature is identifying datasets, each containing blocks of data defined by a list of PVs and a range of time, and adding annotations to those datasets.  An annotation includes descriptive elements like freeform text comment, keywords, and key-value attributes, and may also include user-defined calculations that use links for tracking data provenance.  The API also includes tools for exporting datasets and calculations to common file formats including HDF5, CSV, and XLSX.  A PV metadata API is provided for associating user-defined metadata (aliases, tags, attributes, description) with PVs and using that metadata to discover PVs of interest.  A machine configuration API is also provided for recording and querying the operational state of the accelerator at a point in time, including reusable configuration definitions (e.g., `TopOff`, `3GeV`, `UserOps`) and time-stamped activation intervals that can be loaded from operational calendars or recorded in real time.
 
 ### Ingestion Stream Service API
 
@@ -86,7 +88,7 @@ The table below gives an overview of the Data Platform API organized by service.
 |------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | Ingestion        | [Provider&nbsp;registration](#provider-registration-methods)<br>[PV&nbsp;data&nbsp;ingestion](#pv-data-ingestion-methods)<br>[PV&nbsp;data&nbsp;subscription](#pv-data-subscription-methods)<br>[Request&nbsp;Status&nbsp;query](#request-status-query-methods)<br>                                                                                                                                                                      |
 | Query            | [PV&nbsp;data&nbsp;query](#pv-data-query-methods)<br>[PV&nbsp;stats&nbsp;query](#pv-stats-query-methods)<br>[Provider&nbsp;query](#provider-query-methods)<br>[Provider&nbsp;stats&nbsp;query](#provider-stats-query-methods)<br>                                                                                                                                                                                                        |
-| Annotation       | [PV&nbsp;metadata&nbsp;save](#pv-metadata-save-methods)<br>[PV&nbsp;metadata&nbsp;query](#pv-metadata-query-methods)<br>[PV&nbsp;metadata&nbsp;get](#pv-metadata-get-methods)<br>[PV&nbsp;metadata&nbsp;delete](#pv-metadata-delete-methods)<br>[Data&nbsp;Set&nbsp;save](#data-set-save-methods)<br>[Data&nbsp;Set&nbsp;query](#data-set-query-methods)<br>[Data&nbsp;export](#data-export-methods)<br>[Annotation&nbsp;save](#annotation-save-methods)<br>[Annotation&nbsp;query](#annotation-query-methods)<br> |
+| Annotation       | [PV&nbsp;metadata&nbsp;save](#pv-metadata-save-methods)<br>[PV&nbsp;metadata&nbsp;query](#pv-metadata-query-methods)<br>[PV&nbsp;metadata&nbsp;get](#pv-metadata-get-methods)<br>[PV&nbsp;metadata&nbsp;delete](#pv-metadata-delete-methods)<br>[Configuration&nbsp;save](#configuration-save-methods)<br>[Configuration&nbsp;query](#configuration-query-methods)<br>[Configuration&nbsp;Activation&nbsp;save](#configuration-activation-save-methods)<br>[Configuration&nbsp;Activation&nbsp;query](#configuration-activation-query-methods)<br>[Data&nbsp;Set&nbsp;save](#data-set-save-methods)<br>[Data&nbsp;Set&nbsp;query](#data-set-query-methods)<br>[Data&nbsp;export](#data-export-methods)<br>[Annotation&nbsp;save](#annotation-save-methods)<br>[Annotation&nbsp;query](#annotation-query-methods)<br> |
 | Ingestion Stream | [Data&nbsp;Event&nbsp;subscription](#pv-data-event-subscription-methods)<br>                                                                                                                                                                                                                                                                                                                                                             |
 
 ---
@@ -100,6 +102,8 @@ The table below gives an overview of the Data Platform API organized by entity. 
 | PV Time-Series Data | The core of the MLDP archive is correlated PV time-series data captured from devices in an accelerator facility. | [PV&nbsp;data&nbsp;ingestion](#pv-data-ingestion-methods)<br>[PV&nbsp;data&nbsp;query](#pv-data-query-methods)<br>[PV&nbsp;data&nbsp;subscription](#pv-data-subscription-methods)<br>[Data&nbsp;Event&nbsp;subscription](#pv-data-event-subscription-methods)<br>[PV&nbsp;stats&nbsp;query](#pv-stats-query-methods)<br>      |
 | PV Metadata | User-defined metadata associated with a PV, including aliases, tags, key-value attributes, and description.  Used to discover and identify PVs of interest. | [PV&nbsp;metadata&nbsp;save](#pv-metadata-save-methods)<br>[PV&nbsp;metadata&nbsp;query](#pv-metadata-query-methods)<br>[PV&nbsp;metadata&nbsp;get](#pv-metadata-get-methods)<br>[PV&nbsp;metadata&nbsp;delete](#pv-metadata-delete-methods)<br>                                                                               |
 | Ingestion Request Status | Data ingestion requests are handled asynchronously to maximize performance, so the disposition of individual requests is recorded in a Request Status record. | [Request&nbsp;Status&nbsp;query](#request-status-query-methods)<br>                                                                                                                                                                                                                                                            |
+| Machine Configuration | A reusable named definition of a machine mode or operational state (e.g., `TopOff`, `3GeV`, `UserOps`), belonging to a category, with optional parent hierarchy, tags, and attributes.  Used to describe the accelerator state for interpretation of associated PV data. | [Configuration&nbsp;save](#configuration-save-methods)<br>[Configuration&nbsp;query](#configuration-query-methods)<br>                                                                                                                                                                                    |
+| Configuration Activation | A time interval during which a Machine Configuration was active.  Supports both live recording and retroactive loading from operational calendars.  Multiple configurations may be active simultaneously if they belong to different categories. | [Configuration&nbsp;Activation&nbsp;save](#configuration-activation-save-methods)<br>[Configuration&nbsp;Activation&nbsp;query](#configuration-activation-query-methods)<br>                                                                                                                              |
 | Data Set | A Data Set identifies PV data of interest in the archive through the use of Data Blocks, each one identifying a list of PVs and range of time. | [Data&nbsp;Set&nbsp;save](#data-set-save-methods)<br>[Data&nbsp;Set&nbsp;query](#data-set-query-methods)<br>[Data&nbsp;Set&nbsp;export](#data-set-export-methods)<br>                                                                                                                                                          |
 | Annotation | Annotations are used to annotate Data Sets in the archive with descriptive information, data associations, Calculations, and provenance tracking information. | [Annotation&nbsp;save](#annotation-save-methods)<br>[Annotation&nbsp;query](#annotation-query-methods)<br>                                                                                                                                                                                                                    |
 
@@ -114,6 +118,9 @@ The Data Platform API is intended to support the following use cases and pattern
 - Monitor ingestion Request Status records for errors and other problems.
 - Query PV time-series data and archive ingestion statistics.
 - Save and query user-defined PV metadata (aliases, tags, attributes, description) to discover and identify PVs of interest.
+- Record machine configurations and the time intervals during which they were active, either in real time or by loading from operational calendars.
+- Query which machine configurations were active at a specific point in time or during a time range.
+- Correlate PV time-series data with machine configuration state for analysis and comparison (e.g., compare orbit data during TopOff vs UserOps).
 - Create Data Sets identifying archive data blocks of interest by PVs and time range.
 - Annotate Data Sets by adding descriptive information, linking to associated other Data Sets and Annotations, adding user-defined Calculations, and tracking data provenance.
 - Query Annotations and identify Data Sets of interest.
@@ -695,6 +702,221 @@ rpc bulkSavePvMetadata(BulkSavePvMetadataRequest) returns (BulkSavePvMetadataRes
 **patchPvMetadata()** will provide partial-update semantics, allowing individual fields to be updated without replacing the entire record.  Field mask design is deferred to the release that implements this method.
 
 **bulkSavePvMetadata()** will accept a list of SavePvMetadataRequest messages and apply the same full-replace upsert semantics as savePvMetadata() to each record in a single request.  Intended for large initial imports or bulk synchronization use cases.
+
+</td>
+</tr>
+</table>
+
+
+## Machine Configuration API
+
+The Machine Configuration API, part of the Annotation Service, provides methods for defining and managing reusable machine configuration records that describe the operational state of the accelerator at a given point in time.  This metadata helps users interpret associated PV time-series data — for example, identifying which machine mode was active during a beam loss event, or comparing orbit data across different energy configurations.
+
+A Configuration record stores `configurationName` as its canonical primary key (no pre-registration required), along with a required `category` (e.g., `beam_mode`, `energy`, `destination`), an optional `parentConfigurationName` for hierarchical organization, keyword tags, key-value attributes, a free-text description, and audit timestamps (`createdTime`, `updatedTime`).
+
+For querying the time intervals during which configurations were active, see the [Configuration Activation API](#configuration-activation-api) below.
+
+### Configuration Save Methods
+<table>
+<tr>
+<td><pre>
+rpc saveConfiguration(SaveConfigurationRequest) returns (SaveConfigurationResponse);
+</pre></td>
+</tr>
+<tr>
+<td>defined in: annotation.proto</td>
+</tr>
+<tr>
+<td>
+
+The saveConfiguration() method creates or replaces the metadata record for a machine configuration.  It uses full-replace upsert semantics: if no record exists for the configuration name, a new record is created; if a record already exists, all fields are replaced with the contents of the request.
+
+**Warning:** Fields omitted from the request are not preserved on update — callers must supply the complete desired state on every save.  Use patchConfiguration() (future) for partial updates.
+
+----
+
+A SaveConfigurationRequest includes the required `configurationName` and `category`, and optional fields: `description`, `parentConfigurationName`, `tags`, `attributes`, and `modifiedBy`.  Data normalization rules applied by the service: tags are normalized to a lowercase unique set; attribute keys must be unique within the request.  `createdTime` and `updatedTime` are server-set and are not accepted as input.
+
+----
+
+The response payload is an ExceptionalResult if the request is rejected or an error is encountered, otherwise a SaveConfigurationResult containing the canonical configuration name of the created or updated record.
+
+</td>
+</tr>
+</table>
+
+### Configuration Query Methods
+<table>
+<tr>
+<td><pre>
+rpc getConfiguration(GetConfigurationRequest) returns (GetConfigurationResponse);
+rpc queryConfigurations(QueryConfigurationsRequest) returns (QueryConfigurationsResponse);
+rpc deleteConfiguration(DeleteConfigurationRequest) returns (DeleteConfigurationResponse);
+</pre></td>
+</tr>
+<tr>
+<td>defined in: annotation.proto</td>
+</tr>
+<tr>
+<td>
+
+**getConfiguration()** retrieves a single Configuration record by `configurationName`.  It is a convenience method for the common single-record lookup case.  The response payload is an ExceptionalResult if no record is found or an error is encountered, otherwise the matching Configuration record.
+
+----
+
+**queryConfigurations()** searches Configuration records using structured criteria and returns a paginated result.
+
+A QueryConfigurationsRequest contains a list of QueryConfigurationsCriterion entries and optional pagination parameters (`limit`, `pageToken`).  Multiple criteria are combined with logical AND; values within a single criterion are combined with logical OR.  Criterion types include:
+
+- **NameCriterion** — match by configuration name using exact, prefix, and/or contains sub-lists (all ORed together).
+- **CategoryCriterion** — match records whose category equals any of the specified values.
+- **TagsCriterion** — match records that have any of the specified tags.
+- **AttributesCriterion** — match by attribute key and optional value(s); an empty values list matches any record that has the key regardless of value (key-only / existence search).
+- **ParentCriterion** — match records whose `parentConfigurationName` equals any of the specified values (direct children only; recursive traversal not yet supported).
+
+The response payload is an ExceptionalResult if the request is rejected or an error is encountered, otherwise a QueryConfigurationsResult containing a list of Configuration records and a `nextPageToken` for retrieving subsequent pages.  An empty result set is returned as a QueryConfigurationsResult with an empty list, not an ExceptionalResult.
+
+----
+
+**deleteConfiguration()** deletes the Configuration record for the specified `configurationName`.  The request is rejected if ConfigurationActivation records exist for the configuration; delete associated activations first.  The response payload is an ExceptionalResult if rejected or an error is encountered, otherwise a DeleteConfigurationResult confirming the name of the deleted record.
+
+</td>
+</tr>
+</table>
+
+### Configuration Placeholder Methods
+
+Two additional Configuration methods are defined in the proto but not yet implemented.  Calling either method returns an error response.  They are defined now to reserve their names and establish the standard CRUD pattern for metadata APIs in this service.
+
+<table>
+<tr>
+<td><pre>
+rpc patchConfiguration(PatchConfigurationRequest) returns (PatchConfigurationResponse);
+rpc bulkSaveConfiguration(BulkSaveConfigurationRequest) returns (BulkSaveConfigurationResponse);
+</pre></td>
+</tr>
+<tr>
+<td>defined in: annotation.proto</td>
+</tr>
+<tr>
+<td>
+
+**patchConfiguration()** will provide partial-update semantics, allowing individual fields to be updated without replacing the entire record.  Field mask design is deferred to the release that implements this method.
+
+**bulkSaveConfiguration()** will accept a list of SaveConfigurationRequest messages and apply the same full-replace upsert semantics as saveConfiguration() to each record in a single request.  Intended for large initial imports or bulk synchronization use cases.
+
+</td>
+</tr>
+</table>
+
+
+## Configuration Activation API
+
+The Configuration Activation API, part of the Annotation Service, provides methods for recording and querying the time intervals during which machine configurations were active.  A ConfigurationActivation record links a Configuration to a `startTime` and optional `endTime` (absent means the interval is open-ended).
+
+The primary use case is bulk-loading activation history from operational calendars, but live recording is also supported.  Multiple configurations may be active simultaneously as long as they belong to different categories — the server enforces that no two activations for the same configuration name, or within the same category, overlap.
+
+An optional `clientActivationId` field allows callers to supply a stable external identifier for an activation record (e.g., a calendar event ID).  If omitted, the server generates an opaque identifier.  Clients loading activations from external systems should always supply `clientActivationId` to enable future updates without a prior lookup.
+
+### Configuration Activation Save Methods
+<table>
+<tr>
+<td><pre>
+rpc saveConfigurationActivation(SaveConfigurationActivationRequest) returns (SaveConfigurationActivationResponse);
+</pre></td>
+</tr>
+<tr>
+<td>defined in: annotation.proto</td>
+</tr>
+<tr>
+<td>
+
+The saveConfigurationActivation() method creates or replaces an activation record.  It uses full-replace upsert semantics: the record is matched for update by `clientActivationId` if provided, otherwise by composite key (`configurationName` + `startTime`).
+
+**Warning:** Fields omitted from the request are not preserved on update — callers must supply the complete desired state on every save.  Use patchConfigurationActivation() (future) for partial updates.
+
+To close an open-ended activation, call saveConfigurationActivation() with `endTime` set to the desired close time.
+
+----
+
+A SaveConfigurationActivationRequest includes the required `configurationName` and `startTime`, optional `clientActivationId`, `endTime`, `description`, `tags`, `attributes`, and `modifiedBy`.  `createdTime` and `updatedTime` are server-set and are not accepted as input.
+
+Validation rules: `configurationName` must reference an existing Configuration record; if `endTime` is present it must be >= `startTime`; overlapping activations for the same `configurationName` or within the same category are rejected.
+
+----
+
+The response payload is an ExceptionalResult if the request is rejected or an error is encountered, otherwise a SaveConfigurationActivationResult containing the `clientActivationId` of the created or updated record (client-supplied or server-generated).
+
+</td>
+</tr>
+</table>
+
+### Configuration Activation Query Methods
+<table>
+<tr>
+<td><pre>
+rpc getConfigurationActivation(GetConfigurationActivationRequest) returns (GetConfigurationActivationResponse);
+rpc queryConfigurationActivations(QueryConfigurationActivationsRequest) returns (QueryConfigurationActivationsResponse);
+rpc deleteConfigurationActivation(DeleteConfigurationActivationRequest) returns (DeleteConfigurationActivationResponse);
+rpc getActiveConfigurations(GetActiveConfigurationsRequest) returns (GetActiveConfigurationsResponse);
+</pre></td>
+</tr>
+<tr>
+<td>defined in: annotation.proto</td>
+</tr>
+<tr>
+<td>
+
+**getConfigurationActivation()** retrieves a single ConfigurationActivation record by `clientActivationId` or composite key (`configurationName` + `startTime`).  Exactly one key must be set.  The response payload is an ExceptionalResult if no record is found or an error is encountered, otherwise the matching ConfigurationActivation record.
+
+----
+
+**queryConfigurationActivations()** searches ConfigurationActivation records using structured criteria and returns a paginated result.
+
+A QueryConfigurationActivationsRequest contains a list of QueryConfigurationActivationsCriterion entries and optional pagination parameters (`limit`, `pageToken`).  Multiple criteria are combined with logical AND; values within a single criterion are combined with logical OR.  Criterion types include:
+
+- **TimestampCriterion** — match activations in effect at a specific point in time (`startTime <= timestamp` AND (`endTime` is absent OR `endTime > timestamp`)).
+- **TimeRangeCriterion** — match activations that overlap a specified window (activation is active at any point during `[startTime, endTime)`).
+- **ConfigurationNameCriterion** — match by configuration name (exact match, OR semantics).
+- **ClientActivationIdCriterion** — match by client-supplied activation ID (exact match, OR semantics).
+- **CategoryCriterion** — match activations whose configuration belongs to any of the specified categories.
+- **TagsCriterion** — match activations that have any of the specified tags.
+- **AttributesCriterion** — match by attribute key and optional value(s); an empty values list matches any activation that has the key (key-only / existence search).
+
+The response payload is an ExceptionalResult if the request is rejected or an error is encountered, otherwise a QueryConfigurationActivationsResult containing a list of ConfigurationActivation records and a `nextPageToken` for retrieving subsequent pages.  An empty result set is returned as a QueryConfigurationActivationsResult with an empty list, not an ExceptionalResult.
+
+----
+
+**deleteConfigurationActivation()** deletes an activation record by `clientActivationId` or composite key (`configurationName` + `startTime`).  The response payload is an ExceptionalResult if rejected or an error is encountered, otherwise a DeleteConfigurationActivationResult confirming the `clientActivationId` of the deleted record.
+
+----
+
+**getActiveConfigurations()** returns all ConfigurationActivation records in effect at the specified timestamp.  The `timestamp` field is required; a zero-value timestamp is rejected with an ExceptionalResult.  An empty result (no active configurations at the specified time) is returned as a GetActiveConfigurationsResult with an empty list, not an ExceptionalResult.
+
+</td>
+</tr>
+</table>
+
+### Configuration Activation Placeholder Methods
+
+Two additional Configuration Activation methods are defined in the proto but not yet implemented.  Calling either method returns an error response.  They are defined now to reserve their names and establish the standard CRUD pattern for metadata APIs in this service.
+
+<table>
+<tr>
+<td><pre>
+rpc patchConfigurationActivation(PatchConfigurationActivationRequest) returns (PatchConfigurationActivationResponse);
+rpc bulkSaveConfigurationActivation(BulkSaveConfigurationActivationRequest) returns (BulkSaveConfigurationActivationResponse);
+</pre></td>
+</tr>
+<tr>
+<td>defined in: annotation.proto</td>
+</tr>
+<tr>
+<td>
+
+**patchConfigurationActivation()** will provide partial-update semantics, allowing individual fields (e.g., `endTime`) to be updated without replacing the entire record.  Field mask design is deferred to the release that implements this method.
+
+**bulkSaveConfigurationActivation()** will accept a list of SaveConfigurationActivationRequest messages and apply the same full-replace upsert semantics as saveConfigurationActivation() to each record in a single request.  Intended for bulk loading of activation records from operational calendars.
 
 </td>
 </tr>

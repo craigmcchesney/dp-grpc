@@ -26,7 +26,7 @@ pom.xml               # Maven build; runs protoc via protobuf-maven-plugin
 | `common.proto` | Shared data structures used by all services |
 | `ingestion.proto` | DpIngestionService — provider registration, data ingestion, subscriptions, request status |
 | `query.proto` | DpQueryService — time-series data query, PV metadata query, provider query |
-| `annotation.proto` | DpAnnotationService — DataSets, Annotations, Calculations, data export |
+| `annotation.proto` | DpAnnotationService — PV metadata, machine configuration, DataSets, Annotations, Calculations, data export |
 | `ingestion_stream.proto` | DpIngestionStreamService — data event subscriptions |
 
 Proto files are compiled by the `protobuf-maven-plugin` (0.6.1) using `protoc` and `grpc-java`. Generated Java sources land in `target/generated-sources/`.
@@ -42,6 +42,14 @@ Data is stored and transmitted in **column-oriented** vectors, one column per PV
 - **Deprecated**: `DataColumn` / `DataValue` (per-sample allocation; avoid for new ingestion)
 
 Each column message carries an optional `ColumnMetadata metadata = 10` field (added in issue #116) containing `ColumnProvenance` (source/process), `tags`, and `attributes`.
+
+### Configuration and ConfigurationActivation (`common.proto`)
+Shared messages for the machine configuration API (added in issue #120):
+
+- **`Configuration`** — reusable machine configuration definition. `configurationName` is the canonical primary key. Fields: `category` (required), `description`, `parentConfigurationName`, `tags`, `attributes`, `createdTime`, `updatedTime`, `modifiedBy`.
+- **`ConfigurationActivation`** — time interval during which a Configuration was active. Fields: `clientActivationId` (optional client-supplied key; server-generates if absent), `configurationName`, `startTime`, `endTime` (absent = open-ended), `description`, `tags`, `attributes`, `createdTime`, `updatedTime`, `modifiedBy`.
+
+Placed in `common.proto` so query and other services can reference them without import cycles.
 
 ### DataFrame (`common.proto`)
 The unit of ingestion. Contains `DataTimestamps` (either a `SamplingClock` or explicit `TimestampList`) plus lists of the column message types above.
@@ -78,8 +86,11 @@ All response messages use a `oneof result` with either `ExceptionalResult` (reje
 - `queryProviderMetadata` — ingestion statistics for a provider
 
 ### DpAnnotationService (`annotation.proto`)
-- `createDataSet` / `queryDataSets` — manage DataSets (blocks of PVs × time ranges)
-- `createAnnotation` / `queryAnnotations` — manage Annotations (text, tags, attributes, Calculations, provenance)
+- `savePvMetadata` / `queryPvMetadata` / `getPvMetadata` / `deletePvMetadata` — PV metadata CRUD (`patchPvMetadata` / `bulkSavePvMetadata` deferred stubs)
+- `saveConfiguration` / `queryConfigurations` / `getConfiguration` / `deleteConfiguration` — machine configuration definition CRUD (`patchConfiguration` / `bulkSaveConfiguration` deferred stubs)
+- `saveConfigurationActivation` / `queryConfigurationActivations` / `getConfigurationActivation` / `deleteConfigurationActivation` / `getActiveConfigurations` — configuration activation CRUD and point-in-time query (`patchConfigurationActivation` / `bulkSaveConfigurationActivation` deferred stubs)
+- `saveDataSet` / `queryDataSets` — manage DataSets (blocks of PVs × time ranges)
+- `saveAnnotation` / `queryAnnotations` — manage Annotations (text, tags, attributes, Calculations, provenance)
 - `exportData` — export DataSets and/or Calculations to HDF5, CSV, or XLSX
 
 ### DpIngestionStreamService (`ingestion_stream.proto`)
@@ -99,6 +110,8 @@ All response messages use a `oneof result` with either `ExceptionalResult` (reje
 Metadata APIs follow a standard CRUD method set. `DpAnnotationService.savePvMetadata` /
 `queryPvMetadata` / `getPvMetadata` / `deletePvMetadata` / `patchPvMetadata` /
 `bulkSavePvMetadata` is the reference implementation of this pattern.
+`saveConfiguration` / `saveConfigurationActivation` and their associated CRUD methods
+are a second implementation of this pattern.
 
 **Standard method set:**
 
@@ -125,6 +138,19 @@ do not add a `keyOnly` flag.
 **`save*` full-replace warning**: comments on `Save*Request` must explicitly warn that all
 fields are replaced on update and callers must supply the complete desired state. Reference
 `patch*` as the future partial-update path.
+
+**`Save*Request` flat fields**: request messages must list only client-settable fields
+explicitly — do not embed the full domain message (e.g., `Configuration`,
+`ConfigurationActivation`) since those contain server-set audit fields (`createdTime`,
+`updatedTime`) that must not be accepted as input. Add a `Note:` comment stating that
+audit timestamps are server-set and returned in query/get responses only.
+
+**Optional client-supplied key** (`clientActivationId` pattern): when an entity may be
+loaded from an external system (e.g., a calendar), provide an optional client-supplied
+string key. The server generates an opaque ID if omitted. `get*` and `delete*` and
+`patch*` requests for such entities use `oneof key` accepting either the client key or a
+composite natural key (e.g., `configurationName` + `startTime`). The generated ID is
+returned in the save result so callers can retain it.
 
 **Deferred methods** (`patch*`, `bulkSave*`): include the RPC stub and request/response
 messages in the proto even when not yet implemented, to reserve names and establish the

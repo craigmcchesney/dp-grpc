@@ -80,6 +80,68 @@ message PvMetadata {
   string description = 8; // optional free-text description
 }
 
+/*
+ * Configuration
+ *
+ * Reusable machine configuration definition. configurationName is the canonical
+ * identifier — no pre-registration is required.
+ *
+ * Placed in common.proto so it can be referenced by any service (annotation,
+ * query, etc.) without introducing cross-service import cycles.
+ *
+ * createdTime / updatedTime are server-set audit timestamps.
+ *
+ * modifiedBy is an unvalidated free-form string identifying the actor (user,
+ * service, or system) that performed the most recent save.  It reflects only
+ * the last writer; no history is maintained.
+ */
+message Configuration {
+
+  string configurationName = 1;       // canonical identifier (required)
+  string category = 2;                // required
+  string description = 3;             // optional free-text description
+  string parentConfigurationName = 4; // optional parent configuration name
+  repeated string tags = 5;           // optional keyword tags (normalized to lowercase unique set)
+  repeated Attribute attributes = 6;  // optional key/value attribute pairs
+  Timestamp createdTime = 7;          // server-set: time record was first created
+  Timestamp updatedTime = 8;          // server-set: time record was most recently saved
+  string modifiedBy = 9;              // optional actor / user / service identity for last save
+}
+
+/*
+ * ConfigurationActivation
+ *
+ * Represents the time interval during which a Configuration was active.
+ * startTime is required; endTime is optional (absent = open-ended interval).
+ *
+ * clientActivationId is an optional client-supplied stable identifier (e.g., a
+ * calendar event ID).  If omitted, the server generates an opaque identifier.
+ * Clients loading activations from external systems should always supply
+ * clientActivationId to enable future updates without a prior lookup.
+ *
+ * Placed in common.proto so it can be referenced by any service (annotation,
+ * query, etc.) without introducing cross-service import cycles.
+ *
+ * createdTime / updatedTime are server-set audit timestamps.
+ *
+ * modifiedBy is an unvalidated free-form string identifying the actor (user,
+ * service, or system) that performed the most recent save.  It reflects only
+ * the last writer; no history is maintained.
+ */
+message ConfigurationActivation {
+
+  string clientActivationId = 1;      // optional client-supplied primary key; server-generated if absent
+  string configurationName = 2;       // required; references a Configuration record
+  Timestamp startTime = 3;            // required
+  Timestamp endTime = 4;              // optional; absent = open-ended interval
+  string description = 5;             // optional free-text description
+  repeated string tags = 6;           // optional keyword tags (normalized to lowercase unique set)
+  repeated Attribute attributes = 7;  // optional key/value attribute pairs
+  Timestamp createdTime = 8;          // server-set: time record was first created
+  Timestamp updatedTime = 9;          // server-set: time record was most recently saved
+  string modifiedBy = 10;             // optional actor / user / service identity for last save
+}
+
 //
 // ------------------- Time Definitions ---------------------------
 //
