@@ -39,7 +39,7 @@ Data is stored and transmitted in **column-oriented** vectors, one column per PV
 - **Scalar**: `DoubleColumn`, `FloatColumn`, `Int64Column`, `Int32Column`, `BoolColumn`, `StringColumn`, `EnumColumn`
 - **Array**: `DoubleArrayColumn`, `FloatArrayColumn`, `Int64ArrayColumn`, `Int32ArrayColumn`, `BoolArrayColumn`
 - **Complex**: `ImageColumn`, `StructColumn`, `SerializedDataColumn`
-- **Deprecated**: `DataColumn` / `DataValue` (per-sample allocation; avoid for new ingestion)
+- **Deprecated for ingestion only**: `DataColumn` / `DataValue` (per-sample allocation; avoid for new ingestion). Still the supported representation for tabular/sample query results (e.g. the Query V2 `ColumnTable`) and Annotation Calculations, where an unset `DataValue` oneof provides missing-value support the dense types lack.
 
 Each column message carries an optional `ColumnMetadata metadata = 10` field (added in issue #116) containing `ColumnProvenance` (source/process), `tags`, and `attributes`.
 
@@ -62,6 +62,9 @@ Two modes:
 - `SamplingClock` — start time + period (nanos) + count (uniform sampling)
 - `TimestampList` — explicit list of `Timestamp` messages
 
+### TimeRange (`common.proto`)
+Shared query time interval (added in issue #123 for Query API V2): `beginTime`, `endTime`. Half-open `[beginTime, endTime)` at the sample axis; bucket selection is an overlap test (`bucket.firstTime < endTime AND bucket.lastTime >= beginTime`).
+
 ### Bucket Pattern
 Ingestion and storage use the [MongoDB bucket pattern](https://www.mongodb.com/blog/post/building-with-patterns-the-bucket-pattern): all sample values for a PV over a time range are stored as a single record, not one record per sample.
 
@@ -80,10 +83,16 @@ All response messages use a `oneof result` with either `ExceptionalResult` (reje
 - `queryRequestStatus` — check async ingestion request outcomes
 
 ### DpQueryService (`query.proto`)
+
+V1 (retained for backward compatibility):
 - `queryData` / `queryDataStream` / `queryDataBidiStream` / `queryTable` — retrieve archived time-series data
-- `queryPvMetadata` — PV archive metadata (first/last timestamp, data type, bucket stats)
+- `queryPvStats` — PV archive statistics (first/last timestamp, data type, bucket stats)
 - `queryProviders` — find providers by id, text, tags, attributes
-- `queryProviderMetadata` — ingestion statistics for a provider
+- `queryProviderStats` — ingestion statistics for a provider
+
+V2 (added in issue #123): a common `QuerySpec` (time range + `PvSelector` [name list / regex / metadata criteria] + `ConfigurationSelector`) is bundled with `ExecutionOptions` (paging: `limit`/`pageToken`) and `ResultRepresentation` (format flags) in each request. `QuerySpec` field 4 reserves a future `sampleStatusSelector`.
+- `queryBuckets` / `queryBucketsStream` — bucket-oriented; returns `DataBucket` objects, boundary buckets whole. Unary is resumable/paged; streaming is fire-and-consume (chunked, no continuation tokens).
+- `querySamples` / `querySamplesStream` — sample-oriented; returns an aligned column-oriented `ColumnTable` (union timestamp axis, samples trimmed to `[beginTime, endTime)`, missing values via unset `DataValue`). Preferred for Python/analysis.
 
 ### DpAnnotationService (`annotation.proto`)
 - `savePvMetadata` / `queryPvMetadata` / `getPvMetadata` / `deletePvMetadata` — PV metadata CRUD (`patchPvMetadata` / `bulkSavePvMetadata` deferred stubs)

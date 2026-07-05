@@ -59,6 +59,8 @@ The main objective of the Ingestion Service API is to provide a streamlined high
 
 The core feature of the Query Service API is retrieval of PV time-series data over a range of time.  There are both unary and streaming query methods, with results that contain either bucketed or tabular data.  Methods are also provided for querying archive ingestion statistics for PVs and data providers.
 
+A second generation of the time-series query API (Query API V2) is also provided (see [PV data query V2 methods](#pv-data-query-v2-methods)).  V2 introduces a common `QuerySpec` shared by all query methods that describes *what* data to retrieve — time range, PV selection (explicit list, name pattern, or PV metadata criteria), and machine-configuration filtering — independently of *how* results are returned.  Bucket-oriented methods return the archive's native `DataBucket` objects, while sample-oriented methods return an aligned, column-oriented table suited to Python and analysis workflows.  The original V1 query methods remain available for backward compatibility.
+
 ### Annotation Service API
 
 The Annotation Service API provides tools for augmenting the PV time-series data archive with facility-specific information.  The core feature is identifying datasets, each containing blocks of data defined by a list of PVs and a range of time, and adding annotations to those datasets.  An annotation includes descriptive elements like freeform text comment, keywords, and key-value attributes, and may also include user-defined calculations that use links for tracking data provenance.  The API also includes tools for exporting datasets and calculations to common file formats including HDF5, CSV, and XLSX.  A PV metadata API is provided for associating user-defined metadata (aliases, tags, attributes, description) with PVs and using that metadata to discover PVs of interest.  A machine configuration API is also provided for recording and querying the operational state of the accelerator at a point in time, including reusable configuration definitions (e.g., `TopOff`, `3GeV`, `UserOps`) and time-stamped activation intervals that can be loaded from operational calendars or recorded in real time.
@@ -87,7 +89,7 @@ The table below gives an overview of the Data Platform API organized by service.
 | Service          | API Methods                                                                                                                                                                                                                                                                                                                                                                                                                              |
 |------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | Ingestion        | [Provider&nbsp;registration](#provider-registration-methods)<br>[PV&nbsp;data&nbsp;ingestion](#pv-data-ingestion-methods)<br>[PV&nbsp;data&nbsp;subscription](#pv-data-subscription-methods)<br>[Request&nbsp;Status&nbsp;query](#request-status-query-methods)<br>                                                                                                                                                                      |
-| Query            | [PV&nbsp;data&nbsp;query](#pv-data-query-methods)<br>[PV&nbsp;stats&nbsp;query](#pv-stats-query-methods)<br>[Provider&nbsp;query](#provider-query-methods)<br>[Provider&nbsp;stats&nbsp;query](#provider-stats-query-methods)<br>                                                                                                                                                                                                        |
+| Query            | [PV&nbsp;data&nbsp;query](#pv-data-query-methods)<br>[PV&nbsp;data&nbsp;query&nbsp;V2](#pv-data-query-v2-methods)<br>[PV&nbsp;stats&nbsp;query](#pv-stats-query-methods)<br>[Provider&nbsp;query](#provider-query-methods)<br>[Provider&nbsp;stats&nbsp;query](#provider-stats-query-methods)<br>                                                                                                                                                                                                        |
 | Annotation       | [PV&nbsp;metadata&nbsp;save](#pv-metadata-save-methods)<br>[PV&nbsp;metadata&nbsp;query](#pv-metadata-query-methods)<br>[PV&nbsp;metadata&nbsp;get](#pv-metadata-get-methods)<br>[PV&nbsp;metadata&nbsp;delete](#pv-metadata-delete-methods)<br>[Configuration&nbsp;save](#configuration-save-methods)<br>[Configuration&nbsp;query](#configuration-query-methods)<br>[Configuration&nbsp;Activation&nbsp;save](#configuration-activation-save-methods)<br>[Configuration&nbsp;Activation&nbsp;query](#configuration-activation-query-methods)<br>[Data&nbsp;Set&nbsp;save](#data-set-save-methods)<br>[Data&nbsp;Set&nbsp;query](#data-set-query-methods)<br>[Data&nbsp;export](#data-export-methods)<br>[Annotation&nbsp;save](#annotation-save-methods)<br>[Annotation&nbsp;query](#annotation-query-methods)<br> |
 | Ingestion Stream | [Data&nbsp;Event&nbsp;subscription](#pv-data-event-subscription-methods)<br>                                                                                                                                                                                                                                                                                                                                                             |
 
@@ -99,7 +101,7 @@ The table below gives an overview of the Data Platform API organized by entity. 
 | Entity   | Description | API Methods                                                                                                                                                                                                                                                                                                                                                                         |
 |----------|-------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | Provider | An infrastructure component that sends correlated PV time-series data to the archive.  Might be associated with an EPICS IOC. | [Provider&nbsp;registration](#provider-registration-methods)<br>[Provider&nbsp;query](#provider-query-methods)<br>[Provider&nbsp;stats&nbsp;query](#provider-stats-query-methods)<br>                                                                                                                                         |
-| PV Time-Series Data | The core of the MLDP archive is correlated PV time-series data captured from devices in an accelerator facility. | [PV&nbsp;data&nbsp;ingestion](#pv-data-ingestion-methods)<br>[PV&nbsp;data&nbsp;query](#pv-data-query-methods)<br>[PV&nbsp;data&nbsp;subscription](#pv-data-subscription-methods)<br>[Data&nbsp;Event&nbsp;subscription](#pv-data-event-subscription-methods)<br>[PV&nbsp;stats&nbsp;query](#pv-stats-query-methods)<br>      |
+| PV Time-Series Data | The core of the MLDP archive is correlated PV time-series data captured from devices in an accelerator facility. | [PV&nbsp;data&nbsp;ingestion](#pv-data-ingestion-methods)<br>[PV&nbsp;data&nbsp;query](#pv-data-query-methods)<br>[PV&nbsp;data&nbsp;query&nbsp;V2](#pv-data-query-v2-methods)<br>[PV&nbsp;data&nbsp;subscription](#pv-data-subscription-methods)<br>[Data&nbsp;Event&nbsp;subscription](#pv-data-event-subscription-methods)<br>[PV&nbsp;stats&nbsp;query](#pv-stats-query-methods)<br>      |
 | PV Metadata | User-defined metadata associated with a PV, including aliases, tags, key-value attributes, and description.  Used to discover and identify PVs of interest. | [PV&nbsp;metadata&nbsp;save](#pv-metadata-save-methods)<br>[PV&nbsp;metadata&nbsp;query](#pv-metadata-query-methods)<br>[PV&nbsp;metadata&nbsp;get](#pv-metadata-get-methods)<br>[PV&nbsp;metadata&nbsp;delete](#pv-metadata-delete-methods)<br>                                                                               |
 | Ingestion Request Status | Data ingestion requests are handled asynchronously to maximize performance, so the disposition of individual requests is recorded in a Request Status record. | [Request&nbsp;Status&nbsp;query](#request-status-query-methods)<br>                                                                                                                                                                                                                                                            |
 | Machine Configuration | A reusable named definition of a machine mode or operational state (e.g., `TopOff`, `3GeV`, `UserOps`), belonging to a category, with optional parent hierarchy, tags, and attributes.  Used to describe the accelerator state for interpretation of associated PV data. | [Configuration&nbsp;save](#configuration-save-methods)<br>[Configuration&nbsp;query](#configuration-query-methods)<br>                                                                                                                                                                                    |
@@ -379,6 +381,44 @@ A TableResult message contains a list of PV column data vectors, one for each PV
 ----
 
 The response message for the unary methods cannot exceed the maximum gRPC message size limit, or an error is returned by the methods.
+</td>
+</tr>
+</table>
+
+### PV Data Query V2 Methods
+<table>
+<tr>
+<td><pre>
+rpc queryBuckets(QueryBucketsRequest) returns (QueryBucketsResponse);
+rpc queryBucketsStream(QueryBucketsRequest) returns (stream QueryBucketsResponse);
+rpc querySamples(QuerySamplesRequest) returns (QuerySamplesResponse);
+rpc querySamplesStream(QuerySamplesRequest) returns (stream QuerySamplesResponse);
+</pre></td>
+</tr>
+<tr>
+<td>defined in: query.proto</td>
+</tr>
+<tr>
+<td>
+Query API V2 provides a second generation of the time-series data query API.  Its central abstraction is a common QuerySpec, shared by all four methods, that describes <em>what</em> data to retrieve independently of <em>how</em> results are represented.  The original V1 query methods (above) remain available for backward compatibility.
+
+Each request bundles three messages: a QuerySpec (the logical query), an optional ExecutionOptions (paging), and an optional ResultRepresentation (result format flags).
+
+A QuerySpec contains a TimeRange (half-open [beginTime, endTime)), a PvSelector, and an optional ConfigurationSelector.  The PvSelector selects PVs by one of an explicit name list, a name regex pattern, or PV metadata criteria (mirroring the PV Metadata query language).  The ConfigurationSelector restricts returned data to intervals during which matching machine configurations were active, by intersecting the matching activations' intervals with the query TimeRange.  A reserved field is set aside in QuerySpec for a future sample-status selector.
+
+ExecutionOptions carries a limit and an opaque pageToken, following the common MLDP paging model (an empty nextPageToken in the response indicates the last page).  ResultRepresentation carries flags controlling whether column metadata is excluded and whether serialized columns are used.
+
+----
+
+The two bucket-oriented methods return QueryBucketsResponse messages containing a BucketQueryResult with a list of DataBucket objects that closely match the archive storage model.  Boundary buckets are returned whole, so the first and last buckets may contain samples outside the requested time range.  These methods are intended for Java applications, archive export, and high-performance retrieval.
+
+The two sample-oriented methods return QuerySamplesResponse messages containing a SampleQueryResult with a ColumnTable.  The service assembles buckets internally into a continuous, aligned, column-oriented table over a single union timestamp axis, trimming samples to the half-open time range; where a PV has no sample at a given timestamp the value is left unset (missing).  These methods are intended for Python, Pandas/NumPy/Polars, machine learning, and visualization use cases.
+
+For both styles, the unary methods (queryBuckets, querySamples) provide resumable, bounded-memory paging via the pageToken.  The streaming methods (queryBucketsStream, querySamplesStream) are fire-and-consume: the server streams to completion using limit as the per-message chunk size, and does not emit continuation tokens.
+
+----
+
+As with the V1 methods, an ExceptionalResult is returned on rejection or error; an empty query result is returned as an empty result payload rather than an ExceptionalResult.
 </td>
 </tr>
 </table>
