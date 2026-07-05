@@ -198,6 +198,29 @@ message DataTimestamps {
   }
 }
 
+/*
+ * TimeRange
+ *
+ * Specifies a time interval over which data should be retrieved.  Placed in
+ * common.proto because intervals are referenced across query and other use
+ * cases.
+ *
+ * Interval semantics are half-open [beginTime, endTime) at the sample axis,
+ * matching the MLDP bucket query engine.  Bucket selection is an interval-overlap
+ * test: a bucket is selected iff
+ *
+ *   bucket.firstTime <  endTime   AND   bucket.lastTime >= beginTime
+ *
+ * so a selected boundary bucket may contain individual samples outside
+ * [beginTime, endTime).  How those edge samples are handled differs by query
+ * method (bucket queries return boundary buckets whole; sample queries trim to
+ * the range).
+ */
+message TimeRange {
+  Timestamp beginTime = 1; // Required, inclusive start of interval.
+  Timestamp endTime = 2;   // Required, exclusive end of interval.
+}
+
 
 //
 // ------------------- Common Result Definitions ---------------------------
@@ -447,6 +470,10 @@ message SerializedDataColumn {
  * DataColumns in ingestion causes per-sample memory allocation that is inefficient. Data values are stored in the
  * database as a single opaque blob, even for scalar-valued columns. Consider using one of the above column-oriented
  * data structures for ingestion efficiency.
+ *
+ * This deprecation applies to ingestion only. DataColumn remains the supported representation for tabular/sample
+ * query results (e.g. the Query V2 ColumnTable) and for Annotation Calculations, where an unset DataValue value
+ * oneof provides native missing-value support that the dense column-oriented types do not.
  *
  */
 message DataColumn {

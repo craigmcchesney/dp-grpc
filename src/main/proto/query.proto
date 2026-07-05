@@ -117,6 +117,426 @@ service DpQueryService {
    */
   rpc queryProviderStats(QueryProviderStatsRequest) returns (QueryProviderStatsResponse);
 
+
+  //
+  // ------------------- Query API V2 methods ---------------------------
+  //
+  // Query API V2 introduces a common QuerySpec shared by all methods below.
+  // QuerySpec describes WHAT data to retrieve (time range, PV selection,
+  // configuration filtering) independently of HOW results are represented.
+  // Each request bundles a QuerySpec with optional ExecutionOptions (paging) and
+  // ResultRepresentation (format flags).  V1 methods above remain available for
+  // backward compatibility.
+  //
+
+  /*
+   * queryBuckets(): Unary bucket-oriented time-series query (V2).
+   *
+   * Executes the supplied QuerySpec and returns one page of DataBucket objects,
+   * each corresponding closely to the underlying archive storage model.
+   * Additional pages are retrieved by resubmitting the same QuerySpec with the
+   * nextPageToken from the previous response placed in ExecutionOptions.pageToken.
+   *
+   * Boundary buckets are returned WHOLE (not trimmed): a bucket overlapping the
+   * TimeRange is returned intact, so its first/last bucket may contain individual
+   * samples outside [beginTime, endTime).  Callers wanting samples strictly
+   * within the range should use querySamples(), which trims.
+   *
+   * Intended for Java applications, archive export, infrastructure services, and
+   * high-performance retrieval.
+   */
+  rpc queryBuckets(QueryBucketsRequest) returns (QueryBucketsResponse);
+
+  /*
+   * queryBucketsStream(): Server-streaming bucket-oriented query (V2).
+   *
+   * Executes the supplied QuerySpec and streams QueryBucketsResponse messages
+   * until the result is exhausted, the client cancels, or an error occurs.
+   * Replaces the V1 bidirectional cursor protocol; the client is not responsible
+   * for advancing server-side cursors.
+   *
+   * Paging semantics for streaming: ExecutionOptions.limit controls the chunk
+   * size of each streamed response.  Streaming is fire-and-consume — the server
+   * streams to completion and does not emit continuation tokens (nextPageToken is
+   * empty); ExecutionOptions.pageToken is ignored.  Use unary queryBuckets() when
+   * resumable paging is required.
+   */
+  rpc queryBucketsStream(QueryBucketsRequest) returns (stream QueryBucketsResponse);
+
+  /*
+   * querySamples(): Unary sample-oriented time-series query (V2).
+   *
+   * Executes the supplied QuerySpec and returns one page of aligned sample data
+   * as a column-oriented table.  The server assembles bucket data internally to
+   * present a continuous view of the requested interval; bucket boundaries are
+   * hidden from the client.
+   *
+   * Samples are TRIMMED to the half-open TimeRange [beginTime, endTime): the
+   * server retrieves overlapping buckets and drops edge samples that fall outside
+   * the range, so every returned timestamp satisfies beginTime <= t < endTime.
+   * (This carries forward the trimming behavior of the V1 queryTable processor.)
+   *
+   * Expected to become the preferred method for the Python client library,
+   * interactive analysis, data science, machine learning, and visualization.
+   */
+  rpc querySamples(QuerySamplesRequest) returns (QuerySamplesResponse);
+
+  /*
+   * querySamplesStream(): Server-streaming sample-oriented query (V2).
+   *
+   * Streams aligned sample data as successive ColumnTable pages.  Paging
+   * semantics match queryBucketsStream(): ExecutionOptions.limit controls the
+   * number of timestamps (rows) per streamed response; streaming is
+   * fire-and-consume (no continuation tokens; ExecutionOptions.pageToken
+   * ignored).  Use unary querySamples() when resumable paging is required.
+   */
+  rpc querySamplesStream(QuerySamplesRequest) returns (stream QuerySamplesResponse);
+
+}
+
+
+//
+// ------------------- Query API V2 Shared Query Model ---------------------------
+//
+
+/*
+ * QuerySpec
+ *
+ * Describes the logical time-series query — the "WHERE" clause — independently
+ * of paging and result representation.  The same QuerySpec may be executed by
+ * any V2 query method.
+ *
+ * Supports timeRange (required), pvSelector (required), and the optional
+ * configurationSelector.
+ *
+ * Field 4 is reserved for a future sampleStatusSelector, to be defined once the
+ * Sample Status API is settled.  Its shape is intentionally not committed here.
+ */
+message QuerySpec {
+
+  dp.service.common.TimeRange timeRange = 1; // Required, query time interval.
+
+  PvSelector pvSelector = 2; // Required, selects which PVs to include.
+
+  // Optional, restrict to periods when matching configurations were active.
+  ConfigurationSelector configurationSelector = 3;
+
+  // Reserved for a future sample-status selector (Sample Status API).
+  // The selector shape will be defined against that API when implemented.
+  reserved 4;
+  reserved "sampleStatusSelector";
+}
+
+/*
+ * PvSelector
+ *
+ * Selects which PVs are included in a query.  Exactly one selector must be set;
+ * an unset PvSelector (or an unset selector oneof) returns an ExceptionalResult.
+ */
+message PvSelector {
+
+  oneof selector {
+    PvNameList pvNameList = 1;       // Explicit PV name list.
+    PvNamePattern pvNamePattern = 2; // Regex over PV names.
+    MetadataQuery metadataQuery = 3; // PV metadata criteria (mirrors queryPvMetadata).
+  }
+
+  /*
+   * MetadataQuery
+   *
+   * Selects PVs by metadata, mirroring the query language of
+   * DpAnnotationService.queryPvMetadata().  Multiple criteria are ANDed; values
+   * within a criterion are ORed.  The criterion shape intentionally duplicates
+   * QueryPvMetadataRequest.QueryPvMetadataCriterion rather than sharing a type,
+   * so each stays self-documenting in its own context.
+   */
+  message MetadataQuery {
+
+    repeated Criterion criteria = 1;
+
+    /*
+     * A single PV-metadata selection criterion.  Exactly one criterion must be
+     * set.
+     */
+    message Criterion {
+
+      oneof criterion {
+        PvNameCriterion pvNameCriterion = 10;         // by canonical PV name
+        TagsCriterion tagsCriterion = 11;             // by tag value(s)
+        AttributesCriterion attributesCriterion = 12; // by attribute key/value(s)
+        AliasesCriterion aliasesCriterion = 13;       // by alias
+      }
+
+      // PvNameCriterion: values across all three sub-lists are ORed.
+      message PvNameCriterion {
+        repeated string exact = 1;    // exact string match
+        repeated string prefix = 2;   // prefix match
+        repeated string contains = 3; // substring match
+      }
+
+      // TagsCriterion: tags within one criterion are ORed; separate criteria ANDed.
+      message TagsCriterion {
+        repeated string values = 1;
+      }
+
+      // AttributesCriterion: key required; empty values = key-only existence search.
+      message AttributesCriterion {
+        string key = 1;
+        repeated string values = 2;
+      }
+
+      // AliasesCriterion: mirrors PvNameCriterion; sub-lists ORed.
+      message AliasesCriterion {
+        repeated string exact = 1;
+        repeated string prefix = 2;
+        repeated string contains = 3;
+      }
+    }
+  }
+}
+
+/*
+ * ConfigurationSelector
+ *
+ * Restricts returned data to the time intervals during which matching machine
+ * configurations were active.  The server finds ConfigurationActivation records
+ * matching the supplied criteria, unions their active intervals, intersects that
+ * union with the query's TimeRange, and retrieves data only within the resulting
+ * (possibly fragmented) intervals.
+ *
+ * Criteria are NON-TEMPORAL (name, client activation id, category, tags,
+ * attributes).  Multiple criteria are ANDed; multiple values within a criterion
+ * are ORed.  Time is intentionally NOT part of the selector — the enclosing
+ * QuerySpec.timeRange is the single time axis for the whole query, so there is
+ * no second time specification to reconcile.  (These criteria mirror the
+ * non-temporal arms of annotation.proto's QueryConfigurationActivationsCriterion
+ * but are defined locally; they are not a shared type.)
+ *
+ * If no criteria are supplied, the selector matches nothing and the query
+ * returns an empty result (omit ConfigurationSelector entirely to query the full
+ * TimeRange unconditionally).
+ */
+message ConfigurationSelector {
+
+  repeated Criterion criteria = 1;
+
+  /*
+   * A single NON-TEMPORAL configuration-matching criterion, matched against the
+   * Configuration referenced by each ConfigurationActivation and the
+   * activation's own tags/attributes.  Exactly one criterion must be set.
+   */
+  message Criterion {
+
+    oneof criterion {
+      ConfigurationNameCriterion  configurationNameCriterion  = 10; // by configurationName
+      ClientActivationIdCriterion clientActivationIdCriterion = 11; // by client activation id
+      CategoryCriterion           categoryCriterion           = 12; // by category
+      TagsCriterion               tagsCriterion               = 13; // by tag value(s)
+      AttributesCriterion         attributesCriterion         = 14; // by attribute key/value(s)
+    }
+
+    // ConfigurationNameCriterion: exact configuration name(s); values ORed.
+    message ConfigurationNameCriterion {
+      repeated string values = 1;
+    }
+
+    // ClientActivationIdCriterion: exact client activation id(s); values ORed.
+    message ClientActivationIdCriterion {
+      repeated string values = 1;
+    }
+
+    // CategoryCriterion: exact category value(s); values ORed.
+    message CategoryCriterion {
+      repeated string values = 1;
+    }
+
+    // TagsCriterion: tags within one criterion ORed; separate criteria ANDed.
+    message TagsCriterion {
+      repeated string values = 1;
+    }
+
+    // AttributesCriterion: key required; empty values = key-only existence search.
+    message AttributesCriterion {
+      string key = 1;
+      repeated string values = 2;
+    }
+  }
+}
+
+/*
+ * ExecutionOptions
+ *
+ * Controls how query execution proceeds (paging).  Follows the MLDP metadata-API
+ * paging convention.
+ *
+ * Unary methods (queryBuckets / querySamples): limit is the maximum number of
+ *   result objects per page (DataBuckets for queryBuckets; timestamps/rows for
+ *   querySamples).  pageToken continues from a prior response's nextPageToken;
+ *   empty == first page.  This is the resumable, bounded-memory access path.
+ *
+ * Streaming methods (queryBucketsStream / querySamplesStream): limit is the
+ *   per-message chunk size.  Streaming is fire-and-consume: the server streams to
+ *   completion and does NOT emit continuation tokens (result nextPageToken is
+ *   empty on every streamed message).  pageToken is IGNORED on streaming calls —
+ *   the field is reserved for a possible future streaming-resume feature.  Use
+ *   the unary methods when resumability is required.
+ *
+ * If limit is omitted (0) the server selects an appropriate default.
+ */
+message ExecutionOptions {
+  uint32 limit = 1;
+  string pageToken = 2;
+}
+
+/*
+ * ResultRepresentation
+ *
+ * Controls how results are represented, without affecting which data are
+ * selected.  All fields optional.
+ */
+message ResultRepresentation {
+
+  // Include ColumnMetadata (provenance/tags/attributes) in returned columns
+  // where available.  Default behavior is to include; this flag suppresses it.
+  // (Inverted sense avoids the proto3 "default true" footgun.)
+  bool excludeColumnMetadata = 1;
+
+  // Return columns in serialized form to minimize gRPC serialization overhead.
+  // For bucket queries, each DataBucket carries a SerializedDataColumn instead of
+  // a typed column; for sample queries, ColumnTable populates serializedDataColumns
+  // instead of dataColumns.
+  bool useSerializedColumns = 2;
+}
+
+
+//
+// ------------------- Query API V2 Bucket-Oriented Query ---------------------------
+//
+
+/*
+ * QueryBucketsRequest
+ *
+ * Request for queryBuckets() and queryBucketsStream().  Carries the logical
+ * QuerySpec plus optional execution and representation options.
+ */
+message QueryBucketsRequest {
+  QuerySpec querySpec = 1;                          // Required.
+  ExecutionOptions executionOptions = 2;            // Optional.
+  ResultRepresentation resultRepresentation = 3;    // Optional.
+}
+
+/*
+ * QueryBucketsResponse
+ *
+ * Response for queryBuckets() (single message) and queryBucketsStream() (stream).
+ * Payload is an ExceptionalResult on rejection/error, otherwise a
+ * BucketQueryResult containing one page of DataBuckets.  An empty result is an
+ * empty dataBuckets list, not an ExceptionalResult.
+ */
+message QueryBucketsResponse {
+
+  dp.service.common.Timestamp responseTime = 1; // Indicates time response was generated.
+
+  oneof result {
+    dp.service.common.ExceptionalResult exceptionalResult = 10;
+    BucketQueryResult bucketQueryResult = 11;
+  }
+
+  /*
+   * BucketQueryResult
+   *
+   * One page of DataBucket objects.  Every bucket is complete — paging
+   * boundaries always fall between buckets.  For unary queryBuckets(),
+   * nextPageToken is non-empty when more pages are available; supply it as
+   * ExecutionOptions.pageToken to continue, and an empty nextPageToken indicates
+   * the last page.  For queryBucketsStream(), nextPageToken is always empty (the
+   * stream itself signals completion).
+   */
+  message BucketQueryResult {
+    repeated dp.service.common.DataBucket dataBuckets = 1;
+    string nextPageToken = 2;
+  }
+}
+
+
+//
+// ------------------- Query API V2 Sample-Oriented Query ---------------------------
+//
+
+/*
+ * QuerySamplesRequest
+ *
+ * Request for querySamples() and querySamplesStream().  Same three-part shape as
+ * QueryBucketsRequest.  Bucket boundaries are hidden; the server assembles and
+ * aligns buckets into a continuous column-oriented table.
+ */
+message QuerySamplesRequest {
+  QuerySpec querySpec = 1;                          // Required.
+  ExecutionOptions executionOptions = 2;            // Optional.
+  ResultRepresentation resultRepresentation = 3;    // Optional.
+}
+
+/*
+ * QuerySamplesResponse
+ *
+ * Response for querySamples() (single message) and querySamplesStream() (stream).
+ * Payload is an ExceptionalResult on rejection/error, otherwise a
+ * SampleQueryResult containing one page of aligned sample data.  An empty result
+ * is an empty ColumnTable, not an ExceptionalResult.
+ */
+message QuerySamplesResponse {
+
+  dp.service.common.Timestamp responseTime = 1; // Indicates time response was generated.
+
+  oneof result {
+    dp.service.common.ExceptionalResult exceptionalResult = 10;
+    SampleQueryResult sampleQueryResult = 11;
+  }
+
+  /*
+   * SampleQueryResult
+   *
+   * One page of aligned sample data.  Paging boundaries fall between timestamps
+   * so that all PV values for a given timestamp stay together.  For unary
+   * querySamples(), nextPageToken follows the standard convention (empty == last
+   * page).  For querySamplesStream(), nextPageToken is always empty (the stream
+   * itself signals completion).
+   */
+  message SampleQueryResult {
+    ColumnTable columnTable = 1;
+    string nextPageToken = 2;
+  }
+}
+
+/*
+ * ColumnTable
+ *
+ * The sample-query result table: aligned time-series data in column-oriented
+ * form, over a single union timestamp axis.
+ *
+ * timestampList is the logical row index — the explicit, ordered union of all
+ * selected PVs' timestamps over the page.  A TimestampList (not a full
+ * DataTimestamps) is used deliberately: the union of multiple PVs' samples is in
+ * general irregular and cannot be expressed by a SamplingClock, so the sample
+ * result always carries an explicit timestamp list.
+ *
+ * Each DataColumn holds one value per timestamp; where a PV has no sample at a
+ * given timestamp, that position's DataValue has an unset value oneof (missing).
+ *
+ * V2 standardizes on this single column-oriented representation; the V1
+ * row-oriented table format is not carried forward.
+ *
+ * Columns are returned in one of two parallel forms, mirroring DataFrame in
+ * common.proto: by default the server populates dataColumns; if
+ * ResultRepresentation.useSerializedColumns is set it instead populates
+ * serializedDataColumns (the byte-encoded form of the same DataColumns, which
+ * preserves the unset-oneof missing-value encoding).  Exactly one of the two
+ * lists is populated per response.
+ */
+message ColumnTable {
+  dp.service.common.TimestampList timestampList = 1;
+  repeated dp.service.common.DataColumn dataColumns = 2;
+  repeated dp.service.common.SerializedDataColumn serializedDataColumns = 3;
 }
 
 
