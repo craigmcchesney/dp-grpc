@@ -158,7 +158,8 @@ service DpQueryService {
    * Paging semantics for streaming: ExecutionOptions.limit controls the chunk
    * size of each streamed response.  Streaming is fire-and-consume — the server
    * streams to completion and does not emit continuation tokens (nextPageToken is
-   * empty); ExecutionOptions.pageToken is ignored.  Use unary queryBuckets() when
+   * empty); ExecutionOptions.pageToken must be empty (a non-empty token is
+   * rejected with an ExceptionalResult).  Use unary queryBuckets() when
    * resumable paging is required.
    */
   rpc queryBucketsStream(QueryBucketsRequest) returns (stream QueryBucketsResponse);
@@ -187,8 +188,9 @@ service DpQueryService {
    * Streams aligned sample data as successive ColumnTable pages.  Paging
    * semantics match queryBucketsStream(): ExecutionOptions.limit controls the
    * number of timestamps (rows) per streamed response; streaming is
-   * fire-and-consume (no continuation tokens; ExecutionOptions.pageToken
-   * ignored).  Use unary querySamples() when resumable paging is required.
+   * fire-and-consume (no continuation tokens; ExecutionOptions.pageToken must be
+   * empty, a non-empty token rejected with an ExceptionalResult).  Use unary
+   * querySamples() when resumable paging is required.
    */
   rpc querySamplesStream(QuerySamplesRequest) returns (stream QuerySamplesResponse);
 
@@ -238,7 +240,7 @@ message PvSelector {
   oneof selector {
     PvNameList pvNameList = 1;       // Explicit PV name list.
     PvNamePattern pvNamePattern = 2; // Regex over PV names.
-    MetadataQuery metadataQuery = 3; // PV metadata criteria (mirrors queryPvMetadata).
+    MetadataQuery metadataQuery = 3; // PV metadata criteria (mirrors DpAnnotationService.queryPvMetadata).
   }
 
   /*
@@ -309,7 +311,8 @@ message PvSelector {
  * are ORed.  Time is intentionally NOT part of the selector — the enclosing
  * QuerySpec.timeRange is the single time axis for the whole query, so there is
  * no second time specification to reconcile.  (These criteria mirror the
- * non-temporal arms of annotation.proto's QueryConfigurationActivationsCriterion
+ * non-temporal arms of annotation.proto's
+ * QueryConfigurationActivationsRequest.QueryConfigurationActivationsCriterion
  * but are defined locally; they are not a shared type.)
  *
  * If no criteria are supplied, the selector matches nothing and the query
@@ -383,9 +386,11 @@ message ConfigurationSelector {
  * Streaming methods (queryBucketsStream / querySamplesStream): limit is the
  *   per-message chunk size.  Streaming is fire-and-consume: the server streams to
  *   completion and does NOT emit continuation tokens (result nextPageToken is
- *   empty on every streamed message).  pageToken is IGNORED on streaming calls —
- *   the field is reserved for a possible future streaming-resume feature.  Use
- *   the unary methods when resumability is required.
+ *   empty on every streamed message).  pageToken must be empty on streaming
+ *   calls; a non-empty pageToken is rejected with an ExceptionalResult (rather
+ *   than silently returning the first page).  The field is reserved for a
+ *   possible future streaming-resume feature.  Use the unary methods when
+ *   resumability is required.
  *
  * If limit is omitted (0) the server selects an appropriate default.
  */
