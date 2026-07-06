@@ -324,15 +324,21 @@ message ConfigurationSelector {
    * A single NON-TEMPORAL configuration-matching criterion, matched against the
    * Configuration referenced by each ConfigurationActivation and the
    * activation's own tags/attributes.  Exactly one criterion must be set.
+   *
+   * Field numbers are kept parallel to the corresponding arms of
+   * annotation.proto's QueryConfigurationActivationsCriterion (12-16).  Numbers
+   * 10-11 are intentionally omitted: in the source they are the temporal
+   * TimestampCriterion / TimeRangeCriterion arms, which have no place in a
+   * selector (QuerySpec.timeRange is the single time axis).
    */
   message Criterion {
 
     oneof criterion {
-      ConfigurationNameCriterion  configurationNameCriterion  = 10; // by configurationName
-      ClientActivationIdCriterion clientActivationIdCriterion = 11; // by client activation id
-      CategoryCriterion           categoryCriterion           = 12; // by category
-      TagsCriterion               tagsCriterion               = 13; // by tag value(s)
-      AttributesCriterion         attributesCriterion         = 14; // by attribute key/value(s)
+      ConfigurationNameCriterion  configurationNameCriterion  = 12; // by configurationName
+      ClientActivationIdCriterion clientActivationIdCriterion = 13; // by client activation id
+      CategoryCriterion           categoryCriterion           = 14; // by category
+      TagsCriterion               tagsCriterion               = 15; // by tag value(s)
+      AttributesCriterion         attributesCriterion         = 16; // by attribute key/value(s)
     }
 
     // ConfigurationNameCriterion: exact configuration name(s); values ORed.
